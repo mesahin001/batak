@@ -1,3 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+target/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Solana
+.anchor/
+test-ledger/
+
 # Remix compiler artifacts
 **/artifacts/
 **/artifacts/**
@@ -10,6 +41,25 @@ states/
 *.dbg.json
 *.tsbuildinfo
 
-# Optional
-.env
-.env.local
+# Database (local)
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+
+# SSH keys
+*.pem
+*.key
+id_ed25519*
+id_rsa*
+
+# Backups
+backups/
+*.backup
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/

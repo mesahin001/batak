@@ -1,0 +1,175 @@
+.lobby {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.lobby-header {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.lobby-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #e94560, #533483);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lobby-header p {
+  color: var(--color-text-secondary);
+}
+
+.lobby-content {
+  flex: 1;
+  padding: 0 1rem 2rem;
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lobby-card {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-card h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.setting-group {
+  margin-bottom: 1.5rem;
+}
+
+.setting-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.bot-selector,
+.difficulty-selector,
+.gamemode-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bot-btn,
+.difficulty-btn,
+.gamemode-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: var(--color-bg);
+  border: 2px solid var(--color-secondary);
+  border-radius: 8px;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bot-btn.active,
+.difficulty-btn.active,
+.gamemode-btn.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.gamemode-btn {
+  padding: 1rem 0.75rem;
+  min-height: 70px;
+}
+
+.gamemode-desc {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  font-weight: normal;
+}
+
+.info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--color-bg);
+  border-radius: 8px;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.queue-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-bg);
+  border-radius: 8px;
+}
+
+.queue-status .spinner {
+  width: 20px;
+  height: 20px;
+}
+
+.lobby-info {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+}
+
+.lobby-info h3 {
+  margin-bottom: 1rem;
+}
+
+.lobby-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.lobby-info li {
+  padding: 0.5rem 0;
+  color: var(--color-text-secondary);
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.lobby-info li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lobby-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .bot-selector,
+  .difficulty-selector {
+    flex-wrap: wrap;
+  }
+
+  .bot-btn,
+  .difficulty-btn,
+  .gamemode-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+  }
+}

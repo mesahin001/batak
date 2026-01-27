@@ -1,0 +1,49 @@
+{
+  "name": "Batak Champion 🥇 - Season 1",
+  "symbol": "BTK",
+  "description": "Winner of Batak Tournament #1234 on 2025-01-26",
+  "image": "https://example.com/batak-champion-gold.png",
+  "attributes": [
+    {
+      "trait_type": "Tournament ID",
+      "value": "1234"
+    },
+    {
+      "trait_type": "Date",
+      "value": "2025-01-26"
+    },
+    {
+      "trait_type": "Season",
+      "value": "1"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "1st Place"
+    },
+    {
+      "trait_type": "Prize Tier",
+      "value": "Gold"
+    },
+    {
+      "trait_type": "Game",
+      "value": "Batak"
+    },
+    {
+      "trait_type": "Blockchain",
+      "value": "Solana"
+    }
+  ],
+  "collection": {
+    "name": "Batak Champions",
+    "family": "Batak Tournament"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://example.com/batak-champion-gold.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

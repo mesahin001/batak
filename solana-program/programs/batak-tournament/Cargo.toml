@@ -1,0 +1,23 @@
+[package]
+name = "batak-tournament"
+version = "0.1.0"
+description = "NFT-Rewarded Batak Tournament Program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "batak_tournament"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.30.1"
+anchor-spl = "0.30.1"
+
+[dev-dependencies]
+solana-program-test = "1.18"

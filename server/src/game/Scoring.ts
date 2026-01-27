@@ -1,0 +1,269 @@
+/**
+ * Skor hesaplama.
+ * Batak formülüne göre tur sonu puanlarını hesaplar ve kazananı belirler.
+ */
+
+import { PlayerState, Bid, Suit, BidType } from '../types/game.js';
+export function calculateScores(
+  players: PlayerState[],
+  trumpSuit: Suit | null,
+  bids: Bid[],
+  gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
+): PlayerState[] {
+  return players.map(player => {
+    // Find the bid for this player from the bids array
+    const playerBid = bids.find(b => b.playerId === player.id) || null;
+    const roundScore = calculatePlayerScoreWithBid(player, playerBid, gameMode);
+    const newTotalScore = player.totalScore + roundScore;
+    const newRoundScores = [...player.roundScores, roundScore];
+
+    return {
+      ...player,
+      score: roundScore,
+      totalScore: newTotalScore,
+      roundScores: newRoundScores
+    };
+  });
+}
+
+/**
+ * Get the bid for a specific player from the bids array
+ */
+function getBidForPlayer(player: PlayerState): Bid | null {
+  // Note: The bid will be looked up from the room's bids array
+  // This function signature exists for type compatibility
+  return player.bid || null;
+}
+
+/**
+ * Calculate score for a single player based on Batak rules
+ *
+ * Koz Maça & İhaleli Batak (Bidding):
+ * - Made bid or MORE: 10 × bid + (tricks_won - bid)
+ * - Failed bid: -10 × bid
+ * - Non-bidders (passed): tricks_won × 10
+ * - El almaz (no tricks bid): +50 if 0 tricks, -50 if any tricks taken
+ */
+export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null, gameMode: 'koz_maca' | 'ihaleli_batak'): number {
+  console.log('[calculatePlayerScoreWithBid]', {
+    playerName: player.name,
+    gameMode,
+    bid,
+    tricksWon: player.tricksWon
+  });
+
+  // Check for el almaz (special bid for no tricks)
+  if (bid?.type === BidType.EL_ALMAZ) {
+    const score = player.tricksWon === 0 ? 50 : -50;
+    console.log('[calculatePlayerScoreWithBid] El almaz score:', score);
+    return score;
+  }
+
+  // Non-bidder (passed): tricks × 10
+  if (!bid || bid.amount === 0) {
+    const score = player.tricksWon * 10;
+    console.log('[calculatePlayerScoreWithBid] Non-bidder score:', score);
+    return score;
+  }
+
+  const { amount } = bid;
+
+  // Normal bid: Made bid or MORE wins, fails loses
+  if (player.tricksWon >= amount) {
+    // Made bid or more: 10 × bid + (extra tricks)
+    const extraTricks = player.tricksWon - amount;
+    const score = (amount * 10) + extraTricks;
+    console.log('[calculatePlayerScoreWithBid] Made bid:', {
+      bidAmount: amount,
+      tricksWon: player.tricksWon,
+      extraTricks,
+      score,
+      calculation: `${amount} × 10 + ${extraTricks} = ${score}`
+    });
+    return score;
+  } else {
+    // Failed bid: -10 × bid
+    const score = -(amount * 10);
+    console.log('[calculatePlayerScoreWithBid] Failed bid:', {
+      bidAmount: amount,
+      tricksWon: player.tricksWon,
+      score,
+      calculation: `-${amount} × 10 = ${score}`
+    });
+    return score;
+  }
+}
+
+// Legacy function for backward compatibility
+export function calculatePlayerScore(player: PlayerState, gameMode: 'koz_maca' | 'ihaleli_batak'): number {
+  return calculatePlayerScoreWithBid(player, player.bid, gameMode);
+}
+
+/**
+ * Check if a player has won the game
+ *
+ * İhaleli Batak: LOWEST score wins - first player to reach ≤1 wins
+ * Koz Maça: No early ending - game goes for all rounds
+ *
+ * For Koz Maça, use getHighestScorer() when rounds complete
+ */
+export function checkGameWinner(players: PlayerState[], gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'): string | null {
+  // Koz Maça: No early game end - play all rounds
+  if (gameMode === 'koz_maca') {
+    return null;
+  }
+
+  // İhaleli Batak: First player to reach exactly 1 or below wins
+  for (const player of players) {
+    if (player.totalScore <= 1) {
+      return player.id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Get the highest scoring player (for Koz Maça)
+ * In Koz Maça, the HIGHEST score wins (least negative)
+ */
+export function getHighestScorer(players: PlayerState[]): PlayerState | null {
+  if (players.length === 0) return null;
+
+  return players.reduce((highest, current) => {
+    return current.totalScore > highest.totalScore ? current : highest;
+  });
+}
+
+/**
+ * Check if a player declared King and won by taking all 13 tricks
+ * This is an instant win condition
+ */
+export function checkKingWinner(player: PlayerState): boolean {
+  return player.declaredKing && player.tricksWon === 13;
+}
+
+/**
+ * Get the lowest scoring player (used when max rounds reached)
+ * In Batak, the LOWEST score wins
+ */
+export function getLowestScorer(players: PlayerState[]): PlayerState | null {
+  if (players.length === 0) return null;
+
+  return players.reduce((lowest, current) => {
+    return current.totalScore < lowest.totalScore ? current : lowest;
+  });
+}
+
+/**
+ * Calculate the winner of a trick
+ */
+export function calculateTrickWinner(
+  cards: Array<{ playerId: string; card: any }>,
+  leadSuit: Suit,
+  trumpSuit: Suit | null
+): string {
+  let winningCard = cards[0];
+
+  for (let i = 1; i < cards.length; i++) {
+    const current = cards[i];
+
+    if (cardBeats(current.card, winningCard.card, leadSuit, trumpSuit)) {
+      winningCard = current;
+    }
+  }
+
+  return winningCard.playerId;
+}
+
+/**
+ * Check if card1 beats card2
+ */
+function cardBeats(
+  card1: any,
+  card2: any,
+  leadSuit: Suit,
+  trumpSuit: Suit | null
+): boolean {
+  // If card1 is trump and card2 isn't, card1 wins
+  const card1IsTrump = trumpSuit && card1.suit === trumpSuit;
+  const card2IsTrump = trumpSuit && card2.suit === trumpSuit;
+
+  if (card1IsTrump && !card2IsTrump) return true;
+  if (card2IsTrump && !card1IsTrump) return false;
+
+  // If both are trump, higher rank wins
+  if (card1IsTrump && card2IsTrump) {
+    return card1.rank > card2.rank;
+  }
+
+  // If neither is trump
+  const card1IsLead = card1.suit === leadSuit;
+  const card2IsLead = card2.suit === leadSuit;
+
+  // Card following lead suit beats off-suit
+  if (card1IsLead && !card2IsLead) return true;
+  if (card2IsLead && !card1IsLead) return false;
+
+  // Both follow lead suit (or both don't), higher rank wins
+  return card1.rank > card2.rank;
+}
+
+/**
+ * Validate if a bid is achievable based on hand
+ * (Used by bots for bidding strategy)
+ */
+export function estimateAchievableTricks(
+  hand: any[],
+  suit: Suit | null
+): number {
+  let tricks = 0;
+
+  // Count aces (guaranteed tricks)
+  const aces = hand.filter(c => c.rank === 14).length;
+  tricks += aces;
+
+  // Count kings (likely tricks, unless ace is against you)
+  const kings = hand.filter(c => c.rank === 13).length;
+  tricks += Math.floor(kings * 0.8);
+
+  // If bidding on trump, count additional trump cards
+  if (suit) {
+    const trumps = hand.filter(c => c.suit === suit).length;
+    if (trumps >= 4) {
+      tricks += 1; // Bonus for strong trump suit
+    }
+  }
+
+  return Math.min(13, Math.floor(tricks));
+}
+
+/**
+ * Calculate final rankings (LOWEST score wins in Batak)
+ */
+export interface Ranking {
+  playerId: string;
+  playerName: string;
+  rank: number;
+  score: number;
+}
+
+export function calculateRankings(players: PlayerState[]): Ranking[] {
+  // Sort by lowest score (Batak rules)
+  const sorted = [...players].sort((a, b) => a.totalScore - b.totalScore);
+
+  return sorted.map((player, index) => ({
+    playerId: player.id,
+    playerName: player.name,
+    rank: index + 1,
+    score: player.totalScore
+  }));
+}
+
+/**
+ * Get highest bid amount (excluding pass bids of 0)
+ */
+export function getHighestBidAmount(bids: Bid[]): number {
+  const realBids = bids.filter(b => b.amount > 0);
+  if (realBids.length === 0) return 0;
+  return Math.max(...realBids.map(b => b.amount));
+}

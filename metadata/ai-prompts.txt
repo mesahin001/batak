@@ -1,0 +1,89 @@
+# NFT Image Generation Prompts
+
+## Gold Tier NFT (1st Place)
+```
+"Golden trophy card design for Turkish card game champion,
+decorative Ottoman-style border with intricate geometric patterns,
+celebratory confetti particles floating around,
+glowing gold and deep royal red color scheme,
+'TURNUVA KAZANDI' (Won Tournament) text in elegant Turkish typography,
+playing card symbols (hearts ♥, diamonds ♦, clubs ♣, spades ♠) as decorative corner elements,
+champion ribbon banner at bottom with '1st Place',
+premium collectible card game art style,
+512x512 pixel art with clean bold design suitable for mobile display,
+ magical sparkles and starburst effects, high contrast for visibility"
+```
+
+## Silver Tier NFT (2nd Place)
+```
+"Silver trophy card design for Turkish card game runner-up,
+elegant Ottoman-style border with geometric patterns,
+subtle shimmering particles,
+cool silver and blue color scheme,
+'TURNUVA 2.İNCİ' text in Turkish typography,
+playing card symbols as decorative elements,
+silver medal ribbon banner,
+collectible card game art style,
+512x512 pixel art, clean design"
+```
+
+## Bronze Tier NFT (3rd Place)
+```
+"Bronze trophy card design for Turkish card game,
+traditional Ottoman-style border,
+warm bronze and orange color scheme,
+'TURNUVA 3.' text in Turkish typography,
+playing card symbols as decorative elements,
+bronze medal ribbon banner,
+collectible card game art style,
+512x512 pixel art"
+```
+
+## Special Edition NFT
+```
+"Legendary holographic card design for ultimate Batak champion,
+rainbow iridescent border with Turkish floral patterns,
+magical energy particles and glowing runes,
+multi-colored holographic effects,
+'EFSANEVI ŞAMPİYON' (Legendary Champion) text in ornate Turkish calligraphy,
+all four playing card suits (♥♦♣♠) arranged artistically,
+crown and laurel wreath symbols,
+ultra-premium foil card art style,
+512x512 pixel art with maximum visual impact,
+sparkle effects and light rays emanating from center"
+```
+
+## Season Champion NFT
+```
+"Season championship belt card design for Batak,
+decorative championship belt with Turkish flag colors (red and white),
+stylized map of Turkey in background,
+'SEZON ŞAMPİYONU' (Season Champion) text,
+season number prominently displayed,
+golden trophy cup in center,
+prestigious sports card art style,
+512x512 pixel art"
+```
+
+# Image Generation Tools
+- Midjourney: `https://midjourney.com`
+- DALL-E 3: `https://openai.com/dall-e-3`
+- Stable Diffusion: `https://stability.ai`
+- Leonardo AI: `https://leonardo.ai`
+
+# Upload to Arweave/Irys
+Use free tier for MVP:
+- Irys: `https://www.irys.xyz`
+- Arweave: `https://www.arweave.org`
+
+# Metadata Upload
+```bash
+# Install Irys CLI
+npm install -g @irys/upload
+
+# Upload metadata
+irys upload-metadata metadata/nft-metadata.json
+
+# Upload image
+irys upload metadata/images/batak-champion.png
+```
