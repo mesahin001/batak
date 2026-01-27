@@ -37,12 +37,45 @@ export const config = {
   bonusScore: 100,
 
   validate() {
-    if (!this.solanaPrivateKey) {
-      console.warn('Warning: SOLANA_PRIVATE_KEY not set. Solana features will be disabled.');
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Production: Strict validation - missing critical values cause errors
+    if (this.nodeEnv === 'production') {
+      if (!this.solanaPrivateKey) {
+        errors.push('SOLANA_PRIVATE_KEY is required in production');
+      }
+      if (!this.programId || this.programId.includes('111111')) {
+        errors.push('Valid PROGRAM_ID is required in production (current value appears to be placeholder)');
+      }
+      if (!this.merkleTree) {
+        errors.push('MERKLE_TREE is required in production');
+      }
+
+      if (errors.length > 0) {
+        console.error('❌ Config validation failed:');
+        errors.forEach(err => console.error(`  - ${err}`));
+        throw new Error(`Config validation failed:\n${errors.join('\n')}`);
+      }
     }
-    if (!this.programId) {
-      console.warn('Warning: PROGRAM_ID not set. Tournament features will be disabled.');
+    // Development: Warn only
+    else {
+      if (!this.solanaPrivateKey) {
+        warnings.push('SOLANA_PRIVATE_KEY not set - using mock Solana features');
+      }
+      if (!this.programId || this.programId.includes('111111')) {
+        warnings.push('PROGRAM_ID not set or is placeholder - tournament features may not work');
+      }
+      if (!this.merkleTree) {
+        warnings.push('MERKLE_TREE not set - cNFT minting will be mocked');
+      }
+
+      if (warnings.length > 0) {
+        console.warn('⚠️  Config warnings (development mode):');
+        warnings.forEach(warn => console.warn(`  - ${warn}`));
+      }
     }
+
     return true;
   }
 } as const;

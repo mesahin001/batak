@@ -6,6 +6,12 @@
 import { Card, Suit, PlayerState } from '../../types/game.js';
 import { analyzeHand, findBestTrumpSuit, determineBidAmount } from '../HandAnalyzer.js';
 export class NormalStrategy {
+  private playerIndex: number;
+
+  constructor(playerIndex: number) {
+    this.playerIndex = playerIndex;
+  }
+
   /**
    * Decide bid for normal bot
    */
@@ -174,11 +180,10 @@ export class NormalStrategy {
   }
 
   /**
-   * Get player index (helper - in real implementation this comes from game state)
+   * Get player index
    */
   private getPlayerIndex(player: PlayerState): number {
-    // This is a placeholder - real implementation would track player index
-    return 0;
+    return this.playerIndex;
   }
 
   /**

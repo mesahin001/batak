@@ -6,9 +6,14 @@
 import { Card, Suit, PlayerState } from '../../types/game.js';
 import { analyzeHand, findBestTrumpSuit } from '../HandAnalyzer.js';
 export class HardStrategy {
+  private playerIndex: number;
   private cardsPlayed: Map<string, Card[]> = new Map();
   private trumpsPlayed: Card[] = [];
   private acesPlayed: Card[] = [];
+
+  constructor(playerIndex: number) {
+    this.playerIndex = playerIndex;
+  }
 
   /**
    * Reset tracking for new game

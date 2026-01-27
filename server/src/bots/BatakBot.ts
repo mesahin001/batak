@@ -10,11 +10,13 @@ import { HardStrategy } from './strategies/HardStrategy.js';
 export class BatakBot {
   private playerId: string;
   private playerName: string;
+  private playerIndex: number;
   private strategy: EasyStrategy | NormalStrategy | HardStrategy;
 
-  constructor(playerId: string, playerName: string, difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
+  constructor(playerId: string, playerName: string, playerIndex: number, difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
     this.playerId = playerId;
     this.playerName = playerName;
+    this.playerIndex = playerIndex;
 
     // Set strategy based on difficulty
     switch (difficulty) {
@@ -22,13 +24,13 @@ export class BatakBot {
         this.strategy = new EasyStrategy();
         break;
       case 'normal':
-        this.strategy = new NormalStrategy();
+        this.strategy = new NormalStrategy(playerIndex);
         break;
       case 'hard':
-        this.strategy = new HardStrategy();
+        this.strategy = new HardStrategy(playerIndex);
         break;
       default:
-        this.strategy = new NormalStrategy();
+        this.strategy = new NormalStrategy(playerIndex);
     }
   }
 
@@ -135,11 +137,11 @@ export class BotManager {
   /**
    * Create a new bot
    */
-  createBot(difficulty: 'easy' | 'normal' | 'hard' = 'normal'): BatakBot {
+  createBot(playerIndex: number, difficulty: 'easy' | 'normal' | 'hard' = 'normal'): BatakBot {
     const id = `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const name = generateBotName();
 
-    const bot = new BatakBot(id, name, difficulty);
+    const bot = new BatakBot(id, name, playerIndex, difficulty);
     this.bots.set(id, bot);
 
     return bot;

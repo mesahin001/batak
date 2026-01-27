@@ -78,12 +78,13 @@ export class Matchmaker {
     const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const gameMachine = new GameStateMachine(roomId, 5, entry.gameMode);
 
-    // Add human player
+    // Add human player (index 0)
     gameMachine.addPlayer(entry.socketId, 'Player', false, entry.publicKey);
 
-    // Add bots
+    // Add bots (indices 1, 2, 3...)
     for (let i = 0; i < entry.botCount; i++) {
-      const bot = this.botManager.createBot(entry.botDifficulty);
+      const playerIndex = i + 1; // Human is at index 0, bots are at 1, 2, 3
+      const bot = this.botManager.createBot(playerIndex, entry.botDifficulty);
       gameMachine.addPlayer(bot.getId(), bot.getName(), true);
     }
 
