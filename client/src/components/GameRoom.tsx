@@ -3,7 +3,7 @@
  * Kart gösterimi, ihale arayüzü, trik görüntüleme ve tur sonu modallarını yönetir.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from '../socket/SocketContext';
 import { Suit, GameClientState, RoundCompleteData, GameCompleteData, NextRoundStartingData } from '../types/game';
 import './GameRoom.css';
@@ -24,7 +24,10 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   const [sortBy, setSortBy] = useState<SortOption>('suit');
   const [roundCompleteData, setRoundCompleteData] = useState<RoundCompleteData | null>(null);
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null);
-  const [isPlayingCard, setIsPlayingCard] = useState(false); // NEW: Prevent double-clicks
+  const [isPlayingCard, setIsPlayingCard] = useState(false);
+
+  // Use ref for immediate blocking - synchronously prevents double-clicks
+  const isPlayingCardRef = useRef(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -35,6 +38,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       // Clear selected card and playing state when state updates
       setSelectedCard(null);
       setIsPlayingCard(false);
+      isPlayingCardRef.current = false;
     };
 
     const handleTrickComplete = (data: any) => {
@@ -62,6 +66,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       // Clear playing state when error occurs
       setSelectedCard(null);
       setIsPlayingCard(false);
+      isPlayingCardRef.current = false;
       // Show error message to user
       const errorMessage = error?.message || 'Kart oynatılamadı. Lütfen yeniden dene.';
       alert(errorMessage);
@@ -102,15 +107,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
     if (!currentGameState || !socket) return;
 
-    // Prevent double-clicking - if a card is already being played, ignore
-    if (isPlayingCard) {
-      console.log('[handleCardClick] Already playing a card, ignoring double-click');
+    // CRITICAL: Use ref for IMMEDIATE blocking - prevents race condition
+    // Ref updates synchronously, state updates asynchronously
+    if (isPlayingCardRef.current) {
+      console.log('[handleCardClick] Already playing a card (ref check), ignoring double-click');
       return;
     }
 
-    // Prevent clicking if a card is selected (visual feedback)
-    if (selectedCard !== null) {
-      console.log('[handleCardClick] Card already selected, waiting for server response');
+    // Also check state for defense in depth
+    if (isPlayingCard || selectedCard !== null) {
+      console.log('[handleCardClick] Card already being played (state check)', { isPlayingCard, selectedCard });
       return;
     }
 
@@ -129,6 +135,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     }
 
     // Mark that we're playing a card (prevents double-clicks)
+    // Ref updates synchronously for immediate blocking
+    isPlayingCardRef.current = true;
     setIsPlayingCard(true);
     setSelectedCard(cardId);
     socket.emit('play_card', { cardId });
