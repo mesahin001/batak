@@ -4,7 +4,7 @@
  * Tüm oyun mantığının merkezi: kart dağıtma, ihale, oynama, skor hesaplama.
  */
 
-import { GameState, GameRoom, PlayerState, Trick, Suit, RoundRecord } from '../types/game.js';
+import { GameState, GameRoom, PlayerState, Trick, Suit, RoundRecord, PlayerType } from '../types/game.js';
 import { Deck } from './Deck.js';
 import {
   createPlayer,
@@ -121,7 +121,7 @@ export class GameStateMachine {
     const player = createPlayer(
       playerId,
       playerName,
-      isBot ? 'bot' : 'human',
+      isBot ? PlayerType.BOT : PlayerType.HUMAN,
       publicKey
     );
 
