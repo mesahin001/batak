@@ -38,11 +38,17 @@ function getBidForPlayer(player: PlayerState): Bid | null {
 /**
  * Calculate score for a single player based on Batak rules
  *
- * Koz Maça & İhaleli Batak (Bidding):
- * - Made bid or MORE: 10 × bid + (tricks_won - bid)
- * - Failed bid: -10 × bid
- * - Non-bidders (passed): tricks_won × 10
- * - El almaz (no tricks bid): +50 if 0 tricks, -50 if any tricks taken
+ * İHALELİ BATAK (Auction Batak) - TRUE Turkish Rules:
+ * - İhaleyi alan: Taahhüt × 10 (ekstra el PUAN GETİRMEZ!)
+ * - İhaleyi alan taahhüdü tutamazsa: -taahhüt × 10
+ * - İhale yapan ama hiç el alamayan: -kendi_ihalesi × 10
+ * - Pas geçenler: tricks_won × 10
+ *
+ * KOZ MAÇA (Trump Jack):
+ * - Taahhüt tutuldu: 10 × bid + (extra_tricks)
+ * - Taahhüt tutulamadı: -10 × bid
+ * - Pas geçenler: tricks_won × 10
+ * - El almaz: +50 if 0 tricks, -50 if any tricks taken
  */
 export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null, gameMode: 'koz_maca' | 'ihaleli_batak'): number {
   console.log('[calculatePlayerScoreWithBid]', {
@@ -52,14 +58,14 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
     tricksWon: player.tricksWon
   });
 
-  // Check for el almaz (special bid for no tricks)
-  if (bid?.type === BidType.EL_ALMAZ) {
+  // Check for el almaz (special bid for no tricks) - Koz Maça only
+  if (gameMode === 'koz_maca' && bid?.type === BidType.EL_ALMAZ) {
     const score = player.tricksWon === 0 ? 50 : -50;
     console.log('[calculatePlayerScoreWithBid] El almaz score:', score);
     return score;
   }
 
-  // Non-bidder (passed): tricks × 10
+  // Pas geçenler (ihale yapmayan): tricks × 10
   if (!bid || bid.amount === 0) {
     const score = player.tricksWon * 10;
     console.log('[calculatePlayerScoreWithBid] Non-bidder score:', score);
@@ -68,12 +74,37 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
 
   const { amount } = bid;
 
-  // Normal bid: Made bid or MORE wins, fails loses
+  // İHALELİ BATAK: Ekstra el PUAN GETİRMEZ!
+  if (gameMode === 'ihaleli_batak') {
+    // İhaleyi alan taahhüdü tutarsa → +taahhüt × 10
+    // (Ekstra el işlenmez, sadece taahhüt kadar puan)
+    if (player.tricksWon >= amount) {
+      const score = amount * 10;
+      console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Made bid:', {
+        bidAmount: amount,
+        tricksWon: player.tricksWon,
+        score,
+        calculation: `${amount} × 10 = ${score} (ekstra el puan getirmez!)`
+      });
+      return score;
+    } else {
+      // Taahhüt tutulamazsa → -taahhüt × 10
+      const score = -(amount * 10);
+      console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Failed bid:', {
+        bidAmount: amount,
+        tricksWon: player.tricksWon,
+        score,
+        calculation: `-${amount} × 10 = ${score}`
+      });
+      return score;
+    }
+  }
+
+  // KOZ MAÇA: Normal bid with extra tricks bonus
   if (player.tricksWon >= amount) {
-    // Made bid or more: 10 × bid + (extra tricks)
     const extraTricks = player.tricksWon - amount;
     const score = (amount * 10) + extraTricks;
-    console.log('[calculatePlayerScoreWithBid] Made bid:', {
+    console.log('[calculatePlayerScoreWithBid] Koz Maça - Made bid:', {
       bidAmount: amount,
       tricksWon: player.tricksWon,
       extraTricks,
@@ -82,9 +113,8 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
     });
     return score;
   } else {
-    // Failed bid: -10 × bid
     const score = -(amount * 10);
-    console.log('[calculatePlayerScoreWithBid] Failed bid:', {
+    console.log('[calculatePlayerScoreWithBid] Koz Maça - Failed bid:', {
       bidAmount: amount,
       tricksWon: player.tricksWon,
       score,
