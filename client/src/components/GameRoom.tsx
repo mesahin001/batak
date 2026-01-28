@@ -28,21 +28,39 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
   // Use ref for immediate blocking - synchronously prevents double-clicks
   const isPlayingCardRef = useRef(false);
+  // Fallback timeout ref to clear blocking if server doesn't respond
+  const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!socket) return;
 
-    const handleGameStateUpdate = (state: GameClientState) => {
-      console.log('Game state update:', state);
-      setCurrentGameState(state);
-      // Clear selected card and playing state when state updates
+    const clearPlayingState = () => {
       setSelectedCard(null);
       setIsPlayingCard(false);
       isPlayingCardRef.current = false;
+      // Clear any pending fallback timeout
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
+    };
+
+    const handleGameStateUpdate = (state: GameClientState) => {
+      console.log('Game state update:', state);
+      setCurrentGameState(state);
+      clearPlayingState();
+    };
+
+    const handleCardPlayed = (data: any) => {
+      console.log('[Card Played]', data);
+      // Immediately clear blocking state when we receive card played confirmation
+      // This is faster than waiting for full game_state_update
+      clearPlayingState();
     };
 
     const handleTrickComplete = (data: any) => {
       console.log('Trick complete:', data);
+      clearPlayingState();
     };
 
     const handleRoundComplete = (data: RoundCompleteData) => {
@@ -63,16 +81,14 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
     const handleError = (error: any) => {
       console.log('[Socket Error]', error);
-      // Clear playing state when error occurs
-      setSelectedCard(null);
-      setIsPlayingCard(false);
-      isPlayingCardRef.current = false;
+      clearPlayingState();
       // Show error message to user
       const errorMessage = error?.message || 'Kart oynatılamadı. Lütfen yeniden dene.';
       alert(errorMessage);
     };
 
     socket.on('game_state_update', handleGameStateUpdate);
+    socket.on('card_played', handleCardPlayed);
     socket.on('trick_complete', handleTrickComplete);
     socket.on('round_complete', handleRoundComplete);
     socket.on('next_round_starting', handleNextRoundStarting);
@@ -81,11 +97,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
     return () => {
       socket.off('game_state_update', handleGameStateUpdate);
+      socket.off('card_played', handleCardPlayed);
       socket.off('trick_complete', handleTrickComplete);
       socket.off('round_complete', handleRoundComplete);
       socket.off('next_round_starting', handleNextRoundStarting);
       socket.off('game_complete', handleGameComplete);
       socket.off('game_error', handleError);
+      // Cleanup any pending timeout on unmount
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+      }
     };
   }, [socket, onRoundEnd, onGameEnd]);
 
@@ -139,6 +160,20 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     isPlayingCardRef.current = true;
     setIsPlayingCard(true);
     setSelectedCard(cardId);
+
+    // Fallback timeout: If server doesn't respond within 2 seconds, clear blocking
+    // This prevents UI from getting stuck if events are lost
+    if (fallbackTimeoutRef.current) {
+      clearTimeout(fallbackTimeoutRef.current);
+    }
+    fallbackTimeoutRef.current = setTimeout(() => {
+      console.warn('[handleCardClick] Fallback timeout triggered - clearing playing state');
+      setSelectedCard(null);
+      setIsPlayingCard(false);
+      isPlayingCardRef.current = false;
+      fallbackTimeoutRef.current = null;
+    }, 2000);
+
     socket.emit('play_card', { cardId });
   };
 

@@ -140,6 +140,33 @@ export class SocketServer {
     const room = this.matchmaker.getRoom(roomId);
     if (!room) return;
 
+    // CRITICAL: Server-side validation - prevent double-plays
+    const roomData = room.gameMachine.getRoom();
+    if (roomData.state !== 'playing') {
+      socket.emit('game_error', {
+        message: 'Cannot play card - game is not in playing state'
+      });
+      return;
+    }
+
+    // Verify it's this player's turn
+    const currentPlayer = roomData.players[roomData.currentPlayerIndex];
+    if (currentPlayer.id !== socket.id) {
+      socket.emit('game_error', {
+        message: 'Cannot play card - not your turn'
+      });
+      return;
+    }
+
+    // CRITICAL: Prevent playing when trick is complete (waiting for clear)
+    // During the 3-second delay after trick completion, no cards should be playable
+    if (roomData.currentTrick.cards.length >= 4) {
+      socket.emit('game_error', {
+        message: 'Trick is complete, waiting for next trick'
+      });
+      return;
+    }
+
     try {
       room.gameMachine.playCard(socket.id, payload.cardId);
 
