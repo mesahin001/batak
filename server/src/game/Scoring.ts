@@ -10,13 +10,10 @@ export function calculateScores(
   bids: Bid[],
   gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
 ): PlayerState[] {
-  // Find the winning bid (highest bid amount) for İhaleli Batak 0-trick penalty
-  const winningBidAmount = getHighestBidAmount(bids);
-
   return players.map(player => {
     // Find the bid for this player from the bids array
     const playerBid = bids.find(b => b.playerId === player.id) || null;
-    const roundScore = calculatePlayerScoreWithBid(player, playerBid, gameMode, winningBidAmount);
+    const roundScore = calculatePlayerScoreWithBid(player, playerBid, gameMode);
     const newTotalScore = player.totalScore + roundScore;
     const newRoundScores = [...player.roundScores, roundScore];
 
@@ -44,7 +41,7 @@ function getBidForPlayer(player: PlayerState): Bid | null {
  * İHALELİ BATAK (Auction Batak) - TRUE Turkish Rules:
  * - İhaleyi alan: Aldığı el × 10 (taahhüt üstü de dahil!)
  * - İhaleyi alan taahhüdü tutamazsa: -taahhüt × 10
- * - Hiç el alamayan: -kazanan_ihale × 10 (KAZANAN ihale ile ceza!)
+ * - Hiç el alamayan (0 tricks): -taahhüt × 10 (kendi ihalesi ile!)
  * - Pas geçenler: tricks_won × 10
  *
  * KOZ MAÇA (Trump Jack):
@@ -56,14 +53,12 @@ function getBidForPlayer(player: PlayerState): Bid | null {
 export function calculatePlayerScoreWithBid(
   player: PlayerState,
   bid: Bid | null,
-  gameMode: 'koz_maca' | 'ihaleli_batak',
-  winningBidAmount?: number
+  gameMode: 'koz_maca' | 'ihaleli_batak'
 ): number {
   console.log('[calculatePlayerScoreWithBid]', {
     playerName: player.name,
     gameMode,
     bid,
-    winningBidAmount,
     tricksWon: player.tricksWon
   });
 
@@ -85,19 +80,6 @@ export function calculatePlayerScoreWithBid(
 
   // İHALELİ BATAK: Aldığın elin 10 katı!
   if (gameMode === 'ihaleli_batak') {
-    // Hiç el alamayan İHALE YAPANLAR için: kazanan ihale ile ceza
-    if (player.tricksWon === 0 && winningBidAmount) {
-      const score = -(winningBidAmount * 10);
-      console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Zero tricks penalty:', {
-        playerName: player.name,
-        ownBid: amount,
-        winningBid: winningBidAmount,
-        score,
-        calculation: `-${winningBidAmount} (kazanan ihale) × 10 = ${score}`
-      });
-      return score;
-    }
-
     // İhaleyi alan taahhüdü tutarsa → +aldığı_elin_10_katı
     // (Taahhüdün üstünde el alırsan hepsi puan getirir!)
     if (player.tricksWon >= amount) {
@@ -110,7 +92,7 @@ export function calculatePlayerScoreWithBid(
       });
       return score;
     } else {
-      // Taahhüt tutulamazsa → -taahhüt × 10
+      // Taahhüt tutulamazsa (0 el dahil) → -taahhüt × 10
       const score = -(amount * 10);
       console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Failed bid:', {
         bidAmount: amount,
