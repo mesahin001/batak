@@ -372,7 +372,7 @@ export class GameStateMachine {
     this.room.players = calculateScores(this.room.players, this.room.trumpSuit, this.room.bids, this.room.gameMode);
     this.room.scores = this.room.players.map(p => p.score);
 
-    // Check for King winner (instant win)
+    // Check for King winner (instant win) - optional feature
     for (const player of this.room.players) {
       if (checkKingWinner(player)) {
         console.log('[completeRound] King winner detected:', player.name);
@@ -381,13 +381,8 @@ export class GameStateMachine {
       }
     }
 
-    // Check if anyone reached the winning condition (score ≤ 1)
-    const gameWinnerId = checkGameWinner(this.room.players, this.room.gameMode);
-    if (gameWinnerId) {
-      console.log('[completeRound] Game winner detected:', gameWinnerId);
-      this.completeGame(gameWinnerId);
-      return;
-    }
+    // NO EARLY GAME END - both modes play all rounds
+    // Game ends when max rounds reached, not by score threshold
 
     // Check if we've reached max rounds - end game with appropriate winner
     if (this.room.currentRound >= this.room.totalRounds) {

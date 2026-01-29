@@ -155,23 +155,14 @@ export function calculatePlayerScore(player: PlayerState, gameMode: 'koz_maca' |
 /**
  * Check if a player has won the game
  *
- * İhaleli Batak: LOWEST score wins - first player to reach ≤1 wins
- * Koz Maça: No early ending - game goes for all rounds
+ * İhaleli Batak: NO EARLY ENDING - play all rounds, lowest score wins at end
+ * Koz Maça: No early ending - play all rounds, highest score wins at end
  *
- * For Koz Maça, use getHighestScorer() when rounds complete
+ * For both game modes, use getLowestScorer() or getHighestScorer() when rounds complete
  */
 export function checkGameWinner(players: PlayerState[], gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'): string | null {
-  // Koz Maça: No early game end - play all rounds
-  if (gameMode === 'koz_maca') {
-    return null;
-  }
-
-  // İhaleli Batak: First player to reach exactly 1 or below wins
-  for (const player of players) {
-    if (player.totalScore <= 1) {
-      return player.id;
-    }
-  }
+  // NO EARLY GAME END for either mode
+  // Game ends when max rounds are reached, not based on score threshold
   return null;
 }
 
