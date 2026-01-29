@@ -466,7 +466,7 @@ export class SocketServer {
             this.handleBotBidding(roomId, room);
           }
         }
-      }, 1500); // Delay for realistic pacing
+      }, 3000); // Delay to give human player time to select suit and bid amount
     }
   }
 
@@ -537,7 +537,7 @@ export class SocketServer {
           console.error('[BotTurn] Error:', error);
         }
       }
-    }, 1500); // Delay for realistic pacing
+    }, 2000); // Delay for realistic pacing - gives human time to see bot plays
   }
 
   /**
