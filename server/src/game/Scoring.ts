@@ -10,10 +10,13 @@ export function calculateScores(
   bids: Bid[],
   gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
 ): PlayerState[] {
+  // Find the winning bid (highest bid amount) for İhaleli Batak 0-trick penalty
+  const winningBidAmount = getHighestBidAmount(bids);
+
   return players.map(player => {
     // Find the bid for this player from the bids array
     const playerBid = bids.find(b => b.playerId === player.id) || null;
-    const roundScore = calculatePlayerScoreWithBid(player, playerBid, gameMode);
+    const roundScore = calculatePlayerScoreWithBid(player, playerBid, gameMode, winningBidAmount);
     const newTotalScore = player.totalScore + roundScore;
     const newRoundScores = [...player.roundScores, roundScore];
 
@@ -39,9 +42,9 @@ function getBidForPlayer(player: PlayerState): Bid | null {
  * Calculate score for a single player based on Batak rules
  *
  * İHALELİ BATAK (Auction Batak) - TRUE Turkish Rules:
- * - İhaleyi alan: Taahhüt × 10 (ekstra el PUAN GETİRMEZ!)
+ * - İhaleyi alan: Aldığı el × 10 (taahhüt üstü de dahil!)
  * - İhaleyi alan taahhüdü tutamazsa: -taahhüt × 10
- * - İhale yapan ama hiç el alamayan: -kendi_ihalesi × 10
+ * - Hiç el alamayan: -kazanan_ihale × 10 (KAZANAN ihale ile ceza!)
  * - Pas geçenler: tricks_won × 10
  *
  * KOZ MAÇA (Trump Jack):
@@ -50,11 +53,17 @@ function getBidForPlayer(player: PlayerState): Bid | null {
  * - Pas geçenler: tricks_won × 10
  * - El almaz: +50 if 0 tricks, -50 if any tricks taken
  */
-export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null, gameMode: 'koz_maca' | 'ihaleli_batak'): number {
+export function calculatePlayerScoreWithBid(
+  player: PlayerState,
+  bid: Bid | null,
+  gameMode: 'koz_maca' | 'ihaleli_batak',
+  winningBidAmount?: number
+): number {
   console.log('[calculatePlayerScoreWithBid]', {
     playerName: player.name,
     gameMode,
     bid,
+    winningBidAmount,
     tricksWon: player.tricksWon
   });
 
@@ -74,17 +83,30 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
 
   const { amount } = bid;
 
-  // İHALELİ BATAK: Ekstra el PUAN GETİRMEZ!
+  // İHALELİ BATAK: Aldığın elin 10 katı!
   if (gameMode === 'ihaleli_batak') {
-    // İhaleyi alan taahhüdü tutarsa → +taahhüt × 10
-    // (Ekstra el işlenmez, sadece taahhüt kadar puan)
+    // Hiç el alamayan İHALE YAPANLAR için: kazanan ihale ile ceza
+    if (player.tricksWon === 0 && winningBidAmount) {
+      const score = -(winningBidAmount * 10);
+      console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Zero tricks penalty:', {
+        playerName: player.name,
+        ownBid: amount,
+        winningBid: winningBidAmount,
+        score,
+        calculation: `-${winningBidAmount} (kazanan ihale) × 10 = ${score}`
+      });
+      return score;
+    }
+
+    // İhaleyi alan taahhüdü tutarsa → +aldığı_elin_10_katı
+    // (Taahhüdün üstünde el alırsan hepsi puan getirir!)
     if (player.tricksWon >= amount) {
-      const score = amount * 10;
+      const score = player.tricksWon * 10;
       console.log('[calculatePlayerScoreWithBid] İhaleli Batak - Made bid:', {
         bidAmount: amount,
         tricksWon: player.tricksWon,
         score,
-        calculation: `${amount} × 10 = ${score} (ekstra el puan getirmez!)`
+        calculation: `${player.tricksWon} (aldığı el) × 10 = ${score}`
       });
       return score;
     } else {
@@ -94,7 +116,7 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
         bidAmount: amount,
         tricksWon: player.tricksWon,
         score,
-        calculation: `-${amount} × 10 = ${score}`
+        calculation: `-${amount} (taahhüt) × 10 = ${score}`
       });
       return score;
     }
@@ -125,6 +147,7 @@ export function calculatePlayerScoreWithBid(player: PlayerState, bid: Bid | null
 }
 
 // Legacy function for backward compatibility
+// Note: Doesn't apply zero-trick penalty correctly (needs winning bid amount)
 export function calculatePlayerScore(player: PlayerState, gameMode: 'koz_maca' | 'ihaleli_batak'): number {
   return calculatePlayerScoreWithBid(player, player.bid, gameMode);
 }
