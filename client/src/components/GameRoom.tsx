@@ -49,6 +49,13 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       console.log('Game state update:', state);
       setCurrentGameState(state);
       clearPlayingState();
+
+      // Clear selected suit when entering bidding phase (new round starting)
+      // This ensures players must select a fresh suit each round in İhaleli Batak
+      if (state.state === 'bidding') {
+        setSelectedSuit(null);
+        console.log('[handleGameStateUpdate] Cleared selectedSuit for new bidding round');
+      }
     };
 
     const handleCardPlayed = (data: any) => {
@@ -72,6 +79,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     const handleNextRoundStarting = (data: NextRoundStartingData) => {
       console.log('Next round starting:', data);
       setRoundCompleteData(null); // Clear the round complete modal
+      setSelectedSuit(null); // Clear selected suit for new round bidding
     };
 
     const handleGameComplete = (data: GameCompleteData) => {
