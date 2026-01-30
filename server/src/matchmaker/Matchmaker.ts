@@ -51,6 +51,9 @@ export class Matchmaker {
    * Add player to queue
    */
   joinQueue(entry: Omit<QueueEntry, 'timestamp'>): string | null {
+    // Remove any existing entry for this socket (deduplicate)
+    this.queue = this.queue.filter(e => e.socketId !== entry.socketId);
+
     const queueEntry: QueueEntry = {
       ...entry,
       timestamp: new Date()
@@ -62,7 +65,7 @@ export class Matchmaker {
     this.broadcastQueueStatus();
 
     // Check if we can make a match immediately
-    const roomId = this.tryMatch(queueEntry);
+    const roomId = this.tryMatchForGameMode(queueEntry.gameMode);
 
     if (roomId) {
       return roomId;
@@ -87,23 +90,37 @@ export class Matchmaker {
   }
 
   /**
-   * Try to find a match for a player with OTHER REAL players
+   * Try to find a match for a specific game mode
+   * Checks the ENTIRE queue and creates match when 4+ players found
    */
-  private tryMatch(entry: QueueEntry): string | null {
-    // Find matching players (same game mode, excluding self)
-    const matchingPlayers = this.queue.filter(e =>
-      e.socketId !== entry.socketId &&
-      e.gameMode === entry.gameMode &&
-      (Date.now() - e.timestamp.getTime()) < this.MATCH_TIMEOUT_MS
+  private tryMatchForGameMode(gameMode: 'koz_maca' | 'ihaleli_batak'): string | null {
+    const now = Date.now();
+
+    // Get all valid players for this game mode
+    const validPlayers = this.queue.filter(e =>
+      e.gameMode === gameMode &&
+      (now - e.timestamp.getTime()) < this.MATCH_TIMEOUT_MS
     );
 
-    // Need 3 more players (total 4)
-    if (matchingPlayers.length >= 3) {
-      // Found 4 real players!
-      const selectedPlayers = [
-        entry,
-        ...matchingPlayers.slice(0, 3)
-      ];
+    // Deduplicate by socket ID (keep latest entry for each socket)
+    const uniquePlayers = new Map<string, QueueEntry>();
+    for (const player of validPlayers) {
+      const existing = uniquePlayers.get(player.socketId);
+      if (!existing || player.timestamp > existing.timestamp) {
+        uniquePlayers.set(player.socketId, player);
+      }
+    }
+
+    const playerArray = Array.from(uniquePlayers.values());
+
+    // Need 4 players
+    if (playerArray.length >= 4) {
+      const selectedPlayers = playerArray.slice(0, 4);
+
+      console.log('[Matchmaker] Creating match with 4 unique players:', {
+        players: selectedPlayers.map(p => p.socketId),
+        gameMode
+      });
 
       // Remove all from queue
       selectedPlayers.forEach(p => {
@@ -113,6 +130,12 @@ export class Matchmaker {
       // Create room with 4 real players
       return this.createRealRoom(selectedPlayers);
     }
+
+    console.log('[Matchmaker] Not enough players for match:', {
+      have: playerArray.length,
+      need: 4,
+      gameMode
+    });
 
     return null;
   }
