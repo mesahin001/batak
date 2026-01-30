@@ -51,8 +51,9 @@ export class Matchmaker {
    * Add player to queue
    */
   joinQueue(entry: Omit<QueueEntry, 'timestamp'>): string | null {
-    // Remove any existing entry for this socket (deduplicate)
-    this.queue = this.queue.filter(e => e.socketId !== entry.socketId);
+    // Remove any existing entry for this PUBLIC KEY (wallet) to handle reconnections
+    // This is better than socket-based dedup because sockets change on reconnect
+    this.queue = this.queue.filter(e => e.publicKey !== entry.publicKey);
 
     const queueEntry: QueueEntry = {
       ...entry,
@@ -60,6 +61,13 @@ export class Matchmaker {
     };
 
     this.queue.push(queueEntry);
+
+    console.log('[Matchmaker] Player added to queue:', {
+      socketId: entry.socketId,
+      publicKey: entry.publicKey,
+      gameMode: entry.gameMode,
+      totalInQueue: this.queue.length
+    });
 
     // Broadcast queue status
     this.broadcastQueueStatus();
@@ -82,11 +90,24 @@ export class Matchmaker {
   }
 
   /**
-   * Remove player from queue
+   * Remove player from queue by public key
    */
-  leaveQueue(socketId: string): void {
-    this.queue = this.queue.filter(entry => entry.socketId !== socketId);
+  leaveQueue(socketId: string, publicKey?: string): void {
+    if (publicKey) {
+      // Remove by public key (preferred - handles reconnections)
+      this.queue = this.queue.filter(entry => entry.publicKey !== publicKey);
+    } else {
+      // Fallback: remove by socket ID
+      this.queue = this.queue.filter(entry => entry.socketId !== socketId);
+    }
     this.broadcastQueueStatus();
+  }
+
+  /**
+   * Get queue entry by socket ID (helper for leaveQueue)
+   */
+  getQueueEntryBySocketId(socketId: string): QueueEntry | undefined {
+    return this.queue.find(entry => entry.socketId === socketId);
   }
 
   /**
@@ -102,12 +123,12 @@ export class Matchmaker {
       (now - e.timestamp.getTime()) < this.MATCH_TIMEOUT_MS
     );
 
-    // Deduplicate by socket ID (keep latest entry for each socket)
+    // Deduplicate by PUBLIC KEY (wallet) - keep latest entry for each wallet
     const uniquePlayers = new Map<string, QueueEntry>();
     for (const player of validPlayers) {
-      const existing = uniquePlayers.get(player.socketId);
+      const existing = uniquePlayers.get(player.publicKey);
       if (!existing || player.timestamp > existing.timestamp) {
-        uniquePlayers.set(player.socketId, player);
+        uniquePlayers.set(player.publicKey, player);
       }
     }
 
@@ -118,13 +139,13 @@ export class Matchmaker {
       const selectedPlayers = playerArray.slice(0, 4);
 
       console.log('[Matchmaker] Creating match with 4 unique players:', {
-        players: selectedPlayers.map(p => p.socketId),
+        players: selectedPlayers.map(p => ({ socket: p.socketId, wallet: p.publicKey.slice(0, 8) + '...' })),
         gameMode
       });
 
       // Remove all from queue
       selectedPlayers.forEach(p => {
-        this.queue = this.queue.filter(e => e.socketId !== p.socketId);
+        this.queue = this.queue.filter(e => e.publicKey !== p.publicKey);
       });
 
       // Create room with 4 real players
@@ -133,6 +154,7 @@ export class Matchmaker {
 
     console.log('[Matchmaker] Not enough players for match:', {
       have: playerArray.length,
+      uniqueWallets: playerArray.map(p => p.publicKey.slice(0, 8) + '...'),
       need: 4,
       gameMode
     });

@@ -126,7 +126,9 @@ export class SocketServer {
    */
   private handleLeaveQueue(socket: Socket): void {
     console.log(`Player ${socket.id} leaving queue`);
-    this.matchmaker.leaveQueue(socket.id);
+    // Try to find publicKey from queue first, fallback to socketId only
+    const queueEntry = this.matchmaker.getQueueEntryBySocketId(socket.id);
+    this.matchmaker.leaveQueue(socket.id, queueEntry?.publicKey);
   }
 
   /**
@@ -382,8 +384,9 @@ export class SocketServer {
   private handleDisconnect(socket: Socket): void {
     console.log(`Client disconnected: ${socket.id}`);
 
-    // Remove from queue
-    this.matchmaker.leaveQueue(socket.id);
+    // Remove from queue - try to find publicKey first
+    const queueEntry = this.matchmaker.getQueueEntryBySocketId(socket.id);
+    this.matchmaker.leaveQueue(socket.id, queueEntry?.publicKey);
 
     // Find and remove from room
     const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
