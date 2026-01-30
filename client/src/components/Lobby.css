@@ -156,6 +156,31 @@
   color: var(--color-primary);
 }
 
+.lobby-info li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+}
+
+/* Queue Status Styles */
+.queue-status {
+  text-align: center;
+}
+
+.queue-info {
+  margin-bottom: 1rem;
+}
+
+.queue-info p {
+  margin: 0.5rem 0;
+}
+
+.queue-subtext {
+  color: #a0a0a0;
+  font-size: 0.875rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .lobby-header h1 {

@@ -13,11 +13,19 @@ interface LobbyProps {
   onJoinGame: (data: any) => void;
 }
 
+interface QueueStatus {
+  status: 'waiting' | 'matched_with_bots';
+  playersInQueue: number;
+  playersNeeded: number;
+  gameMode: string;
+  message: string;
+}
+
 const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
   const { socket, isConnected } = useSocket();
   const { publicKey } = useWallet();
   const [inQueue, setInQueue] = useState(false);
-  const [queuePosition, setQueuePosition] = useState(0);
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
   const [botCount, setBotCount] = useState(3);
   const [botDifficulty, setBotDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.KOZ_MACA);
@@ -26,13 +34,15 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
   React.useEffect(() => {
     if (!socket) return;
 
-    const handleQueueUpdate = (data: any) => {
-      setQueuePosition(data.position);
+    const handleQueueStatus = (data: QueueStatus) => {
+      console.log('[Lobby] Queue status:', data);
+      setQueueStatus(data);
     };
 
     const handleMatchFound = (data: any) => {
       console.log('Match found:', data);
       setInQueue(false);
+      setQueueStatus(null);
       // Pass the full gameState to start the game
       onJoinGame(data.gameState);
     };
@@ -40,14 +50,15 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
     const handleError = (data: any) => {
       setError(data.message);
       setInQueue(false);
+      setQueueStatus(null);
     };
 
-    socket.on('queue_update', handleQueueUpdate);
+    socket.on('queue_status', handleQueueStatus);
     socket.on('match_found', handleMatchFound);
     socket.on('error', handleError);
 
     return () => {
-      socket.off('queue_update', handleQueueUpdate);
+      socket.off('queue_status', handleQueueStatus);
       socket.off('match_found', handleMatchFound);
       socket.off('error', handleError);
     };
@@ -55,7 +66,7 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
 
   const handleJoinQueue = () => {
     if (!socket || !publicKey) {
-      setError('Please connect your wallet first');
+      setError('Lütfen önce cüzdanınızı bağlayın');
       return;
     }
 
@@ -75,7 +86,7 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
 
     socket.emit('leave_queue');
     setInQueue(false);
-    setQueuePosition(0);
+    setQueueStatus(null);
   };
 
   return (
@@ -87,10 +98,10 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
 
       <div className="lobby-content">
         <div className="lobby-card">
-          <h2>Game Settings</h2>
+          <h2>Oyun Ayarları</h2>
 
           <div className="setting-group">
-            <label>Game Mode</label>
+            <label>Oyun Modu</label>
             <div className="gamemode-selector">
               <button
                 className={`gamemode-btn ${gameMode === GameMode.KOZ_MACA ? 'active' : ''}`}
@@ -112,7 +123,7 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
           </div>
 
           <div className="setting-group">
-            <label>Bot Players</label>
+            <label>Oyuncu Sayısı</label>
             <div className="bot-selector">
               {[0, 1, 2, 3].map((count) => (
                 <button
@@ -121,15 +132,18 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
                   onClick={() => setBotCount(count)}
                   disabled={inQueue}
                 >
-                  {count === 0 ? 'PvP' : `${count} Bot${count > 1 ? 's' : ''}`}
+                  {count === 0 ? 'PvP (4 Oyuncu)' : `${count} Bot`}
                 </button>
               ))}
             </div>
+            {botCount === 0 && (
+              <small className="text-yellow">⚠️ 4 gerçek oyuncu bulunmazsa 30 sn bot ile oynanır</small>
+            )}
           </div>
 
           {botCount > 0 && (
             <div className="setting-group">
-              <label>Bot Difficulty</label>
+              <label>Bot Zorluğu</label>
               <div className="difficulty-selector">
                 {(['easy', 'normal', 'hard'] as const).map((difficulty) => (
                   <button
@@ -147,9 +161,9 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
 
           <div className="setting-group">
             <div className="info-box">
-              <p>🎮 {botCount === 0 ? '4 Players' : `1 Human + ${botCount} Bots`}</p>
-              <p>🏆 Winner receives cNFT reward</p>
-              <p>⏱️ Game duration: ~15 minutes</p>
+              <p>🎮 {botCount === 0 ? '4 Gerçek Oyuncu' : `1 Gerçek + ${botCount} Bot`}</p>
+              <p>🏆 Kazanan cNFT ödül kazanır</p>
+              <p>⏱️ Oyun süresi: ~15 dakika</p>
             </div>
           </div>
 
@@ -165,23 +179,46 @@ const Lobby: React.FC<LobbyProps> = ({ onJoinGame }) => {
               onClick={handleJoinQueue}
               disabled={!isConnected}
             >
-              {isConnected ? 'Find Match' : 'Connecting...'}
+              {isConnected ? 'Oyun Bul' : 'Bağlanıyor...'}
             </button>
           ) : (
             <div className="queue-status">
-              <div className="spinner"></div>
-              <p>Finding match...</p>
+              {queueStatus ? (
+                <>
+                  <div className="queue-info">
+                    {queueStatus.status === 'matched_with_bots' ? (
+                      <>
+                        <p>⚡ Botlarla eşleşildi!</p>
+                        <p className="queue-subtext">{queueStatus.message}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>⏳ Oyuncu Bekleniyor...</p>
+                        <p className="queue-subtext">{queueStatus.message}</p>
+                      </>
+                    )}
+                  </div>
+                  <button className="btn-secondary" onClick={handleLeaveQueue}>
+                    İptal
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="spinner"></div>
+                  <p>Eşleşme aranıyor...</p>
+                </>
+              )}
             </div>
           )}
         </div>
 
         <div className="lobby-info">
-          <h3>How to Play</h3>
+          <h3>Nasıl Oynanır</h3>
           <ul>
-            <li>Bid the number of tricks you'll win with your trump suit</li>
-            <li>Must follow suit if possible</li>
-            <li>Trump cards beat non-trump cards</li>
-            <li>Highest score wins the tournament</li>
+            <li>İhale: Kaç trick alacağını söyle</li>
+            <li>Koz rengi (İhaleli Batak) veya Maça (Koz Maça)</li>
+            <li>Sıra sende kart at</li>
+            <li>En düşük skor kazanır!</li>
           </ul>
         </div>
       </div>
