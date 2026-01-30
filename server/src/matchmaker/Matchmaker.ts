@@ -191,18 +191,80 @@ export class Matchmaker {
     if (room) {
       room.gameMachine.startGame();
 
-      // Get the room state and send to client
+      // Send match_found to the human player
       const clientState = room.gameMachine.getStateForClient(entry.socketId);
 
       console.log('[Matchmaker] Sending match_found with bot game to', entry.socketId);
+      console.log('[Matchmaker] Game state:', {
+        state: clientState.state,
+        currentPlayerIndex: clientState.currentPlayerIndex,
+        players: clientState.players.map((p: any) => ({ name: p.name, type: p.type, isHumanTurn: p.isHumanTurn }))
+      });
 
       entry.socket.emit('match_found', {
         roomId: botRoomId,
         gameState: clientState
       });
+
+      // Trigger bot turns if current player is a bot
+      this.triggerBotTurns(botRoomId, room, entry.socket);
     } else {
       entry.socket.emit('error', { message: 'Failed to create bot room' });
     }
+  }
+
+  /**
+   * Trigger bot turns for bidding/playing
+   */
+  private triggerBotTurns(roomId: string, room: any, humanSocket: Socket): void {
+    const roomData = room.gameMachine.getRoom();
+    const currentPlayer = roomData.players[roomData.currentPlayerIndex];
+
+    if (currentPlayer?.type === 'bot') {
+      console.log('[Matchmaker] Current player is bot, triggering bot turn:', currentPlayer.name);
+
+      setTimeout(() => {
+        const bot = room.botManager.getBot(currentPlayer.id);
+        if (bot) {
+          if (roomData.state === 'bidding') {
+            // Bot bidding
+            const highestBid = this.getCurrentHighestBid(roomData);
+            const bid = bot.makeBid(currentPlayer, highestBid, ['spades'], roomData.gameMode);
+
+            if (bid && bid.amount > 0) {
+              console.log('[Matchmaker] Bot', currentPlayer.name, 'bids', bid.amount);
+              room.gameMachine.submitBid(currentPlayer.id, bid.suit as any, bid.amount);
+            } else {
+              console.log('[Matchmaker] Bot', currentPlayer.name, 'passes');
+              room.gameMachine.passBid(currentPlayer.id);
+            }
+
+            // Broadcast updated state
+            const clientState = room.gameMachine.getStateForClient(humanSocket.id);
+            humanSocket.emit('game_state_update', clientState);
+
+            // Check if more bot turns needed
+            this.triggerBotTurns(roomId, room, humanSocket);
+          } else if (roomData.state === 'playing') {
+            // Bot card playing - similar logic
+            // For now, let SocketServer handle playing state
+          }
+        }
+      }, 3000); // 3 second delay for bot turns
+    } else {
+      console.log('[Matchmaker] Current player is human, waiting for input:', currentPlayer.name);
+    }
+  }
+
+  /**
+   * Get current highest bid from room data
+   */
+  private getCurrentHighestBid(roomData: any): any {
+    const realBids = roomData.bids.filter((b: any) => b.amount > 0);
+    if (realBids.length === 0) return { amount: 0, suit: null };
+    return realBids.reduce((highest: any, bid: any) =>
+      bid.amount > highest.amount ? bid : highest
+    );
   }
 
   /**
