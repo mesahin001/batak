@@ -50,11 +50,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       setCurrentGameState(state);
       clearPlayingState();
 
-      // Clear selected suit when entering bidding phase (new round starting)
-      // This ensures players must select a fresh suit each round in İhaleli Batak
+      // Clear selected suit when entering bidding phase for İhaleli Batak
+      // For Koz Maça, always set to spades (trump is always spades)
       if (state.state === 'bidding') {
-        setSelectedSuit(null);
-        console.log('[handleGameStateUpdate] Cleared selectedSuit for new bidding round');
+        if (state.gameMode === 'koz_maca') {
+          setSelectedSuit('spades');
+          console.log('[handleGameStateUpdate] Set selectedSuit to spades for Koz Maça');
+        } else {
+          setSelectedSuit(null);
+          console.log('[handleGameStateUpdate] Cleared selectedSuit for İhaleli Batak');
+        }
       }
     };
 
@@ -186,8 +191,13 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   };
 
   const handleBid = (suit: string, amount: number) => {
-    if (!socket) return;
+    console.log('[handleBid] Called with suit:', suit, 'amount:', amount, 'socket:', !!socket);
+    if (!socket) {
+      console.error('[handleBid] Socket is undefined!');
+      return;
+    }
     socket.emit('bid_trump', { suit, amount });
+    console.log('[handleBid] Emitted bid_trump event');
   };
 
   const handleSuitSelect = (suit: string) => {

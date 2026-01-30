@@ -185,6 +185,9 @@ export class Matchmaker {
 
     // Add socket to room
     this.addPlayerToRoom(botRoomId, entry.socketId, entry.socket);
+    // IMPORTANT: Join socket to Socket.IO room so events work
+    entry.socket.join(botRoomId);
+    console.log('[Matchmaker] Socket joined room:', botRoomId);
 
     // Start the game
     const room = this.getRoom(botRoomId);
