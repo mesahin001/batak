@@ -253,6 +253,10 @@ export class Matchmaker {
       }, 3000); // 3 second delay for bot turns
     } else {
       console.log('[Matchmaker] Current player is human, waiting for input:', currentPlayer.name);
+      // IMPORTANT: Send game state update so client knows it's their turn!
+      const clientState = room.gameMachine.getStateForClient(humanSocket.id);
+      humanSocket.emit('game_state_update', clientState);
+      console.log('[Matchmaker] Sent game_state_update to human, currentPlayerIndex:', clientState.currentPlayerIndex);
     }
   }
 
