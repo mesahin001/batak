@@ -87,38 +87,14 @@ export class SocketServer {
 
     console.log(`[Matchmaker] Room created: ${roomId}`);
 
-    if (roomId) {
-      // Add player to room
-      this.matchmaker.addPlayerToRoom(roomId, socket.id, socket);
+    // Note: If roomId is returned, the matchmaker has already:
+    // - Added sockets to room
+    // - Started the game
+    // - Sent match_found to all players
+    // So we don't need to do anything here.
 
-      // Join socket to room
-      socket.join(roomId);
-
-      // Get room details
-      const room = this.matchmaker.getRoom(roomId);
-      if (room) {
-        // Start game automatically for MVP
-        console.log('[Matchmaker] Starting game...');
-        this.startGame(roomId);
-
-        // Get the updated room data with game state
-        const roomData = room.gameMachine.getRoom();
-        const clientState = room.gameMachine.getStateForClient(socket.id);
-
-        console.log('[Matchmaker] Room players:', roomData.players);
-        console.log('[Matchmaker] Sending match_found event to', socket.id);
-
-        // Send match found event with full game state
-        socket.emit(ServerEvent.MATCH_FOUND, {
-          roomId,
-          gameState: clientState
-        });
-      }
-    } else {
-      socket.emit(ServerEvent.ERROR, {
-        message: 'Failed to join queue'
-      });
-    }
+    // If roomId is null, player is in queue waiting for match
+    // Bot fallback will trigger after 30s if no match found
   }
 
   /**

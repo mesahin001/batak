@@ -166,28 +166,43 @@ export class Matchmaker {
    * After timeout, create room with bots if no match found
    */
   private checkBotFallback(entry: QueueEntry): void {
-    // Check if player is still in queue
-    const stillInQueue = this.queue.find(e => e.socketId === entry.socketId);
+    // Check if player is still in queue (by public key since sockets change)
+    const stillInQueue = this.queue.find(e => e.publicKey === entry.publicKey);
     if (!stillInQueue) return;
 
     // Try to match with real players one more time
-    const roomId = this.tryMatch(entry);
+    const roomId = this.tryMatchForGameMode(entry.gameMode);
     if (roomId) return;
 
     // No match found, create room with bots
-    console.log('[Matchmaker] No match found, creating room with bots for', entry.socketId);
+    console.log('[Matchmaker] No match found, creating room with bots for', entry.publicKey.slice(0, 8) + '...');
 
     // Remove from queue
-    this.queue = this.queue.filter(e => e.socketId !== entry.socketId);
+    this.queue = this.queue.filter(e => e.publicKey !== entry.publicKey);
 
     // Create bot-filled room
     const botRoomId = this.createBotRoom(entry);
 
-    // Notify player using socket from entry
-    entry.socket.emit('queue_status', {
-      status: 'matched_with_bots',
-      message: 'Oyuncu bulunamadı, botlarla oynuyorsunuz'
-    });
+    // Add socket to room
+    this.addPlayerToRoom(botRoomId, entry.socketId, entry.socket);
+
+    // Start the game
+    const room = this.getRoom(botRoomId);
+    if (room) {
+      room.gameMachine.startGame();
+
+      // Get the room state and send to client
+      const clientState = room.gameMachine.getStateForClient(entry.socketId);
+
+      console.log('[Matchmaker] Sending match_found with bot game to', entry.socketId);
+
+      entry.socket.emit('match_found', {
+        roomId: botRoomId,
+        gameState: clientState
+      });
+    } else {
+      entry.socket.emit('error', { message: 'Failed to create bot room' });
+    }
   }
 
   /**
@@ -214,11 +229,31 @@ export class Matchmaker {
 
     console.log('[Matchmaker] Created REAL MP room:', roomId, 'with 4 players');
 
+    // Add all sockets to room
+    entries.forEach(entry => {
+      room.players.set(entry.socketId, entry.socket);
+      entry.socket.join(roomId);
+    });
+
+    // Start the game
+    gameMachine.startGame();
+
+    // Send match_found to ALL players
+    entries.forEach(entry => {
+      const clientState = gameMachine.getStateForClient(entry.socketId);
+      entry.socket.emit('match_found', {
+        roomId,
+        gameState: clientState
+      });
+      console.log('[Matchmaker] Sent match_found to', entry.socketId, '(', entry.publicKey.slice(0, 8) + '...)');
+    });
+
     return roomId;
   }
 
   /**
    * Create room with BOTs (fallback when no real players found)
+   * Always creates 4 total players: 1 human + 3 bots
    */
   private createBotRoom(entry: QueueEntry): string {
     const roomId = `room_bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -227,8 +262,9 @@ export class Matchmaker {
     // Add human player (index 0)
     gameMachine.addPlayer(entry.socketId, 'Player', false, entry.publicKey);
 
-    // Add bots (indices 1, 2, 3...)
-    for (let i = 0; i < entry.botCount; i++) {
+    // Always add 3 bots to make 4 total players (indices 1, 2, 3)
+    const BOT_COUNT = 3;
+    for (let i = 0; i < BOT_COUNT; i++) {
       const playerIndex = i + 1; // Human is at index 0, bots are at 1, 2, 3
       const bot = this.botManager.createBot(playerIndex, entry.botDifficulty);
       gameMachine.addPlayer(bot.getId(), bot.getName(), true);
@@ -243,6 +279,8 @@ export class Matchmaker {
     };
 
     this.rooms.set(roomId, room);
+
+    console.log('[Matchmaker] Created BOT room:', roomId, 'with 1 human + 3 bots');
 
     return roomId;
   }
