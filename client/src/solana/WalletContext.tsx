@@ -50,35 +50,58 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     setConnecting(true);
 
     try {
+      console.log('[Wallet] Attempting to connect wallet...');
+
       // Check for Solana Mobile Wallet Adapter (Solana Seeker)
       if ((window as any).solanaMobileWalletAdapter) {
+        console.log('[Wallet] Found Solana Mobile Wallet Adapter');
         const adapter = (window as any).solanaMobileWalletAdapter;
         const response = await adapter.connect();
         setPublicKey(response.publicKey.toString());
         setConnected(true);
+        console.log('[Wallet] Connected via Mobile Wallet Adapter');
       }
       // Check for Phantom wallet
       else if ((window as any).solana?.isPhantom) {
+        console.log('[Wallet] Found Phantom wallet');
         const response = await (window as any).solana.connect();
         setPublicKey(response.publicKey.toString());
         setConnected(true);
+        console.log('[Wallet] Connected via Phantom');
       }
-      // Check for general Solana provider
+      // Check for Backpack (all Solana wallets use this)
+      else if ((window as any).backpack) {
+        console.log('[Wallet] Found Backpack wallet adapter');
+        try {
+          const response = await (window as any).backpack.connect();
+          setPublicKey(response.publicKey.toString());
+          setConnected(true);
+          console.log('[Wallet] Connected via Backpack');
+        } catch (err) {
+          console.error('[Wallet] Backpack connection failed:', err);
+          throw err;
+        }
+      }
+      // Check for general Solana provider (includes others)
       else if ((window as any).solana) {
+        console.log('[Wallet] Found general Solana provider');
         const response = await (window as any).solana.connect();
         setPublicKey(response.publicKey.toString());
         setConnected(true);
+        console.log('[Wallet] Connected via general Solana provider');
       }
       // Fallback: generate mock wallet for testing
       else {
-        console.warn('No Solana wallet found. Using mock wallet for testing.');
+        console.warn('[Wallet] No Solana wallet found. Using mock wallet for testing.');
         // Generate a mock public key
         const mockKey = 'Mock' + Math.random().toString(36).substring(2, 12) + 'Wallet';
         setPublicKey(mockKey);
         setConnected(true);
+        console.log('[Wallet] Using mock wallet:', mockKey);
       }
     } catch (error) {
-      console.error('Failed to connect wallet:', error);
+      console.error('[Wallet] Failed to connect wallet:', error);
+      setConnecting(false);
       throw error;
     } finally {
       setConnecting(false);
