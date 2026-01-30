@@ -78,6 +78,7 @@ export class SocketServer {
 
     const roomId = this.matchmaker.joinQueue({
       socketId: socket.id,
+      socket,  // Pass socket reference for emitting queue_status
       publicKey: payload.publicKey,
       botDifficulty: payload.botDifficulty || 'normal',
       botCount: payload.botCount !== undefined ? payload.botCount : 3,

@@ -11,6 +11,7 @@ import { BotManager as BotManagerClass } from '../bots/BatakBot.js';
 
 interface QueueEntry {
   socketId: string;
+  socket: Socket;  // Store socket reference to emit events
   publicKey: string;
   botDifficulty: 'easy' | 'normal' | 'hard';
   botCount: number;
@@ -137,15 +138,11 @@ export class Matchmaker {
     // Create bot-filled room
     const botRoomId = this.createBotRoom(entry);
 
-    // Notify player
-    const room = this.rooms.get(botRoomId);
-    const socket = room?.players.get(entry.socketId);
-    if (socket) {
-      socket.emit('queue_status', {
-        status: 'matched_with_bots',
-        message: 'Oyuncu bulunamadı, botlarla oynuyorsunuz'
-      });
-    }
+    // Notify player using socket from entry
+    entry.socket.emit('queue_status', {
+      status: 'matched_with_bots',
+      message: 'Oyuncu bulunamadı, botlarla oynuyorsunuz'
+    });
   }
 
   /**
@@ -217,18 +214,13 @@ export class Matchmaker {
       // Send status to each player in this game mode queue
       this.queue.forEach(entry => {
         if (entry.gameMode === gameMode) {
-          const room = this.findPlayerRoom(entry.socketId);
-          const socket = room?.players.get(entry.socketId);
-
-          if (socket) {
-            socket.emit('queue_status', {
-              status: 'waiting',
-              playersInQueue,
-              playersNeeded: this.PLAYERS_PER_GAME,
-              gameMode,
-              message: `${playersInQueue}/${this.PLAYERS_PER_GAME} oyuncu bekleniyor...`
-            });
-          }
+          entry.socket.emit('queue_status', {
+            status: 'waiting',
+            playersInQueue,
+            playersNeeded: this.PLAYERS_PER_GAME,
+            gameMode,
+            message: `${playersInQueue}/${this.PLAYERS_PER_GAME} oyuncu bekleniyor...`
+          });
         }
       });
     });
