@@ -295,7 +295,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     return colors[suit] || '#000000';
   };
 
-  const getRankSymbol = (rank: number) => {
+  const getRankSymbol = (rank: number | undefined) => {
+    if (rank === undefined) return '?';
     const symbols: Record<number, string> = {
       2: '2', 3: '3', 4: '4', 5: '5', 6: '6',
       7: '7', 8: '8', 9: '9', 10: '10',
