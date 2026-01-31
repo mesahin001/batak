@@ -51,9 +51,19 @@ export class Matchmaker {
    * Add player to queue
    */
   joinQueue(entry: Omit<QueueEntry, 'timestamp'>): string | null {
-    // Remove any existing entry for this PUBLIC KEY (wallet) to handle reconnections
-    // This is better than socket-based dedup because sockets change on reconnect
-    this.queue = this.queue.filter(e => e.publicKey !== entry.publicKey);
+    // Remove STALE entries for this wallet (disconnected sockets only)
+    // This allows multiple tabs with same wallet to stay in queue
+    this.queue = this.queue.filter(e => {
+      if (e.publicKey === entry.publicKey) {
+        // Check if socket is still connected
+        const isConnected = e.socket.connected;
+        if (!isConnected) {
+          console.log('[Matchmaker] Removing stale entry for', e.publicKey.slice(0, 8) + '...');
+          return false; // Remove disconnected socket
+        }
+      }
+      return true; // Keep connected sockets
+    });
 
     const queueEntry: QueueEntry = {
       ...entry,
@@ -66,7 +76,8 @@ export class Matchmaker {
       socketId: entry.socketId,
       publicKey: entry.publicKey,
       gameMode: entry.gameMode,
-      totalInQueue: this.queue.length
+      totalInQueue: this.queue.length,
+      connectedSockets: this.queue.filter(e => e.publicKey === entry.publicKey && e.socket.connected).length
     });
 
     // Broadcast queue status
