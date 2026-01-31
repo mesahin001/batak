@@ -129,11 +129,21 @@ export class Matchmaker {
   private tryMatchForGameMode(gameMode: 'koz_maca' | 'ihaleli_batak'): string | null {
     const now = Date.now();
 
+    console.log('[Matchmaker] Queue before filtering:', {
+      total: this.queue.length,
+      entries: this.queue.map(e => ({ wallet: e.publicKey.slice(0, 8), connected: e.socket.connected }))
+    });
+
     // Get all valid players for this game mode
     const validPlayers = this.queue.filter(e =>
       e.gameMode === gameMode &&
       (now - e.timestamp.getTime()) < this.MATCH_TIMEOUT_MS
     );
+
+    console.log('[Matchmaker] After timestamp filter:', {
+      valid: validPlayers.length,
+      entries: validPlayers.map(e => ({ wallet: e.publicKey.slice(0, 8), connected: e.socket.connected }))
+    });
 
     // Deduplicate by PUBLIC KEY (wallet) - keep latest entry for each wallet
     const uniquePlayers = new Map<string, QueueEntry>();
@@ -145,6 +155,11 @@ export class Matchmaker {
     }
 
     const playerArray = Array.from(uniquePlayers.values());
+
+    console.log('[Matchmaker] After deduplication:', {
+      unique: playerArray.length,
+      wallets: playerArray.map(p => p.publicKey.slice(0, 8) + '...')
+    });
 
     // Need 4 players
     if (playerArray.length >= 4) {
