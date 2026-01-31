@@ -596,7 +596,7 @@ export class GameStateMachine {
         totalScore: p.totalScore,  // Cumulative score
         roundScores: p.roundScores,
         bid: p.bid,
-        hand: i === playerIndex ? p.hand : p.hand.map(() => ({ id: 'hidden' })),
+        hand: i === playerIndex ? p.hand : p.hand.map((c, idx) => ({ id: `hidden-${i}-${idx}` })),
         handSize: p.hand.length
       }))
     };
