@@ -575,6 +575,14 @@ export class GameStateMachine {
   getStateForClient(playerId: string): any {
     const playerIndex = this.room.players.findIndex(p => p.id === playerId);
 
+    console.log('[getStateForClient] playerId:', playerId, 'playerIndex:', playerIndex, 'total players:', this.room.players.length);
+    if (playerIndex >= 0) {
+      console.log('[getStateForClient] Player found, hand size:', this.room.players[playerIndex].hand.length);
+      if (this.room.players[playerIndex].hand.length > 0) {
+        console.log('[getStateForClient] First card:', this.room.players[playerIndex].hand[0]);
+      }
+    }
+
     return {
       state: this.room.state,
       currentPlayerIndex: this.room.currentPlayerIndex,

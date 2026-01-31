@@ -361,6 +361,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   // Get and sort my hand
   const myHand = myPlayer?.hand ? sortCards(myPlayer.hand) : [];
 
+  // Debug: log first card to see structure
+  if (myHand.length > 0 && myHand[0].id !== 'hidden-hidden-0') {
+    console.log('[GameRoom] First card:', myHand[0]);
+    console.log('[GameRoom] Card rank:', myHand[0].rank, 'type:', typeof myHand[0].rank);
+  }
+
   return (
     <div className="game-room">
       {/* Header */}

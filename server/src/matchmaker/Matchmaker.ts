@@ -310,7 +310,12 @@ export class Matchmaker {
 
     // Add all 4 human players
     entries.forEach((entry, index) => {
-      gameMachine.addPlayer(entry.socketId, `Player ${index + 1}`, false, entry.publicKey);
+      gameMachine.addPlayer(entry.socketId, entry.socketId, false, entry.publicKey);
+      console.log('[Matchmaker] Added player:', {
+        socketId: entry.socketId,
+        name: entry.socketId.slice(0, 8) + '...',
+        publicKey: entry.publicKey.slice(0, 8)
+      });
     });
 
     const room: GameRoom = {
@@ -337,6 +342,13 @@ export class Matchmaker {
     // Send match_found to ALL players
     entries.forEach(entry => {
       const clientState = gameMachine.getStateForClient(entry.socketId);
+      // Debug: log first card data
+      const foundPlayer = clientState.players.find((p: any) => p.id === entry.socketId);
+      console.log('[Matchmaker] For socket', entry.socketId.slice(0, 8), 'found player:', foundPlayer?.name, 'hand size:', foundPlayer?.hand?.length);
+      const firstPlayerHand = clientState.players[0]?.hand;
+      if (firstPlayerHand && firstPlayerHand.length > 0 && firstPlayerHand[0].id !== 'hidden-0-0') {
+        console.log('[Matchmaker] First card in players[0]:', firstPlayerHand[0]);
+      }
       entry.socket.emit('match_found', {
         roomId,
         gameState: clientState
