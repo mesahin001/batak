@@ -308,12 +308,13 @@ export class Matchmaker {
     const roomId = `room_real_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const gameMachine = new GameStateMachine(roomId, 5, entries[0].gameMode);
 
-    // Add all 4 human players
+    // Add all 4 human players using PUBLIC KEY as ID (stable across reconnections)
     entries.forEach((entry, index) => {
-      gameMachine.addPlayer(entry.socketId, entry.socketId, false, entry.publicKey);
+      gameMachine.addPlayer(entry.publicKey, entry.socketId.slice(0, 12), false, entry.publicKey);
       console.log('[Matchmaker] Added player:', {
+        id: entry.publicKey.slice(0, 8),
+        name: entry.socketId.slice(0, 12),
         socketId: entry.socketId,
-        name: entry.socketId.slice(0, 8) + '...',
         publicKey: entry.publicKey.slice(0, 8)
       });
     });
@@ -339,16 +340,13 @@ export class Matchmaker {
     // Start the game
     gameMachine.startGame();
 
-    // Send match_found to ALL players
+    // Send match_found to ALL players using their PUBLIC KEY as player ID
     entries.forEach(entry => {
-      const clientState = gameMachine.getStateForClient(entry.socketId);
+      // Get state using publicKey as player ID
+      const clientState = gameMachine.getStateForClient(entry.publicKey);
       // Debug: log first card data
-      const foundPlayer = clientState.players.find((p: any) => p.id === entry.socketId);
-      console.log('[Matchmaker] For socket', entry.socketId.slice(0, 8), 'found player:', foundPlayer?.name, 'hand size:', foundPlayer?.hand?.length);
-      const firstPlayerHand = clientState.players[0]?.hand;
-      if (firstPlayerHand && firstPlayerHand.length > 0 && firstPlayerHand[0].id !== 'hidden-0-0') {
-        console.log('[Matchmaker] First card in players[0]:', firstPlayerHand[0]);
-      }
+      const foundPlayer = clientState.players.find((p: any) => p.id === entry.publicKey);
+      console.log('[Matchmaker] For wallet', entry.publicKey.slice(0, 8), 'found player:', foundPlayer?.name, 'hand size:', foundPlayer?.hand?.length);
       entry.socket.emit('match_found', {
         roomId,
         gameState: clientState
@@ -367,8 +365,8 @@ export class Matchmaker {
     const roomId = `room_bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const gameMachine = new GameStateMachine(roomId, 5, entry.gameMode);
 
-    // Add human player (index 0)
-    gameMachine.addPlayer(entry.socketId, 'Player', false, entry.publicKey);
+    // Add human player using PUBLIC KEY as ID
+    gameMachine.addPlayer(entry.publicKey, 'Player', false, entry.publicKey);
 
     // Always add 3 bots to make 4 total players (indices 1, 2, 3)
     const BOT_COUNT = 3;
