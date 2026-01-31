@@ -51,18 +51,19 @@ export class Matchmaker {
    * Add player to queue
    */
   joinQueue(entry: Omit<QueueEntry, 'timestamp'>): string | null {
-    // Remove STALE entries for this wallet (disconnected sockets only)
-    // This allows multiple tabs with same wallet to stay in queue
+    // Remove OLD entries for this wallet that have disconnected
+    // But only if there's a newer connected entry for the same wallet
     this.queue = this.queue.filter(e => {
-      if (e.publicKey === entry.publicKey) {
-        // Check if socket is still connected
-        const isConnected = e.socket.connected;
-        if (!isConnected) {
-          console.log('[Matchmaker] Removing stale entry for', e.publicKey.slice(0, 8) + '...');
-          return false; // Remove disconnected socket
+      if (e.publicKey === entry.publicKey && e.socketId !== entry.socketId) {
+        // Old entry for same wallet
+        if (!e.socket.connected) {
+          // This old socket is disconnected and we're adding a new one
+          // Safe to remove the old one
+          console.log('[Matchmaker] Removing old disconnected entry for', e.publicKey.slice(0, 8));
+          return false;
         }
       }
-      return true; // Keep connected sockets
+      return true;
     });
 
     const queueEntry: QueueEntry = {
@@ -74,10 +75,9 @@ export class Matchmaker {
 
     console.log('[Matchmaker] Player added to queue:', {
       socketId: entry.socketId,
-      publicKey: entry.publicKey,
+      publicKey: entry.publicKey.slice(0, 8),
       gameMode: entry.gameMode,
-      totalInQueue: this.queue.length,
-      connectedSockets: this.queue.filter(e => e.publicKey === entry.publicKey && e.socket.connected).length
+      totalInQueue: this.queue.length
     });
 
     // Broadcast queue status
@@ -105,10 +105,11 @@ export class Matchmaker {
    */
   leaveQueue(socketId: string, publicKey?: string): void {
     if (publicKey) {
-      // Remove by public key (preferred - handles reconnections)
+      // Remove all entries for this wallet (player explicitly left)
       this.queue = this.queue.filter(entry => entry.publicKey !== publicKey);
     } else {
-      // Fallback: remove by socket ID
+      // Remove only this socket ID (disconnect)
+      // Keep other entries for same wallet (other tabs)
       this.queue = this.queue.filter(entry => entry.socketId !== socketId);
     }
     this.broadcastQueueStatus();
