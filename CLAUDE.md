@@ -181,7 +181,29 @@ GAME_COMPLETE         // Game over + final results: { winner, players, roundHist
 ERROR                 // { message }
 ```
 
-**Critical Pattern:** After any game state change, always broadcast via `broadcastGameState(roomId, room)` which calls `gameMachine.getStateForClient(socketId)` for each player to hide opponents' cards.
+**Critical Pattern:** After any game state change, always broadcast via `broadcastGameState(roomId, room)` which calls `gameMachine.getStateForClient(playerId)` for each player to hide opponents' cards.
+
+### Player Identification in Multiplayer (Critical!)
+
+**Server-Side:**
+- Human players are identified by their **publicKey** (wallet address), NOT socketId
+- `room.players` Map uses `publicKey` as the key for human players
+- `player.id` in GameStateMachine equals the player's publicKey
+- `broadcastGameState()` iterates over `roomData.players` and uses `player.id` to find their socket
+
+**Client-Side:**
+- `myPlayerIndex` is found by matching `publicKey.toString()` with `player.id`
+- NEVER use `p.type === 'human'` to find my player in 4-player PvP (all players are human!)
+
+```typescript
+// CORRECT - Match by wallet publicKey
+const myPlayerIndex = publicKey
+  ? currentGameState.players?.findIndex((p) => p.id === publicKey.toString())
+  : currentGameState.players?.findIndex((p) => p.type === 'human'); // Fallback for bots only
+
+// WRONG - Always returns index 0 in 4-player PvP!
+const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'human');
+```
 
 ### Bot Bidding Flow
 
@@ -230,7 +252,15 @@ ERROR                 // { message }
   - `handleBotTurns()` - Bot turn management
   - `handleBotBidding()` - Bot bidding management
   - `checkRoundComplete()` - Determines if round/game is complete
-  - `broadcastGameState()` - State synchronization
+  - `broadcastGameState()` - State synchronization (iterates over players by player.id/publicKey)
+  - `getPlayerIdFromSocket()` - Helper to map socket.id to player's publicKey
+
+### Matchmaker
+- `server/src/matchmaker/Matchmaker.ts` - Player matchmaking and room management
+  - `createRealRoom()` - Creates 4-player PvP rooms using publicKey as player ID
+  - `createBotRoom()` - Creates 1 human + 3 bot rooms
+  - `triggerBotTurns()` - Bot AI turn execution with humanPlayerId parameter
+  - Room management methods use publicKey for socket lookups
 
 ### Bot AI
 - `server/src/bots/BatakBot.ts` - Main bot class
@@ -243,6 +273,8 @@ ERROR                 // { message }
 
 ### Client Components
 - `client/src/components/GameRoom.tsx` - Main game UI, card display, bidding, round complete modal
+  - **CRITICAL:** Uses `useWallet()` to get `publicKey` for identifying "my" player in 4-player PvP
+  - `myPlayerIndex` found by matching `publicKey.toString()` with `player.id`
 - `client/src/components/TournamentResults.tsx` - Final results with round history
 - `client/src/socket/SocketContext.tsx` - Socket connection management
 - `client/src/solana/WalletContext.tsx` - Wallet connection (includes mock fallback)
@@ -333,6 +365,22 @@ socket.emit('play_card', { cardId });
 1. Pass `this.room.bids` array to `calculateScores()`
 2. Use `calculatePlayerScoreWithBid(player, playerBid, gameMode)` which takes bid as parameter
 3. Formula: `10 × bid + (tricks_won - bid)` → `10 × 1 + (2 - 1) = 11`
+
+### Issue: "4-player PvP - All players show same cards / Only first player sees cards"
+**Root Cause:** Player identification mismatch between server (publicKey) and client (socketId)
+
+**Server Fix:**
+1. `Matchmaker.ts:315` - Use `entry.publicKey.slice(0, 12)` for player name, NOT `socketId.slice(0, 12)`
+2. `Matchmaker.ts:338` - Store socket in `room.players` Map using `publicKey` as key: `room.players.set(entry.publicKey, entry.socket)`
+3. `SocketServer.ts:534-541` - `broadcastGameState()` iterates over `roomData.players` and uses `player.id` (publicKey) to find socket
+4. `SocketServer.ts:133` - `handlePlayCard()` uses `getPlayerIdFromSocket()` to map socket to publicKey
+5. `Matchmaker.ts:423-463` - Room management methods (`findPlayerRoom`, `addPlayerToRoom`, `removePlayerFromRoom`) use publicKey
+
+**Client Fix:**
+1. `GameRoom.tsx:343` - Find `myPlayerIndex` by matching `publicKey.toString()` with `player.id`, NOT by `p.type === 'human'`
+2. Add `useWallet` hook to get `publicKey`
+
+**Why this happened:** In 4-player PvP, all 4 players are human. Using `p.type === 'human'` always returns the first human player (index 0), so all clients saw player 0's perspective.
 
 ## Environment Variables
 

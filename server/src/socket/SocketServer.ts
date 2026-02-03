@@ -119,6 +119,15 @@ export class SocketServer {
     const room = this.matchmaker.getRoom(roomId);
     if (!room) return;
 
+    // Find the player's actual ID (publicKey for humans) from the socket
+    const playerId = this.getPlayerIdFromSocket(room, socket);
+    if (!playerId) {
+      socket.emit('game_error', {
+        message: 'Player not found in room'
+      });
+      return;
+    }
+
     // CRITICAL: Server-side validation - prevent double-plays
     const roomData = room.gameMachine.getRoom();
     if (roomData.state !== 'playing') {
@@ -130,7 +139,7 @@ export class SocketServer {
 
     // Verify it's this player's turn
     const currentPlayer = roomData.players[roomData.currentPlayerIndex];
-    if (currentPlayer.id !== socket.id) {
+    if (currentPlayer.id !== playerId) {
       socket.emit('game_error', {
         message: 'Cannot play card - not your turn'
       });
@@ -147,11 +156,11 @@ export class SocketServer {
     }
 
     try {
-      room.gameMachine.playCard(socket.id, payload.cardId);
+      room.gameMachine.playCard(playerId, payload.cardId);
 
       // Broadcast card played
       this.io.to(roomId).emit(ServerEvent.CARD_PLAYED, {
-        playerId: socket.id,
+        playerId: playerId,
         cardId: payload.cardId
       });
 
@@ -260,13 +269,22 @@ export class SocketServer {
     const room = this.matchmaker.getRoom(roomId);
     if (!room) return;
 
+    // Find the player's actual ID (publicKey for humans) from the socket
+    const playerId = this.getPlayerIdFromSocket(room, socket);
+    if (!playerId) {
+      socket.emit(ServerEvent.ERROR, {
+        message: 'Player not found in room'
+      });
+      return;
+    }
+
     try {
       if (payload.amount === 0) {
         // Pass
-        room.gameMachine.passBid(socket.id);
+        room.gameMachine.passBid(playerId);
       } else {
         // Bid
-        room.gameMachine.submitBid(socket.id, payload.suit, payload.amount);
+        room.gameMachine.submitBid(playerId, payload.suit, payload.amount);
       }
 
       // Send updated game state
@@ -529,15 +547,40 @@ export class SocketServer {
   }
 
   /**
+   * Get player ID (publicKey for humans) from socket
+   * Iterates through room.players Map to find the key (publicKey) that maps to this socket
+   */
+  private getPlayerIdFromSocket(room: any, socket: Socket): string | null {
+    for (const [playerId, roomSocket] of room.players) {
+      if (roomSocket.id === socket.id) {
+        return playerId;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Broadcast game state to all players in room
+   * Iterates over actual players from gameMachine using their player ID (publicKey for humans)
    */
   private broadcastGameState(roomId: string, room: any): void {
     const roomData = room.gameMachine.getRoom();
 
-    // Send customized state to each player
-    for (const [socketId, socket] of room.players) {
-      const state = room.gameMachine.getStateForClient(socketId);
-      socket.emit(ServerEvent.GAME_STATE_UPDATE, state);
+    console.log('[broadcastGameState] Room data players (first 20 chars of id):', roomData.players.map((p: any) => ({ id: p.id.slice(0, 20), name: p.name, type: p.type })));
+    console.log('[broadcastGameState] Room.players Map keys (first 20 chars):', Array.from(room.players.keys()).map(k => k.slice(0, 20)));
+
+    // Send customized state to each player using their actual player ID (publicKey for humans)
+    for (const player of roomData.players) {
+      // Find the socket for this player
+      // For human players: key is publicKey (matches player.id)
+      // For bot players: no socket needed, they don't receive events
+      const socket = room.players.get(player.id);
+      console.log('[broadcastGameState] Player:', player.name, 'id (first 20):', player.id.slice(0, 20), 'socket found:', !!socket);
+      if (socket) {
+        const state = room.gameMachine.getStateForClient(player.id);
+        console.log('[broadcastGameState] Emitting to', player.name, 'playerIndex in state:', state.players.findIndex((p: any) => p.id === player.id));
+        socket.emit(ServerEvent.GAME_STATE_UPDATE, state);
+      }
     }
   }
 

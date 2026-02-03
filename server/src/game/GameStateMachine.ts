@@ -76,6 +76,16 @@ export class GameStateMachine {
   }
 
   /**
+   * Debug: Print all players in room with their IDs
+   */
+  debugPrintPlayers(): void {
+    console.log('[GameStateMachine] Current players in room:');
+    this.room.players.forEach((p, i) => {
+      console.log(`  [${i}] id: ${p.id.slice(0, 20)}, name: ${p.name}, type: ${p.type}, hand size: ${p.hand.length}`);
+    });
+  }
+
+  /**
    * Get current round number
    */
   getCurrentRound(): number {
@@ -575,15 +585,17 @@ export class GameStateMachine {
   getStateForClient(playerId: string): any {
     const playerIndex = this.room.players.findIndex(p => p.id === playerId);
 
-    console.log('[getStateForClient] playerId:', playerId, 'playerIndex:', playerIndex, 'total players:', this.room.players.length);
+    console.log('[getStateForClient] Looking for playerId:', playerId);
+    console.log('[getStateForClient] Room players (first 20 chars of each id):', this.room.players.map((p: any) => ({ id: p.id.slice(0, 20), name: p.name, type: p.type })));
+    console.log('[getStateForClient] playerIndex:', playerIndex, 'total players:', this.room.players.length);
+
     if (playerIndex >= 0) {
-      console.log('[getStateForClient] Player found, hand size:', this.room.players[playerIndex].hand.length);
-      if (this.room.players[playerIndex].hand.length > 0) {
-        console.log('[getStateForClient] First card:', this.room.players[playerIndex].hand[0]);
-      }
+      console.log('[getStateForClient] Player FOUND at index', playerIndex, 'hand size:', this.room.players[playerIndex].hand.length);
+    } else {
+      console.log('[getStateForClient] Player NOT FOUND - all cards will be hidden!');
     }
 
-    return {
+    const state = {
       state: this.room.state,
       currentPlayerIndex: this.room.currentPlayerIndex,
       trumpSuit: this.room.trumpSuit,
@@ -608,5 +620,9 @@ export class GameStateMachine {
         handSize: p.hand.length
       }))
     };
+
+    console.log('[getStateForClient] State players array:', state.players.map((p: any) => ({ id: p.id.slice(0, 20), name: p.name, handType: Array.isArray(p.hand) ? (p.hand[0]?.suit || 'hidden') : 'unknown' })));
+
+    return state;
   }
 }

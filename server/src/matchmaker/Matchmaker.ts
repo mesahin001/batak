@@ -129,25 +129,27 @@ export class Matchmaker {
   private tryMatchForGameMode(gameMode: 'koz_maca' | 'ihaleli_batak'): string | null {
     const now = Date.now();
 
-    console.log('[Matchmaker] Queue before filtering:', {
+    console.log('[Matchmaker] Queue:', {
       total: this.queue.length,
-      entries: this.queue.map(e => ({ wallet: e.publicKey.slice(0, 8), connected: e.socket.connected }))
+      gameMode,
+      entries: this.queue.map(e => ({
+        wallet: e.publicKey.slice(0, 8),
+        ageSec: Math.floor((now - e.timestamp.getTime()) / 1000)
+      }))
     });
 
-    // Get all valid players for this game mode
-    const validPlayers = this.queue.filter(e =>
-      e.gameMode === gameMode &&
-      (now - e.timestamp.getTime()) < this.MATCH_TIMEOUT_MS
-    );
+    // Get all players for this game mode (no timestamp filter for PvP)
+    // Note: Timestamp filter only applies to bot fallback logic, not real player matching
+    const matchingPlayers = this.queue.filter(e => e.gameMode === gameMode);
 
-    console.log('[Matchmaker] After timestamp filter:', {
-      valid: validPlayers.length,
-      entries: validPlayers.map(e => ({ wallet: e.publicKey.slice(0, 8), connected: e.socket.connected }))
+    console.log('[Matchmaker] Players for this game mode:', {
+      count: matchingPlayers.length,
+      entries: matchingPlayers.map(e => e.publicKey.slice(0, 8))
     });
 
     // Deduplicate by PUBLIC KEY (wallet) - keep latest entry for each wallet
     const uniquePlayers = new Map<string, QueueEntry>();
-    for (const player of validPlayers) {
+    for (const player of matchingPlayers) {
       const existing = uniquePlayers.get(player.publicKey);
       if (!existing || player.timestamp > existing.timestamp) {
         uniquePlayers.set(player.publicKey, player);
@@ -156,16 +158,16 @@ export class Matchmaker {
 
     const playerArray = Array.from(uniquePlayers.values());
 
-    console.log('[Matchmaker] After deduplication:', {
+    console.log('[Matchmaker] After dedup (by publicKey):', {
       unique: playerArray.length,
       wallets: playerArray.map(p => p.publicKey.slice(0, 8) + '...')
     });
 
-    // Need 4 players
+    // Need 4 players for PvP match
     if (playerArray.length >= 4) {
       const selectedPlayers = playerArray.slice(0, 4);
 
-      console.log('[Matchmaker] Creating match with 4 unique players:', {
+      console.log('[Matchmaker] ✓ Creating 4-player PvP match:', {
         players: selectedPlayers.map(p => ({ socket: p.socketId, wallet: p.publicKey.slice(0, 8) + '...' })),
         gameMode
       });
@@ -210,8 +212,8 @@ export class Matchmaker {
     // Create bot-filled room
     const botRoomId = this.createBotRoom(entry);
 
-    // Add socket to room
-    this.addPlayerToRoom(botRoomId, entry.socketId, entry.socket);
+    // Add socket to room using PUBLIC KEY as key
+    this.addPlayerToRoom(botRoomId, entry.publicKey, entry.socket);
     // IMPORTANT: Join socket to Socket.IO room so events work
     entry.socket.join(botRoomId);
     console.log('[Matchmaker] Socket joined room:', botRoomId);
@@ -221,8 +223,8 @@ export class Matchmaker {
     if (room) {
       room.gameMachine.startGame();
 
-      // Send match_found to the human player
-      const clientState = room.gameMachine.getStateForClient(entry.socketId);
+      // Send match_found to the human player using PUBLIC KEY as player ID
+      const clientState = room.gameMachine.getStateForClient(entry.publicKey);
 
       console.log('[Matchmaker] Sending match_found with bot game to', entry.socketId);
       console.log('[Matchmaker] Game state:', {
@@ -236,8 +238,8 @@ export class Matchmaker {
         gameState: clientState
       });
 
-      // Trigger bot turns if current player is a bot
-      this.triggerBotTurns(botRoomId, room, entry.socket);
+      // Trigger bot turns if current player is a bot (pass publicKey as human player ID)
+      this.triggerBotTurns(botRoomId, room, entry.socket, entry.publicKey);
     } else {
       entry.socket.emit('error', { message: 'Failed to create bot room' });
     }
@@ -245,8 +247,12 @@ export class Matchmaker {
 
   /**
    * Trigger bot turns for bidding/playing
+   * @param roomId - The room ID
+   * @param room - The game room
+   * @param humanSocket - The human player's socket
+   * @param humanPlayerId - The human player's ID (publicKey)
    */
-  private triggerBotTurns(roomId: string, room: any, humanSocket: Socket): void {
+  private triggerBotTurns(roomId: string, room: any, humanSocket: Socket, humanPlayerId: string): void {
     const roomData = room.gameMachine.getRoom();
     const currentPlayer = roomData.players[roomData.currentPlayerIndex];
 
@@ -270,11 +276,11 @@ export class Matchmaker {
             }
 
             // Broadcast updated state
-            const clientState = room.gameMachine.getStateForClient(humanSocket.id);
+            const clientState = room.gameMachine.getStateForClient(humanPlayerId);
             humanSocket.emit('game_state_update', clientState);
 
             // Check if more bot turns needed
-            this.triggerBotTurns(roomId, room, humanSocket);
+            this.triggerBotTurns(roomId, room, humanSocket, humanPlayerId);
           } else if (roomData.state === 'playing') {
             // Bot card playing - similar logic
             // For now, let SocketServer handle playing state
@@ -284,7 +290,7 @@ export class Matchmaker {
     } else {
       console.log('[Matchmaker] Current player is human, waiting for input:', currentPlayer.name);
       // IMPORTANT: Send game state update so client knows it's their turn!
-      const clientState = room.gameMachine.getStateForClient(humanSocket.id);
+      const clientState = room.gameMachine.getStateForClient(humanPlayerId);
       humanSocket.emit('game_state_update', clientState);
       console.log('[Matchmaker] Sent game_state_update to human, currentPlayerIndex:', clientState.currentPlayerIndex);
     }
@@ -310,12 +316,12 @@ export class Matchmaker {
 
     // Add all 4 human players using PUBLIC KEY as ID (stable across reconnections)
     entries.forEach((entry, index) => {
-      gameMachine.addPlayer(entry.publicKey, entry.socketId.slice(0, 12), false, entry.publicKey);
+      gameMachine.addPlayer(entry.publicKey, entry.publicKey.slice(0, 12), false, entry.publicKey);
       console.log('[Matchmaker] Added player:', {
-        id: entry.publicKey.slice(0, 8),
-        name: entry.socketId.slice(0, 12),
-        socketId: entry.socketId,
-        publicKey: entry.publicKey.slice(0, 8)
+        index,
+        id: entry.publicKey,
+        name: entry.publicKey.slice(0, 12),
+        socketId: entry.socketId
       });
     });
 
@@ -331,27 +337,29 @@ export class Matchmaker {
 
     console.log('[Matchmaker] Created REAL MP room:', roomId, 'with 4 players');
 
-    // Add all sockets to room
+    // Add all sockets to room using PUBLIC KEY as key
     entries.forEach(entry => {
-      room.players.set(entry.socketId, entry.socket);
+      room.players.set(entry.publicKey, entry.socket);
       entry.socket.join(roomId);
     });
+
+    console.log('[Matchmaker] Room.players Map keys (first 20 chars):', Array.from(room.players.keys()).map(k => k.slice(0, 20)));
+
+    // Debug: Print players after game start
+    gameMachine.debugPrintPlayers();
 
     // Start the game
     gameMachine.startGame();
 
     // Send match_found to ALL players using their PUBLIC KEY as player ID
     entries.forEach(entry => {
+      console.log('[Matchmaker] === Sending match_found to', entry.publicKey.slice(0, 8), '===');
       // Get state using publicKey as player ID
       const clientState = gameMachine.getStateForClient(entry.publicKey);
-      // Debug: log first card data
-      const foundPlayer = clientState.players.find((p: any) => p.id === entry.publicKey);
-      console.log('[Matchmaker] For wallet', entry.publicKey.slice(0, 8), 'found player:', foundPlayer?.name, 'hand size:', foundPlayer?.hand?.length);
       entry.socket.emit('match_found', {
         roomId,
         gameState: clientState
       });
-      console.log('[Matchmaker] Sent match_found to', entry.socketId, '(', entry.publicKey.slice(0, 8) + '...)');
     });
 
     return roomId;
@@ -417,11 +425,15 @@ export class Matchmaker {
 
   /**
    * Find which room a player is in
+   * Now searches by socket.id since room.players uses publicKey as key
    */
   private findPlayerRoom(socketId: string): GameRoom | undefined {
     for (const room of this.rooms.values()) {
-      if (room.players.has(socketId)) {
-        return room;
+      // Iterate through room.players values to find matching socket
+      for (const socket of room.players.values()) {
+        if (socket.id === socketId) {
+          return room;
+        }
       }
     }
     return undefined;
@@ -436,21 +448,34 @@ export class Matchmaker {
 
   /**
    * Add player socket to room
+   * Note: playerId should be publicKey for human players
    */
-  addPlayerToRoom(roomId: string, socketId: string, socket: Socket): void {
+  addPlayerToRoom(roomId: string, playerId: string, socket: Socket): void {
     const room = this.rooms.get(roomId);
     if (room) {
-      room.players.set(socketId, socket);
+      room.players.set(playerId, socket);
     }
   }
 
   /**
    * Remove player from room
+   * Now searches by socket.id to find the playerId (publicKey) to remove
    */
   removePlayerFromRoom(roomId: string, socketId: string): void {
     const room = this.rooms.get(roomId);
     if (room) {
-      room.players.delete(socketId);
+      // Find the playerId (publicKey) that maps to this socket
+      let playerIdToRemove: string | null = null;
+      for (const [playerId, socket] of room.players) {
+        if (socket.id === socketId) {
+          playerIdToRemove = playerId;
+          break;
+        }
+      }
+
+      if (playerIdToRemove) {
+        room.players.delete(playerIdToRemove);
+      }
 
       // If no human players left, close room
       if (this.getHumanPlayerCount(room) === 0) {

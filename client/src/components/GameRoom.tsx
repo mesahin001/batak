@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from '../socket/SocketContext';
+import { useWallet } from '../solana/WalletContext';
 import { Suit, GameClientState, RoundCompleteData, GameCompleteData, NextRoundStartingData } from '../types/game';
 import './GameRoom.css';
 
@@ -19,6 +20,7 @@ type SortOption = 'none' | 'suit' | 'rank';
 
 const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, onLeave }) => {
   const { socket } = useSocket();
+  const { publicKey } = useWallet();
   const [currentGameState, setCurrentGameState] = useState<GameClientState>(gameState);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('suit');
@@ -154,9 +156,10 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       return;
     }
 
-    const myPlayerIndex = currentGameState.players?.findIndex(
-      (p) => p.type === 'human'
-    );
+    // Find my player index by matching my wallet publicKey with player.id
+    const myPlayerIndex = publicKey
+      ? currentGameState.players?.findIndex((p) => p.id === publicKey.toString())
+      : currentGameState.players?.findIndex((p) => p.type === 'human'); // Fallback for bots
 
     // Check if it's player's turn before doing anything
     if (myPlayerIndex === undefined || myPlayerIndex === -1) {
@@ -340,7 +343,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     );
   }
 
-  const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'human');
+  // Find my player index by matching my wallet publicKey with player.id
+  // This is critical for 4-player PvP where all players are human
+  const myPlayerIndex = publicKey
+    ? currentGameState.players?.findIndex((p) => p.id === publicKey.toString())
+    : currentGameState.players?.findIndex((p) => p.type === 'human'); // Fallback for bots
+
   const myPlayer = currentGameState.players?.[myPlayerIndex ?? -1];
   const isMyTurn = currentGameState.currentPlayerIndex === myPlayerIndex;
   const isBidding = currentGameState.state === 'bidding';

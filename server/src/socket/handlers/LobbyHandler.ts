@@ -12,7 +12,7 @@ export class LobbyHandler {
   /**
    * Handle player joining queue
    */
-  handleJoinQueue(socket: Socket, publicKey: string, botCount: number = 3, botDifficulty: 'easy' | 'normal' | 'hard' = 'normal'): void {
+  handleJoinQueue(socket: Socket, publicKey: string, botCount: number = 3, botDifficulty: 'easy' | 'normal' | 'hard' = 'normal', gameMode: 'koz_maca' | 'ihaleli_batak' = 'koz_maca'): void {
     console.log(`[Lobby] Player ${socket.id} joining queue`);
 
     const roomId = this.matchmaker.joinQueue({
@@ -20,11 +20,12 @@ export class LobbyHandler {
       publicKey,
       botDifficulty,
       botCount,
-      timestamp: new Date()
+      gameMode
+      // timestamp is added automatically by joinQueue method
     });
 
     if (roomId) {
-      this.matchmaker.addPlayerToRoom(roomId, socket.id, socket);
+      this.matchmaker.addPlayerToRoom(roomId, publicKey, socket);
       socket.join(roomId);
 
       const room = this.matchmaker.getRoom(roomId);
