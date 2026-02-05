@@ -1,21 +1,26 @@
 [toolchain]
 
 [features]
-seeds = false
+resolution = true
 skip-lint = false
 
-[programs.localnet]
-batak_tournament = "BatakPK1111111111111111111111111111111111"
-
 [programs.devnet]
-batak_tournament = "BatakPK1111111111111111111111111111111111"
+batak_tournament = "5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h"
+
+[programs.localnet]
+batak_tournament = "4eL4eG9C6jco5GBafF81JdWZcFV92dSQoZjc1CgE2tUL"
+
+[programs.mainnet]
+batak_tournament = "4eL4eG9C6jco5GBafF81JdWZcFV92dSQoZjc1CgE2tUL"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
-wallet = "~/.config/solana/id.json"
+cluster = "devnet"
+wallet = "~/batak/solana-program/deploy-keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[hooks]

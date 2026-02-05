@@ -1,0 +1,49 @@
+{
+  "name": "Batak Third Place 🥉 - Season 1",
+  "symbol": "BTK",
+  "description": "Third Place of Batak Tournament - Bronze Tier",
+  "image": "https://example.com/metadata/bronze-tier.png",
+  "attributes": [
+    {
+      "trait_type": "Tournament ID",
+      "value": "0"
+    },
+    {
+      "trait_type": "Season",
+      "value": "1"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "3rd Place"
+    },
+    {
+      "trait_type": "Prize Tier",
+      "value": "Bronze"
+    },
+    {
+      "trait_type": "Game",
+      "value": "Batak"
+    },
+    {
+      "trait_type": "Blockchain",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Token Standard",
+      "value": "cNFT"
+    }
+  ],
+  "collection": {
+    "name": "Batak Champions",
+    "family": "Batak Tournament"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://example.com/metadata/bronze-tier.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

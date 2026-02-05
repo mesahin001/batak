@@ -1,0 +1,132 @@
+# 🚀 BATAK - DEPLOYMENT CONFIG
+# docker-compose.yml for single-server production
+
+version: '3.8'
+
+services:
+  # ============================================
+  # BATAK GAME SERVER
+  # ============================================
+  batak-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: batak-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://batak:${DB_PASSWORD}@postgres:5432/batak
+      - REDIS_URL=redis://redis:6379
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      - SOLANA_NETWORK=devnet
+      - PROGRAM_ID=${PROGRAM_ID}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - batak-network
+
+  # ============================================
+  # POSTGRESQL DATABASE
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: batak-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=batak
+      - POSTGRES_USER=batak
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./server/src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U batak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - batak-network
+
+  # ============================================
+  # REDIS CACHE
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: batak-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - batak-network
+
+  # ============================================
+  # NGINX REVERSE PROXY
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: batak-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - batak-server
+    networks:
+      - batak-network
+
+  # ============================================
+  # PGADMIN (Optional - for DB management)
+  # ============================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: batak-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - batak-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  batak-network:
+    driver: bridge

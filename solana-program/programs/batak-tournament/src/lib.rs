@@ -9,7 +9,7 @@ mod state;
 
 use instructions::*;
 
-declare_id!("BatakPK1111111111111111111111111111111111");
+declare_id!("5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h");
 
 #[program]
 pub mod batak_tournament {

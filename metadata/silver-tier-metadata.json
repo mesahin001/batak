@@ -1,0 +1,49 @@
+{
+  "name": "Batak Runner-Up 🥈 - Season 1",
+  "symbol": "BTK",
+  "description": "Runner-Up of Batak Tournament - 2nd Place Silver Tier",
+  "image": "https://example.com/metadata/silver-tier.png",
+  "attributes": [
+    {
+      "trait_type": "Tournament ID",
+      "value": "0"
+    },
+    {
+      "trait_type": "Season",
+      "value": "1"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "2nd Place"
+    },
+    {
+      "trait_type": "Prize Tier",
+      "value": "Silver"
+    },
+    {
+      "trait_type": "Game",
+      "value": "Batak"
+    },
+    {
+      "trait_type": "Blockchain",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Token Standard",
+      "value": "cNFT"
+    }
+  ],
+  "collection": {
+    "name": "Batak Champions",
+    "family": "Batak Tournament"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://example.com/metadata/silver-tier.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

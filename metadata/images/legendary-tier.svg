@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF0000"/>
+      <stop offset="20%" style="stop-color:#FF7F00"/>
+      <stop offset="40%" style="stop-color:#FFFF00"/>
+      <stop offset="60%" style="stop-color:#00FF00"/>
+      <stop offset="80%" style="stop-color:#0000FF"/>
+      <stop offset="100%" style="stop-color:#8B00FF"/>
+    </linearGradient>
+    <linearGradient id="holographic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff0080;stop-opacity:0.3"/>
+      <stop offset="50%" style="stop-color:#00ffff;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:0.3"/>
+    </linearGradient>
+    <filter id="glow4">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="sparkle">
+      <feGaussianBlur stdDeviation="1"/>
+    </filter>
+  </defs>
+
+  <!-- Background with holographic gradient -->
+  <rect width="512" height="512" fill="#0a0510"/>
+  <rect width="512" height="512" fill="url(#holographic)"/>
+
+  <!-- Rainbow holographic border -->
+  <rect x="15" y="15" width="482" height="482" fill="none" stroke="url(#rainbow)" stroke-width="10" filter="url(#glow4)"/>
+  <rect x="25" y="25" width="462" height="462" fill="none" stroke="url(#rainbow)" stroke-width="3" opacity="0.7"/>
+
+  <!-- Animated-looking starburst pattern -->
+  <g opacity="0.3">
+    <line x1="256" y1="30" x2="256" y2="100" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="256" y1="412" x2="256" y2="482" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="30" y1="256" x2="100" y2="256" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="412" y1="256" x2="482" y2="256" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="80" y1="80" x2="130" y2="130" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="382" y1="382" x2="432" y2="432" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="432" y1="80" x2="382" y2="130" stroke="url(#rainbow)" stroke-width="2"/>
+    <line x1="80" y1="432" x2="130" y2="382" stroke="url(#rainbow)" stroke-width="2"/>
+  </g>
+
+  <!-- Corner suits with rainbow effect -->
+  <text x="50" y="60" font-size="36" fill="url(#rainbow)" filter="url(#glow4)">♥</text>
+  <text x="440" y="60" font-size="36" fill="url(#rainbow)" filter="url(#glow4)">♦</text>
+  <text x="50" y="470" font-size="36" fill="url(#rainbow)" filter="url(#glow4)">♣</text>
+  <text x="440" y="470" font-size="36" fill="url(#rainbow)" filter="url(#glow4)">♠</text>
+
+  <!-- Crown icon -->
+  <g transform="translate(256, 100)">
+    <polygon points="-50,0 -25,-30 0,0 25,-30 50,0 40,20 -40,20" fill="url(#rainbow)" filter="url(#glow4)"/>
+    <circle cx="-35" cy="-10" r="8" fill="#FFD700"/>
+    <circle cx="0" cy="-20" r="10" fill="#FFD700"/>
+    <circle cx="35" cy="-10" r="8" fill="#FFD700"/>
+    <rect x="-40" y="20" width="80" height="10" fill="url(#rainbow)"/>
+  </g>
+
+  <!-- Main trophy - larger and more ornate -->
+  <g transform="translate(256, 210)">
+    <!-- Trophy base -->
+    <ellipse cx="0" cy="70" rx="60" ry="15" fill="url(#rainbow)"/>
+    <!-- Trophy stem -->
+    <rect x="-10" y="20" width="20" height="50" fill="url(#rainbow)"/>
+    <!-- Trophy cup -->
+    <path d="M-40,-40 Q-50,0 -30,30 L30,30 Q50,0 40,-40 Z" fill="url(#rainbow)" filter="url(#glow4)"/>
+    <ellipse cx="0" cy="-40" rx="40" ry="12" fill="#FFD700"/>
+    <!-- Handles -->
+    <ellipse cx="-45" cy="-10" rx="12" ry="20" fill="none" stroke="url(#rainbow)" stroke-width="4"/>
+    <ellipse cx="45" cy="-10" rx="12" ry="20" fill="none" stroke="url(#rainbow)" stroke-width="4"/>
+    <!-- Star emblem -->
+    <polygon points="0,-20 6,-8 20,-8 10,2 14,16 0,8 -14,16 -10,2 -20,-8 -6,-8" fill="#FFF" filter="url(#glow4)"/>
+  </g>
+
+  <!-- Main text - glowing -->
+  <text x="256" y="330" font-family="Georgia, serif" font-size="38" font-weight="bold" fill="url(#rainbow)" text-anchor="middle" filter="url(#glow4)">EFSANEVI</text>
+  <text x="256" y="375" font-family="Georgia, serif" font-size="38" font-weight="bold" fill="url(#rainbow)" text-anchor="middle" filter="url(#glow4)">ŞAMPİYON</text>
+
+  <!-- Special ribbon -->
+  <path d="M156,410 Q256,450 356,410 L356,450 L256,470 L156,450 Z" fill="url(#rainbow)" stroke="#FFD700" stroke-width="2"/>
+  <text x="256" y="445" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="#000" text-anchor="middle">LEGENDARY</text>
+
+  <!-- Sparkle particles -->
+  <g fill="#FFD700" opacity="0.9">
+    <circle cx="80" cy="100" r="3"/>
+    <circle cx="432" cy="80" r="2"/>
+    <circle cx="60" cy="220" r="2"/>
+    <circle cx="452" cy="200" r="3"/>
+    <circle cx="100" cy="380" r="2"/>
+    <circle cx="412" cy="350" r="3"/>
+    <circle cx="150" cy="150" r="2"/>
+    <circle cx="362" cy="120" r="2"/>
+    <circle cx="400" cy="300" r="2"/>
+    <circle cx="112" cy="280" r="2"/>
+  </g>
+
+  <!-- Season badge -->
+  <circle cx="256" cy="490" r="18" fill="url(#rainbow)" stroke="#FFD700" stroke-width="2"/>
+  <text x="256" y="496" font-family="Arial" font-size="12" font-weight="bold" fill="#FFF" text-anchor="middle">S1</text>
+</svg>

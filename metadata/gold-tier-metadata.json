@@ -1,0 +1,49 @@
+{
+  "name": "Batak Champion 🥇 - Season 1",
+  "symbol": "BTK",
+  "description": "Winner of Batak Tournament - 1st Place Gold Tier",
+  "image": "https://example.com/metadata/gold-tier.png",
+  "attributes": [
+    {
+      "trait_type": "Tournament ID",
+      "value": "0"
+    },
+    {
+      "trait_type": "Season",
+      "value": "1"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "1st Place"
+    },
+    {
+      "trait_type": "Prize Tier",
+      "value": "Gold"
+    },
+    {
+      "trait_type": "Game",
+      "value": "Batak"
+    },
+    {
+      "trait_type": "Blockchain",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Token Standard",
+      "value": "cNFT"
+    }
+  ],
+  "collection": {
+    "name": "Batak Champions",
+    "family": "Batak Tournament"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://example.com/metadata/gold-tier.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

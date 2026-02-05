@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Batak Tournament Game** - A multiplayer Turkish trick-taking card game with cNFT rewards on Solana. The game uses a server-authoritative architecture where all game logic runs server-side, with real-time WebSocket communication to React clients.
 
 **Tech Stack:**
-- Client: React 18 + Vite + Socket.IO Client + TypeScript
+- Client: React 18 + Vite + Socket.IO Client + TypeScript (UI with CSS, Phaser included but not actively used)
 - Server: Node.js + Express + Socket.IO + TypeScript
 - Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
 - Target: Solana Seeker Android app via PWA→APK (Bubblewrap)
@@ -223,6 +223,17 @@ const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'hum
 
 **Smart Contract:** `solana-program/programs/batak-tournament/`
 
+**Deployed Program ID (Devnet):** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h`
+
+**Deployed from:** Solana Playground (https://beta.solpg.io) or local Anchor CLI
+
+**Program Instructions:**
+- `create_tournament` - Create new tournament (authority only)
+- `register_player` - Player joins tournament
+- `start_tournament` - Start tournament when 4 players ready
+- `submit_match_result` - Server submits winner (authority only)
+- `mint_compressed_nft_reward` - Mint cNFT to winner (authority only)
+
 **Server Managers:** `server/src/solana/`
 - `TournamentManager.ts` - On-chain tournament operations
 - `CNFTMinter.ts` - Compressed NFT minting via Bubblegum
@@ -231,7 +242,9 @@ const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'hum
 **cNFT Flow:**
 1. Tournament finishes → Server determines winner
 2. `submitMatchResult()` - Records winner on-chain (server-signed only)
-3. `mintTournamentReward()` - Mints cNFT to winner's wallet
+3. `mintCompressedNftReward()` - Mints cNFT to winner's wallet (Bubblegum SDK)
+
+**Note:** The cNFT minting integration exists in code but is not yet called from the game completion flow. See `server/src/solana/CNFTMinter.ts:132` for mock implementation that needs real Arweave/Irys upload.
 
 ## Important File Locations
 
@@ -271,6 +284,22 @@ const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'hum
 - `server/src/types/game.ts` - Suit, Rank, Card, Player, Bid, GameState enums, BidType, RoundRecord
 - `server/src/types/socket.ts` - Socket event enums
 
+### Database (NEW - Not Yet Integrated)
+- `server/src/database/DatabaseManager.ts` - SQLite database manager for player stats and game history
+- `server/src/database/schema.sql` - Database schema (players, games, nft_rewards, leaderboard)
+- `server/src/database/README.md` - Integration guide with examples
+
+### Deployment & Production
+- `docker-compose.yml` - Full production stack (server + postgres + redis + nginx)
+- `server/Dockerfile` - Production container definition
+- `.env.production.example` - Production environment variables template
+- `docs/PRODUCTION-ROADMAP.md` - Detailed scaling strategy (Level 1-3)
+
+### NFT Assets
+- `metadata/images/` - NFT card images (gold-tier.png, silver-tier.png, bronze-tier.png, legendary-tier.png)
+- `metadata/*-tier-metadata.json` - NFT metadata templates for each tier
+- `client/public/images/` - PWA icons (icon-72x72.png through icon-512x512.png, maskable variants)
+
 ### Client Components
 - `client/src/components/GameRoom.tsx` - Main game UI, card display, bidding, round complete modal
   - **CRITICAL:** Uses `useWallet()` to get `publicKey` for identifying "my" player in 4-player PvP
@@ -279,6 +308,26 @@ const myPlayerIndex = currentGameState.players?.findIndex((p) => p.type === 'hum
 - `client/src/socket/SocketContext.tsx` - Socket connection management
 - `client/src/solana/WalletContext.tsx` - Wallet connection (includes mock fallback)
 - `client/src/types/game.ts` - Client-side type definitions
+
+**Note:** `client/src/phaser/` contains Phaser.js game engine code but the current implementation uses pure React + CSS for the main game UI. Phaser files are legacy/not actively used.
+
+## Project Completion Status
+
+**Overall:** ~85% complete
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Game Logic | ✅ 100% | GameStateMachine, all Batak rules implemented |
+| Bot AI | ✅ 100% | Easy/Normal/Hard strategies with HandAnalyzer |
+| Server API | ✅ 100% | Socket.IO, matchmaker, room management |
+| Client UI | ✅ 85% | React game room, wallet connect, PWA ready |
+| Solana Program | ✅ 80% | Deployed to devnet, tested, cNFT integration pending |
+| Database | 🟡 50% | Schema designed, manager written, not integrated |
+| NFT Assets | ✅ 100% | Gold/Silver/Bronze/Legendary card images created |
+| PWA Icons | ✅ 100% | All sizes (72-512px) including maskable |
+| APK Build | ❌ 0% | Script ready, not executed |
+
+**Deployed Solana Program ID:** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h` (devnet)
 
 ## Game Modes
 
@@ -370,56 +419,103 @@ socket.emit('play_card', { cardId });
 **Root Cause:** Player identification mismatch between server (publicKey) and client (socketId)
 
 **Server Fix:**
-1. `Matchmaker.ts:315` - Use `entry.publicKey.slice(0, 12)` for player name, NOT `socketId.slice(0, 12)`
-2. `Matchmaker.ts:338` - Store socket in `room.players` Map using `publicKey` as key: `room.players.set(entry.publicKey, entry.socket)`
-3. `SocketServer.ts:534-541` - `broadcastGameState()` iterates over `roomData.players` and uses `player.id` (publicKey) to find socket
-4. `SocketServer.ts:133` - `handlePlayCard()` uses `getPlayerIdFromSocket()` to map socket to publicKey
-5. `Matchmaker.ts:423-463` - Room management methods (`findPlayerRoom`, `addPlayerToRoom`, `removePlayerFromRoom`) use publicKey
+1. `Matchmaker.ts` - Use `entry.publicKey.slice(0, 12)` for player name, NOT `socketId.slice(0, 12)`
+2. `Matchmaker.ts` - Store socket in `room.players` Map using `publicKey` as key: `room.players.set(entry.publicKey, entry.socket)`
+3. `SocketServer.ts` - `broadcastGameState()` iterates over `roomData.players` and uses `player.id` (publicKey) to find socket
+4. `SocketServer.ts` - `handlePlayCard()` uses `getPlayerIdFromSocket()` to map socket to publicKey
+5. `Matchmaker.ts` - Room management methods use publicKey
 
 **Client Fix:**
-1. `GameRoom.tsx:343` - Find `myPlayerIndex` by matching `publicKey.toString()` with `player.id`, NOT by `p.type === 'human'`
+1. `GameRoom.tsx` - Find `myPlayerIndex` by matching `publicKey.toString()` with `player.id`, NOT by `p.type === 'human'`
 2. Add `useWallet` hook to get `publicKey`
 
 **Why this happened:** In 4-player PvP, all 4 players are human. Using `p.type === 'human'` always returns the first human player (index 0), so all clients saw player 0's perspective.
+
+## Issue: "Server restart loses all active games"
+**Root Cause:** Game state exists only in RAM (`Matchmaker.rooms` Map)
+
+**Current behavior:** Server restart = all active games lost, players disconnected
+
+**Solution (Future):** Implement Redis state persistence - see `docs/PRODUCTION-ROADMAP.md` Level 2
+- Snapshot game state to Redis every 10 seconds
+- On restart, recover active games from Redis
+- Auto-reconnect players to their games
 
 ## Environment Variables
 
 **Server (.env):**
 ```bash
 PORT=3001
+NODE_ENV=development
+
+# Solana Configuration (Optional for local test)
 SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_PRIVATE_KEY=[base58_encoded_key]
+SOLANA_PRIVATE_KEY=[base58_encoded_key]  # Server wallet for transactions
 SOLANA_NETWORK=devnet
-PROGRAM_ID=[program_id]
+
+# Program Configuration
+PROGRAM_ID=5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h  # Deployed devnet program
 MERKLE_TREE=[merkle_tree_address]
+
+# Game Configuration
+MAX_PLAYERS=4
 DEFAULT_BOT_DIFFICULTY=normal
+GAME_TIMEOUT=300000
 ```
 
 **Client (.env):**
 ```bash
 VITE_SERVER_URL=ws://localhost:3001
 VITE_SOLANA_NETWORK=devnet
-VITE_PROGRAM_ID=[program_id]
+VITE_PROGRAM_ID=5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h  # Must match server
 VITE_DEFAULT_BOT_DIFFICULTY=normal
 VITE_DEFAULT_BOT_COUNT=3
 ```
 
+**Production (.env.production):**
+See `.env.production.example` for full production configuration including database credentials and security settings.
+
 ## Common Development Tasks
+
+### Database Integration (Player Stats & Game History)
+
+**Location:** `server/src/database/DatabaseManager.ts`
+
+**Installing dependencies:**
+```bash
+cd server && npm install better-sqlite3
+```
+
+**Integration in server.ts:**
+```typescript
+import { DatabaseManager } from './database/DatabaseManager.js';
+const db = new DatabaseManager('./data/batak.db');
+```
+
+**When game completes - Update player stats:**
+```typescript
+db.updatePlayerStats(publicKey, tricksWon, bidAmount, finalScore, isWinner);
+db.completeGame(gameId, winnerPk, finalScores, roundHistory);
+```
+
+**When cNFT is minted - Record reward:**
+```typescript
+db.recordNftReward({ playerPk, tier, metadataUri, onChainMinted: true });
+```
+
+**Data persistence:**
+- Game state = In-memory (RAM) - Lost on server restart
+- Player stats = SQLite `players` table - Persistent
+- Game history = SQLite `games` table - Persistent
+- NFT rewards = SQLite `nft_rewards` table - Persistent
+
+**Production upgrade:** Replace SQLite with PostgreSQL + Redis for state recovery (see `docs/PRODUCTION-ROADMAP.md`)
 
 ### Adding a New Bot Difficulty Level
 1. Create new strategy file in `server/src/bots/strategies/`
 2. Implement `BotStrategy` interface
 3. Add to `BotManager.ts` difficulty mapping
 4. Update `config.ts` default difficulty
-
-### Modifying Bidding Rules
-- `GameStateMachine.ts` - Bid validation, state transitions
-- `SocketServer.ts` - Bidding completion logic
-- `TurnValidator.ts` - Bid validation rules
-
-### Modifying Scoring
-- `Scoring.ts` - Score calculation logic (Batak formula)
-- `GameStateMachine.ts` - `calculateScores()` call
 
 ### Debugging Game State Issues
 1. Add console.log in `GameStateMachine.ts` methods
@@ -430,4 +526,75 @@ VITE_DEFAULT_BOT_COUNT=3
 ### Testing Bot Behavior
 - Set `botDifficulty` in Lobby or use `DEFAULT_BOT_DIFFICULTY` env var
 - Set `botCount` (0-3) for number of bot opponents
-- Bot at index 0 plays first after bidding winner
+
+## Deployment & Production
+
+### Docker Deployment
+
+**Files:** `docker-compose.yml`, `server/Dockerfile`, `.env.production.example`
+
+**Production deployment:**
+```bash
+# Build and start all services
+docker-compose up -d
+
+# Services included:
+# - batak-server (Node.js app)
+# - postgres (database)
+# - redis (cache)
+# - nginx (reverse proxy)
+```
+
+### Production Architecture Levels
+
+See `docs/PRODUCTION-ROADMAP.md` for detailed scaling strategy:
+
+| Level | Stack | Capacity | Cost | Notes |
+|-------|-------|----------|------|-------|
+| 1 - MVP | Single server + SQLite | ~500 players | $20-30/mo | Server restart = game loss |
+| 2 - Improved | Multi-server + PostgreSQL + Redis | ~2000-5000 players | $50-150/mo | State recovery possible |
+| 3 - Full Production | Load balancer + monitoring + auto-scale | ~10,000+ players | $200-500/mo | Enterprise ready |
+
+**Current architecture:** Level 1 (MVP) - Single server with in-memory game state
+
+### Solana Program Deployment
+
+**Deployed Program ID (Devnet):** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h`
+
+**Using Solana Playground (recommended):**
+1. Go to https://beta.solpg.io
+2. Create project with "Anchor Rust"
+3. Copy code from `solana-program/playground/lib.rs`
+4. Build & Deploy
+5. Update `.env` with new program ID
+
+**Local deployment (requires Anchor CLI):**
+```bash
+cd solana-program
+anchor build
+anchor deploy
+```
+
+**Testing the program:**
+```bash
+# Via Playground test panel
+# Or locally:
+anchor test
+```
+
+**Playground test files:** `solana-program/playground/test-*.ts`
+- `test-final.ts` - Random tournament IDs (recommended for playground - avoids conflicts)
+- `test-minimal.ts` - Core functionality (Gold/Silver/Bronze tier creation, validation)
+- `test-simple.ts` - Uses same wallet for all players (no airdrops)
+
+### NFT Images
+
+**Location:** `metadata/images/`
+
+**Tiers created:**
+- `gold-tier.png` - 1st place (48KB)
+- `silver-tier.png` - 2nd place (46KB)
+- `bronze-tier.png` - 3rd place (44KB)
+- `legendary-tier.png` - Special edition (105KB)
+
+**Metadata templates:** `metadata/*-tier-metadata.json`

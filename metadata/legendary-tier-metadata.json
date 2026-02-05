@@ -1,0 +1,53 @@
+{
+  "name": "Efsanevi Batak Şampiyonu 👑 - Season 1",
+  "symbol": "BTK",
+  "description": "Legendary Champion - Ultimate Batak Tournament Winner",
+  "image": "https://example.com/metadata/legendary-tier.png",
+  "attributes": [
+    {
+      "trait_type": "Tournament ID",
+      "value": "0"
+    },
+    {
+      "trait_type": "Season",
+      "value": "1"
+    },
+    {
+      "trait_type": "Rank",
+      "value": "Legendary Champion"
+    },
+    {
+      "trait_type": "Prize Tier",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Game",
+      "value": "Batak"
+    },
+    {
+      "trait_type": "Blockchain",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Token Standard",
+      "value": "cNFT"
+    },
+    {
+      "trait_type": "Special Edition",
+      "value": "Holographic"
+    }
+  ],
+  "collection": {
+    "name": "Batak Champions",
+    "family": "Batak Tournament"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://example.com/metadata/legendary-tier.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}
