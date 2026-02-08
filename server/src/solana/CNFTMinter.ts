@@ -3,21 +3,14 @@
  * Metaplex Bubblegum ile turnuva kazananlarına compressed NFT mint eder.
  */
 
-import { PublicKey, Keypair } from '@solana/web3.js';
-import { BN } from '@coral-xyz/anchor';
-import {
-  createTree,
-  mintCompressedNft,
-  treeAddressFromMint,
-} from '@metaplex-foundation/mpl-bubblegum';
-import {
-  apiKey,
-  dasApi,
-  irysStorage,
-  wallet,
-  metaplex,
-} from '@metaplex-foundation/umi';
+import { PublicKey } from '@solana/web3.js';
+// @ts-ignore - optional dependency
+import { createTree, mintCompressedNft } from '@metaplex-foundation/mpl-bubblegum';
+// @ts-ignore - optional dependency
+import { dasApi, irysStorage } from '@metaplex-foundation/umi';
+// @ts-ignore - optional dependency
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+// @ts-ignore - optional dependency
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { SolanaClient } from './SolanaClient.js';
 import { CNFTMetadata } from '../types/tournament.js';
@@ -92,7 +85,7 @@ export class CNFTMinter {
         metadataUrl: metadataUri,
         name: metadata.name,
         symbol: metadata.symbol,
-        sellerFeeBasisPoints: 0, // No royalties for MVP
+        sellerFeeBasisPoints: 500, // 5% royalty
         creators: [
           {
             address: this.client.getPayer().publicKey as any,
@@ -125,8 +118,7 @@ export class CNFTMinter {
     try {
       // In production, would upload to Irys/Arweave
       // For MVP, using placeholder URI
-      const metadataJson = JSON.stringify(metadata);
-      const encoded = Buffer.from(metadataJson).toString('base64');
+      JSON.stringify(metadata);
 
       // Mock URI (replace with actual upload in production)
       const uri = `https://arweave.net/placeholder-${Date.now()}`;
@@ -144,7 +136,7 @@ export class CNFTMinter {
    */
   getTournamentMetadata(
     tournamentId: string,
-    winnerAddress: string,
+    _winnerAddress: string,
     rewardTier: 'bronze' | 'silver' | 'gold',
     date: Date
   ): CNFTMetadata {

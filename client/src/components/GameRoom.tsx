@@ -1,12 +1,12 @@
 /**
- * Oyun odası bileşeni.
- * Kart gösterimi, ihale arayüzü, trik görüntüleme ve tur sonu modallarını yönetir.
+ * Oyun odası bileşeni — Mobil-first yeniden tasarım.
+ * Masa düzeni: üst/sol/sağ rakipler, ortada trick alanı, altta yatay kart şeridi.
  */
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from '../socket/SocketContext';
-import { useWallet } from '../solana/WalletContext';
-import { Suit, GameClientState, RoundCompleteData, GameCompleteData, NextRoundStartingData } from '../types/game';
+import { useAuth } from '../auth/AuthContext';
+import { GameClientState, RoundCompleteData, GameCompleteData } from '../types/game';
 import './GameRoom.css';
 
 interface GameRoomProps {
@@ -16,22 +16,21 @@ interface GameRoomProps {
   onLeave: () => void;
 }
 
-type SortOption = 'none' | 'suit' | 'rank';
-
 const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, onLeave }) => {
   const { socket } = useSocket();
-  const { publicKey } = useWallet();
+  const { playerId } = useAuth();
   const [currentGameState, setCurrentGameState] = useState<GameClientState>(gameState);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('suit');
+  const [showScoreboard, setShowScoreboard] = useState(false);
   const [roundCompleteData, setRoundCompleteData] = useState<RoundCompleteData | null>(null);
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null);
   const [isPlayingCard, setIsPlayingCard] = useState(false);
+  const [isCollectingTrick, setIsCollectingTrick] = useState(false);
+  const [scorePopups, setScorePopups] = useState<Record<string, number>>({});
 
-  // Use ref for immediate blocking - synchronously prevents double-clicks
   const isPlayingCardRef = useRef(false);
-  // Fallback timeout ref to clear blocking if server doesn't respond
-  const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevScoresRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (!socket) return;
@@ -40,7 +39,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       setSelectedCard(null);
       setIsPlayingCard(false);
       isPlayingCardRef.current = false;
-      // Clear any pending fallback timeout
       if (fallbackTimeoutRef.current) {
         clearTimeout(fallbackTimeoutRef.current);
         fallbackTimeoutRef.current = null;
@@ -48,56 +46,64 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     };
 
     const handleGameStateUpdate = (state: GameClientState) => {
-      console.log('Game state update:', state);
-      setCurrentGameState(state);
+      setCurrentGameState(prev => {
+        if (prev && prev.currentTrick?.cards?.length === 4 && state.currentTrick?.cards?.length === 0) {
+          setIsCollectingTrick(true);
+          setTimeout(() => setIsCollectingTrick(false), 800);
+        }
+        return state;
+      });
+
+      if (state.players) {
+        const newPopups: Record<string, number> = {};
+        for (const player of state.players) {
+          const prevScore = prevScoresRef.current[player.id];
+          if (prevScore !== undefined && player.totalScore !== prevScore) {
+            newPopups[player.id] = player.totalScore - prevScore;
+          }
+          prevScoresRef.current[player.id] = player.totalScore ?? 0;
+        }
+        if (Object.keys(newPopups).length > 0) {
+          setScorePopups(newPopups);
+          setTimeout(() => setScorePopups({}), 1500);
+        }
+      }
+
       clearPlayingState();
 
-      // Clear selected suit when entering bidding phase for İhaleli Batak
-      // For Koz Maça, always set to spades (trump is always spades)
       if (state.state === 'bidding') {
         if (state.gameMode === 'koz_maca') {
           setSelectedSuit('spades');
-          console.log('[handleGameStateUpdate] Set selectedSuit to spades for Koz Maça');
         } else {
           setSelectedSuit(null);
-          console.log('[handleGameStateUpdate] Cleared selectedSuit for İhaleli Batak');
         }
       }
     };
 
-    const handleCardPlayed = (data: any) => {
-      console.log('[Card Played]', data);
-      // Immediately clear blocking state when we receive card played confirmation
-      // This is faster than waiting for full game_state_update
+    const handleCardPlayed = () => {
       clearPlayingState();
     };
 
-    const handleTrickComplete = (data: any) => {
-      console.log('Trick complete:', data);
+    const handleTrickComplete = () => {
       clearPlayingState();
     };
 
     const handleRoundComplete = (data: RoundCompleteData) => {
-      console.log('Round complete:', data);
       setRoundCompleteData(data);
       onRoundEnd(data);
     };
 
-    const handleNextRoundStarting = (data: NextRoundStartingData) => {
-      console.log('Next round starting:', data);
-      setRoundCompleteData(null); // Clear the round complete modal
-      setSelectedSuit(null); // Clear selected suit for new round bidding
+    const handleNextRoundStarting = () => {
+      setRoundCompleteData(null);
+      setSelectedSuit(null);
     };
 
     const handleGameComplete = (data: GameCompleteData) => {
-      console.log('Game complete:', data);
       onGameEnd(data);
     };
 
     const handleError = (error: any) => {
-      console.log('[Socket Error]', error);
       clearPlayingState();
-      // Show error message to user
       const errorMessage = error?.message || 'Kart oynatılamadı. Lütfen yeniden dene.';
       alert(errorMessage);
     };
@@ -109,6 +115,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     socket.on('next_round_starting', handleNextRoundStarting);
     socket.on('game_complete', handleGameComplete);
     socket.on('game_error', handleError);
+    socket.on('player_replaced', () => {});
 
     return () => {
       socket.off('game_state_update', handleGameStateUpdate);
@@ -118,12 +125,14 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       socket.off('next_round_starting', handleNextRoundStarting);
       socket.off('game_complete', handleGameComplete);
       socket.off('game_error', handleError);
-      // Cleanup any pending timeout on unmount
+      socket.off('player_replaced');
       if (fallbackTimeoutRef.current) {
         clearTimeout(fallbackTimeoutRef.current);
       }
     };
   }, [socket, onRoundEnd, onGameEnd]);
+
+  // --- Handlers ---
 
   const handleLeaveGame = () => {
     if (confirm('Oyundan ayrılmak istediğine emin misin?')) {
@@ -138,52 +147,23 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   };
 
   const handleCardClick = (cardId: string) => {
-    // During bidding, cards are just for viewing - don't play them
     if (isBidding) return;
-
     if (!currentGameState || !socket) return;
+    if (isPlayingCardRef.current) return;
+    if (isPlayingCard || selectedCard !== null) return;
 
-    // CRITICAL: Use ref for IMMEDIATE blocking - prevents race condition
-    // Ref updates synchronously, state updates asynchronously
-    if (isPlayingCardRef.current) {
-      console.log('[handleCardClick] Already playing a card (ref check), ignoring double-click');
-      return;
-    }
+    const myIdx = getMyPlayerIndex();
+    if (myIdx === undefined || myIdx === -1) return;
+    if (currentGameState.currentPlayerIndex !== myIdx) return;
 
-    // Also check state for defense in depth
-    if (isPlayingCard || selectedCard !== null) {
-      console.log('[handleCardClick] Card already being played (state check)', { isPlayingCard, selectedCard });
-      return;
-    }
-
-    // Find my player index by matching my wallet publicKey with player.id
-    const myPlayerIndex = publicKey
-      ? currentGameState.players?.findIndex((p) => p.id === publicKey.toString())
-      : currentGameState.players?.findIndex((p) => p.type === 'human'); // Fallback for bots
-
-    // Check if it's player's turn before doing anything
-    if (myPlayerIndex === undefined || myPlayerIndex === -1) {
-      return;
-    }
-
-    if (currentGameState.currentPlayerIndex !== myPlayerIndex) {
-      // Don't show alert, just silently ignore - UI shows disabled state
-      return;
-    }
-
-    // Mark that we're playing a card (prevents double-clicks)
-    // Ref updates synchronously for immediate blocking
     isPlayingCardRef.current = true;
     setIsPlayingCard(true);
     setSelectedCard(cardId);
 
-    // Fallback timeout: If server doesn't respond within 2 seconds, clear blocking
-    // This prevents UI from getting stuck if events are lost
     if (fallbackTimeoutRef.current) {
       clearTimeout(fallbackTimeoutRef.current);
     }
     fallbackTimeoutRef.current = setTimeout(() => {
-      console.warn('[handleCardClick] Fallback timeout triggered - clearing playing state');
       setSelectedCard(null);
       setIsPlayingCard(false);
       isPlayingCardRef.current = false;
@@ -194,65 +174,61 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   };
 
   const handleBid = (suit: string, amount: number) => {
-    console.log('[handleBid] Called with suit:', suit, 'amount:', amount, 'socket:', !!socket);
-    if (!socket) {
-      console.error('[handleBid] Socket is undefined!');
-      return;
-    }
+    if (!socket) return;
     socket.emit('bid_trump', { suit, amount });
-    console.log('[handleBid] Emitted bid_trump event');
   };
 
   const handleSuitSelect = (suit: string) => {
-    console.log('[handleSuitSelect] Selected suit:', suit);
     setSelectedSuit(suit);
-    // Force a small delay to ensure state update
-    setTimeout(() => {
-      console.log('[handleSuitSelect] selectedSuit state:', suit);
-    }, 100);
   };
 
-  // Check if bid is valid
-  // Koz Maça: Independent bidding (can bid any amount 1-13)
-  // İhaleli Batak: Must bid higher than current highest for selected suit
-  const isValidBid = (amount: number): boolean => {
-    // Pass (0) is always valid
-    if (amount === 0) return true;
+  // --- Helpers ---
 
-    // Koz Maça: Free bidding 1-13
+  const getMyPlayerIndex = (): number => {
+    if (!currentGameState?.players) return -1;
+    if (playerId) {
+      return currentGameState.players.findIndex((p) => p.id === playerId);
+    }
+    return currentGameState.players.findIndex((p) => p.type === 'human');
+  };
+
+  const getOpponentPositions = () => {
+    const myIdx = getMyPlayerIndex();
+    if (myIdx === -1 || !currentGameState?.players) return { left: null, top: null, right: null };
+    const players = currentGameState.players;
+    return {
+      left:  players[(myIdx + 1) % 4] || null,
+      top:   players[(myIdx + 2) % 4] || null,
+      right: players[(myIdx + 3) % 4] || null,
+    };
+  };
+
+  /** Map playerId to trick slot position */
+  const getTrickSlotForPlayer = (trickPlayerId: string): string => {
+    const myIdx = getMyPlayerIndex();
+    if (myIdx === -1 || !currentGameState?.players) return 'bottom';
+    const playerIdx = currentGameState.players.findIndex(p => p.id === trickPlayerId);
+    if (playerIdx === -1) return 'bottom';
+    const relative = (playerIdx - myIdx + 4) % 4;
+    const slots = ['bottom', 'left', 'top', 'right'];
+    return slots[relative];
+  };
+
+  const isValidBid = (amount: number): boolean => {
+    if (amount === 0) return true;
     if (currentGameState.gameMode === 'koz_maca') {
       return amount >= 1 && amount <= 13;
     }
-
-    // İhaleli Batak with suit selection
-    // Must bid higher than current highest for the selected suit
-    const suit = selectedSuit; // Capture in local variable
-    const highestBid = suit
-      ? getHighestBidForSuit(suit)
-      : getHighestBid();
-
-    const isValid = amount > highestBid;
-
-    console.log('[isValidBid]', {
-      amount,
-      selectedSuit: suit,
-      highestBid,
-      gameMode: currentGameState.gameMode,
-      isMyTurn,
-      allBids: currentGameState.bids,
-      result: isValid
-    });
-
-    return isValid;
+    const suit = selectedSuit;
+    const highestBid = suit ? getHighestBidForSuit(suit) : getHighestBid();
+    return amount > highestBid;
   };
 
-  // Get current highest bid amount
   const getHighestBid = (): number => {
     if (!currentGameState.bids || currentGameState.bids.length === 0) return 0;
     return Math.max(...currentGameState.bids.map((b) => b.amount));
   };
 
-  // Get current highest bid for a specific suit
   const getHighestBidForSuit = (suit: string): number => {
     if (!currentGameState.bids || currentGameState.bids.length === 0) return 0;
     const suitBids = currentGameState.bids.filter((b) => b.suit === suit);
@@ -261,76 +237,50 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   };
 
   const getSuitSymbol = (suit: string) => {
-    const symbols: Record<string, string> = {
-      spades: '♠',
-      hearts: '♥',
-      diamonds: '♦',
-      clubs: '♣'
-    };
+    const symbols: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
     return symbols[suit] || suit;
   };
 
-  // Get the bid for a specific player
-  const getPlayerBid = (playerId: string) => {
-    if (!currentGameState.bids) return null;
-    return currentGameState.bids.find((b: any) => b.playerId === playerId);
-  };
-
-  // Format bid display for a player
-  const formatPlayerBid = (playerId: string) => {
-    const bid = getPlayerBid(playerId);
-    if (!bid) return null;
-    if (bid.amount === 0) return 'Pas';
-    // In İhaleli Batak, show suit symbol (unless it's spades which is default for Koz Maça)
-    if (currentGameState.gameMode === 'ihaleli_batak' && bid.suit && bid.suit !== 'spades') {
-      return `${bid.amount}${getSuitSymbol(bid.suit)}`;
-    }
-    return `${bid.amount}`;
-  };
-
   const getSuitColor = (suit: string) => {
-    const colors: Record<string, string> = {
-      spades: '#1e40af',
-      hearts: '#dc2626',
-      diamonds: '#b45309',
-      clubs: '#15803d'
-    };
+    const colors: Record<string, string> = { spades: '#1e40af', hearts: '#dc2626', diamonds: '#b45309', clubs: '#15803d' };
     return colors[suit] || '#000000';
   };
 
   const getRankSymbol = (rank: number | undefined) => {
     if (rank === undefined) return '?';
     const symbols: Record<number, string> = {
-      2: '2', 3: '3', 4: '4', 5: '5', 6: '6',
-      7: '7', 8: '8', 9: '9', 10: '10',
+      2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10',
       11: 'J', 12: 'Q', 13: 'K', 14: 'A'
     };
     return symbols[rank] || rank.toString();
   };
 
-  // Sort cards
+  const getPlayerBid = (pid: string) => {
+    if (!currentGameState.bids) return null;
+    return currentGameState.bids.find((b: any) => b.playerId === pid);
+  };
+
+  const formatPlayerBid = (pid: string) => {
+    const bid = getPlayerBid(pid);
+    if (!bid) return null;
+    if (bid.amount === 0) return 'Pas';
+    if (currentGameState.gameMode === 'ihaleli_batak' && bid.suit && bid.suit !== 'spades') {
+      return `${bid.amount}${getSuitSymbol(bid.suit)}`;
+    }
+    return `${bid.amount}`;
+  };
+
   const sortCards = (cards: any[]) => {
     if (!cards) return [];
-
-    const suitOrder = { clubs: 0, diamonds: 1, spades: 2, hearts: 3 };
-
-    const sorted = [...cards].sort((a, b) => {
-      if (sortBy === 'suit') {
-        // Sort by suit first, then by rank descending
-        const suitDiff = (suitOrder[a.suit] || 0) - (suitOrder[b.suit] || 0);
-        if (suitDiff !== 0) return suitDiff;
-        return b.rank - a.rank; // Descending rank
-      } else if (sortBy === 'rank') {
-        // Sort by rank descending, then by suit
-        if (b.rank !== a.rank) return b.rank - a.rank;
-        return (suitOrder[a.suit] || 0) - (suitOrder[b.suit] || 0);
-      }
-      // No sorting - keep original order
-      return 0;
+    const suitOrder: Record<string, number> = { clubs: 0, diamonds: 1, spades: 2, hearts: 3 };
+    return [...cards].sort((a, b) => {
+      const suitDiff = (suitOrder[a.suit] || 0) - (suitOrder[b.suit] || 0);
+      if (suitDiff !== 0) return suitDiff;
+      return b.rank - a.rank;
     });
-
-    return sorted;
   };
+
+  // --- Derived state ---
 
   if (!currentGameState) {
     return (
@@ -343,289 +293,268 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     );
   }
 
-  // Find my player index by matching my wallet publicKey with player.id
-  // This is critical for 4-player PvP where all players are human
-  const myPlayerIndex = publicKey
-    ? currentGameState.players?.findIndex((p) => p.id === publicKey.toString())
-    : currentGameState.players?.findIndex((p) => p.type === 'human'); // Fallback for bots
-
-  const myPlayer = currentGameState.players?.[myPlayerIndex ?? -1];
+  const myPlayerIndex = getMyPlayerIndex();
+  const myPlayer = currentGameState.players?.[myPlayerIndex];
   const isMyTurn = currentGameState.currentPlayerIndex === myPlayerIndex;
   const isBidding = currentGameState.state === 'bidding';
+  const isScoring = currentGameState.state === 'scoring' || currentGameState.state === 'finished';
   const currentRound = currentGameState.currentRound ?? 1;
   const totalRounds = currentGameState.totalRounds ?? 5;
-
-  // Debug logging for bidding
-  console.log('[Bidding Debug]', {
-    myPlayerIndex,
-    currentPlayerIndex: currentGameState.currentPlayerIndex,
-    isMyTurn,
-    isBidding,
-    bids: currentGameState.bids,
-    highestBid: getHighestBid(),
-    gameMode: currentGameState.gameMode
-  });
-
-  // Get and sort my hand
   const myHand = myPlayer?.hand ? sortCards(myPlayer.hand) : [];
+  const opponents = getOpponentPositions();
+  const trickCards = currentGameState.currentTrick?.cards || [];
 
-  // Debug: log first card to see structure
-  if (myHand.length > 0 && myHand[0].id !== 'hidden-hidden-0') {
-    console.log('[GameRoom] First card:', myHand[0]);
-    console.log('[GameRoom] Card rank:', myHand[0].rank, 'type:', typeof myHand[0].rank);
-  }
+  // --- Render helpers ---
+
+  const renderOpponentSlot = (player: any) => {
+    if (!player) return null;
+    const playerIndex = currentGameState.players?.findIndex(p => p.id === player.id) ?? -1;
+    const isActive = currentGameState.currentPlayerIndex === playerIndex;
+    return (
+      <div className={`opponent-slot ${isActive ? 'active' : ''}`}>
+        <span className="opp-icon">{player.type === 'bot' ? '🤖' : '👤'}</span>
+        <span className="opp-name">{player.name}</span>
+        <span className="opp-tricks">{player.tricksWon} el</span>
+        {formatPlayerBid(player.id) && (
+          <span className="opp-bid">{formatPlayerBid(player.id)}</span>
+        )}
+        {scorePopups[player.id] !== undefined && (
+          <div className={`score-popup ${scorePopups[player.id] >= 0 ? 'positive' : 'negative'}`}>
+            {scorePopups[player.id] >= 0 ? '+' : ''}{scorePopups[player.id]}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="game-room">
-      {/* Header */}
-      <div className="game-header">
-        <h2>🃏 Batak</h2>
-        <div className="game-info">
-          {currentGameState.currentRound && currentGameState.totalRounds && (
-            <span className="round-indicator">
-              Round {currentRound} / {totalRounds}
-            </span>
-          )}
+      {/* ===== Mini Header (32px) ===== */}
+      <div className="game-header-mini">
+        <div className="header-left">
+          <span className="header-round">R{currentRound}/{totalRounds}</span>
           {currentGameState.trumpSuit && (
-            <span className="trump-indicator">
-              Trump: <span className={`suit-${currentGameState.trumpSuit}`}>
+            <span className="header-trump">
+              <span className="trump-sym" style={{ color: getSuitColor(currentGameState.trumpSuit) }}>
                 {getSuitSymbol(currentGameState.trumpSuit)}
               </span>
+              Koz
             </span>
           )}
-          <span className="state-indicator">
-            {currentGameState.state?.toUpperCase()}
-          </span>
+          <span className="header-trick-count">{currentGameState.tricks ?? 0}.el</span>
+          <span className="header-state">{currentGameState.state}</span>
         </div>
-        <button className="btn-secondary" onClick={handleLeaveGame}>
-          Çıkış
-        </button>
+        <button className="btn-hamburger" onClick={() => setShowScoreboard(true)}>☰</button>
       </div>
 
-      {/* Game Table */}
-      <div className={`game-table ${isBidding ? 'has-bidding' : ''}`}>
-        {/* Other Players */}
-        <div className="other-players">
-          {currentGameState.players?.map((player, index) => {
-            if (index === myPlayerIndex) return null;
-            return (
-              <div
-                key={player.id}
-                className={`player-area ${currentGameState.currentPlayerIndex === index ? 'active' : ''}`}
-              >
-                <div className="player-avatar">
-                  {player.type === 'bot' ? '🤖' : '👤'}
-                </div>
-                <div className="player-info">
-                  <span className="player-name">{player.name}</span>
-                  <span className="player-stats">{player.tricksWon} tricks</span>
-                  {formatPlayerBid(player.id) && (
-                    <span className="player-bid">İhale: {formatPlayerBid(player.id)}</span>
-                  )}
-                  {player.totalScore !== undefined && (
-                    <span className="player-total-score">Total: {player.totalScore}</span>
-                  )}
-                </div>
-                <div className="player-cards">{player.handSize} cards</div>
-              </div>
-            );
-          })}
+      {/* ===== Game Table (CSS Grid 3x3) ===== */}
+      <div className="game-table">
+        {/* Top opponent */}
+        <div className="opponent-top">
+          {renderOpponentSlot(opponents.top)}
         </div>
 
-        {/* Center Play Area */}
-        <div className="play-area">
-          {currentGameState.state === 'scoring' || currentGameState.state === 'finished' ? (
-            <div className="play-area-placeholder">
-              <div className="game-ending">
-                <div className="spinner"></div>
-                <p>Skor hesaplanıyor...</p>
-              </div>
+        {/* Left opponent */}
+        <div className="opponent-left">
+          {renderOpponentSlot(opponents.left)}
+        </div>
+
+        {/* Center: Trick area (also hosts bidding overlay) */}
+        <div className="trick-area">
+          {isScoring ? (
+            <div className="trick-scoring">
+              <div className="spinner"></div>
+              <p>Skor hesaplanıyor...</p>
             </div>
-          ) : currentGameState.currentTrick?.cards?.length > 0 ? (
-            <div className="trick-cards">
-              {currentGameState.currentTrick.cards.map((play, i) => (
-                <div key={i} className="played-card">
-                  <div className="card">
-                    <span className="card-rank">{getRankSymbol(play.card.rank)}</span>
-                    <span className="card-suit" style={{ color: getSuitColor(play.card.suit) }}>
-                      {getSuitSymbol(play.card.suit)}
-                    </span>
-                  </div>
+          ) : isBidding ? (
+            <div className="bidding-overlay">
+              <div className="bid-header">İhale - Kaç El?</div>
+              <div className="bid-info">
+                {currentGameState.gameMode === 'koz_maca'
+                  ? 'Koz Maça: ♠ koz, sadece el sayısı'
+                  : selectedSuit
+                    ? `${getSuitSymbol(selectedSuit)} koz — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
+                    : 'Önce koz rengi seç'
+                }
+              </div>
+
+              {/* Suit selection (İhaleli Batak only) */}
+              {currentGameState.gameMode === 'ihaleli_batak' && !selectedSuit && (
+                <div className="suit-selection">
+                  {['spades', 'hearts', 'diamonds', 'clubs'].map((suit) => (
+                    <button
+                      key={suit}
+                      className="suit-btn"
+                      onClick={() => handleSuitSelect(suit)}
+                      disabled={!isMyTurn}
+                    >
+                      <span className="suit-symbol" style={{ color: getSuitColor(suit) }}>
+                        {getSuitSymbol(suit)}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* Bid numbers */}
+              {(currentGameState.gameMode === 'koz_maca' || selectedSuit) && (
+                <>
+                  <div className="bid-numbers">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((amount) => (
+                      <button
+                        key={amount}
+                        className="bid-num-btn"
+                        onClick={() => handleBid(selectedSuit || 'spades', amount)}
+                        disabled={!isMyTurn || !isValidBid(amount)}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="bid-actions-row">
+                    <button className="btn-pass" onClick={() => handleBid(selectedSuit || 'spades', 0)} disabled={!isMyTurn}>
+                      Pas Geç
+                    </button>
+                    {currentGameState.gameMode === 'ihaleli_batak' && selectedSuit && (
+                      <button className="btn-change-suit" onClick={() => setSelectedSuit(null)} disabled={!isMyTurn}>
+                        Rengi Değiştir
+                      </button>
+                    )}
+                  </div>
+                  {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
+                    <div className="current-highest-bid">
+                      En Yüksek: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : trickCards.length > 0 ? (
+            <div className={`trick-slots ${isCollectingTrick ? 'collecting' : ''}`}>
+              {trickCards.map((play, i) => {
+                const slot = getTrickSlotForPlayer(play.playerId);
+                return (
+                  <div key={i} className={`trick-slot trick-slot-${slot}`}>
+                    <div className="trick-card">
+                      <span className="tc-rank">{getRankSymbol(play.card.rank)}</span>
+                      <span className="tc-suit" style={{ color: getSuitColor(play.card.suit) }}>
+                        {getSuitSymbol(play.card.suit)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="play-area-placeholder">
+            <div className={`trick-status ${isMyTurn ? 'my-turn' : ''}`}>
               {isMyTurn ? (
-                <span>Sıra sende - Kart seç</span>
+                <span>Sıra sende</span>
               ) : (
-                <span className="waiting-text">
-                  {currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || 'Rakip'} oynuyor...
+                <span>
+                  <span className="waiting-name">
+                    {currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || 'Rakip'}
+                  </span> oynuyor
                 </span>
               )}
             </div>
           )}
         </div>
 
-        {/* My Hand - Show in both BIDDING and PLAYING, hide when game over */}
-        {currentGameState.state !== 'scoring' && currentGameState.state !== 'finished' && (
-          <div className={`my-hand ${isBidding ? 'scroll-hint' : ''}`}>
-            <div className="hand-info">
-              <span>{myPlayer?.name}</span>
-              <span>{myPlayer?.tricksWon} tricks</span>
-              {formatPlayerBid(myPlayer?.id || '') && (
-                <span>İhale: {formatPlayerBid(myPlayer?.id || '')}</span>
-              )}
-              <span>Round: {myPlayer?.score ?? 0}</span>
-              {myPlayer?.totalScore !== undefined && (
-                <span>Total: {myPlayer.totalScore}</span>
-              )}
-              {!isBidding && (
-                <div className="sort-controls">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="sort-select"
-                  >
-                    <option value="suit">Sırala: Tür</option>
-                    <option value="rank">Sırala: Değer</option>
-                    <option value="none">Sırala: Yok</option>
-                  </select>
-                </div>
-              )}
-            </div>
-            <div className="cards">
-              {myHand.map((card, cardIndex) => (
-                <div
-                  key={card.id}
-                  className={`card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
-                  onClick={() => handleCardClick(card.id)}
-                  title={`${getRankSymbol(card.rank)} ${getSuitSymbol(card.suit)}`}
-                  style={{ '--card-index': cardIndex } as React.CSSProperties}
-                >
-                  <span className="card-rank">{getRankSymbol(card.rank)}</span>
-                  <span className="card-suit" style={{ color: getSuitColor(card.suit) }}>
-                    {getSuitSymbol(card.suit)}
-                  </span>
-                </div>
-              ))}
-            </div>
+        {/* Right opponent */}
+        <div className="opponent-right">
+          {renderOpponentSlot(opponents.right)}
+        </div>
+
+        {/* My info bar */}
+        <div className="my-info-bar">
+          <div className="info-item">
+            <span className="info-value name">{myPlayer?.name}</span>
           </div>
-        )}
+          <div className="info-item">
+            <span className="info-label">El:</span>
+            <span className="info-value tricks">{myPlayer?.tricksWon ?? 0}</span>
+          </div>
+          {formatPlayerBid(myPlayer?.id || '') && (
+            <div className="info-item">
+              <span className="info-label">İhale:</span>
+              <span className="info-value bid">{formatPlayerBid(myPlayer?.id || '')}</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">S:</span>
+            <span className="info-value score">{myPlayer?.totalScore ?? 0}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Bidding Panel */}
-      {isBidding && (
-        <div className="bidding-panel">
-          <h3>İhale - Kaç Trick Alacaksın?</h3>
-          <div className="bid-info">
-            {currentGameState.gameMode === 'koz_maca'
-              ? 'Koz Maça: Maça koz, sadece el sayısı'
-              : selectedSuit
-                ? `${getSuitSymbol(selectedSuit)} koz - Kaç el? (Min: ${getHighestBidForSuit(selectedSuit) + 1})`
-                : 'Önce koz rengi seçin'
-            }
-          </div>
-
-          {/* İhaleli Batak - Suit Selection */}
-          {currentGameState.gameMode === 'ihaleli_batak' && !selectedSuit && (
-            <div className="suit-selection">
-              {['spades', 'hearts', 'diamonds', 'clubs'].map((suit) => (
-                <button
-                  key={suit}
-                  className={`suit-btn ${!isMyTurn ? 'disabled' : ''}`}
-                  onClick={() => handleSuitSelect(suit)}
-                  disabled={!isMyTurn}
-                  title={`${getSuitSymbol(suit)} koz`}
-                >
-                  <span className="suit-symbol" style={{ color: getSuitColor(suit) }}>
-                    {getSuitSymbol(suit)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Trick Count Selection - Show when suit is selected OR Koz Maça */}
-          {(currentGameState.gameMode === 'koz_maca' || selectedSuit) && (
-            <>
-              <div className="bid-amounts-single">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((amount) => (
-                  <button
-                    key={amount}
-                    className="bid-btn-large"
-                    onClick={() => handleBid(selectedSuit || 'spades', amount)}
-                    disabled={!isMyTurn || !isValidBid(amount)}
-                    title={!isValidBid(amount) ? 'Geçersiz ihale' : `${amount} el`}
-                  >
-                    {amount}
-                  </button>
-                ))}
-              </div>
-              <button className="btn-pass" onClick={() => handleBid(selectedSuit || 'spades', 0)} disabled={!isMyTurn}>
-                Pas Geç
-              </button>
-              {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
-                <div className="current-highest-bid">
-                  En Yüksek İhale: {getHighestBid()}/{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Change suit selection (İhaleli Batak) */}
-          {currentGameState.gameMode === 'ihaleli_batak' && selectedSuit && (
-            <button
-              className="btn-change-suit"
-              onClick={() => setSelectedSuit(null)}
-              disabled={!isMyTurn}
+      {/* ===== My Hand Strip (horizontal scroll, overlapping cards) ===== */}
+      {!isScoring && (
+        <div className={`my-hand-strip ${isMyTurn && !isBidding ? 'my-turn' : ''}`}>
+          {myHand.map((card, cardIndex) => (
+            <div
+              key={card.id}
+              className={`hand-card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
+              onClick={() => handleCardClick(card.id)}
+              style={{ '--card-i': cardIndex } as React.CSSProperties}
             >
-              ← Rengi Değiştir
-            </button>
-          )}
+              <span className="hc-rank">{getRankSymbol(card.rank)}</span>
+              <span className="hc-suit" style={{ color: getSuitColor(card.suit) }}>
+                {getSuitSymbol(card.suit)}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Score Board - Enhanced with round and total scores */}
-      <div className="score-board">
-        <h3>Skorlar</h3>
-        {currentGameState.players?.map((player, index) => (
-          <div key={player.id} className="score-item">
-            <div className="score-name">{player.name}</div>
-            <div className="score-values">
-              <span className="score-round">Round: {player.score ?? 0}</span>
-              {player.totalScore !== undefined && (
-                <span className="score-total">Total: {player.totalScore}</span>
-              )}
-            </div>
+      {/* ===== Scoreboard Overlay (hamburger toggle) ===== */}
+      {showScoreboard && (
+        <>
+          <div className="scoreboard-backdrop" onClick={() => setShowScoreboard(false)} />
+          <div className="scoreboard-panel">
+            <h3>Skorlar</h3>
+            {currentGameState.players?.map((player) => (
+              <div key={player.id} className="sb-player">
+                <span className={`sb-name ${player.id === playerId ? 'me' : ''}`}>{player.name}</span>
+                <div className="sb-scores">
+                  <span className="sb-round">Round: {player.score ?? 0}</span>
+                  {player.totalScore !== undefined && (
+                    <span className="sb-total">Total: {player.totalScore}</span>
+                  )}
+                </div>
+                <span className="sb-tricks">{player.tricksWon} el kazandı</span>
+              </div>
+            ))}
+            <button className="btn-leave" onClick={handleLeaveGame}>
+              Oyundan Çık
+            </button>
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
-      {/* Round Complete Modal */}
+      {/* ===== Round Complete Modal (compact) ===== */}
       {roundCompleteData && (
         <div className="round-complete-modal">
           <div className="round-complete-content">
-            <h2>Round {roundCompleteData.roundNumber} Complete!</h2>
-            <p>Round {roundCompleteData.roundNumber} of {roundCompleteData.totalRounds}</p>
+            <h2>Round {roundCompleteData.roundNumber} Bitti!</h2>
+            <p className="round-sub">Round {roundCompleteData.roundNumber} / {roundCompleteData.totalRounds}</p>
 
             <div className="round-scores">
-              <h3>Round Scores</h3>
+              <h3>Skorlar</h3>
               {roundCompleteData.players.map((player) => (
                 <div key={player.id} className="round-score-item">
-                  <span>{player.name}</span>
-                  <span>+{player.score} (Total: {player.totalScore})</span>
+                  <span className="rs-name">{player.name}</span>
+                  <span className="rs-score">+{player.score} (T: {player.totalScore})</span>
                 </div>
               ))}
             </div>
 
             {currentRound < totalRounds ? (
               <button className="btn-primary" onClick={handleRequestNextRound}>
-                Start Round {currentRound + 1}
+                Round {currentRound + 1} Başlat
               </button>
             ) : (
               <div className="round-final-message">
-                <p>Game Over - Final scores being calculated...</p>
+                <p>Oyun bitti — Skorlar hesaplanıyor...</p>
               </div>
             )}
           </div>

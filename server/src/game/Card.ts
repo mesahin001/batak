@@ -43,7 +43,6 @@ export function shuffleDeck(deck: Card[]): Card[] {
  * Deal cards to players (13 cards each for 4 players)
  */
 export function dealCards(deck: Card[], playerCount: number = 4): Card[][] {
-  const cardsPerPlayer = Math.floor(deck.length / playerCount);
   const hands: Card[][] = Array.from({ length: playerCount }, () => []);
 
   for (let i = 0; i < deck.length; i++) {

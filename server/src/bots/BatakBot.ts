@@ -3,20 +3,18 @@
  * Easy/Normal/Hard stratejileriyle ihale ve kart oynama kararları verir.
  */
 
-import { Card, Suit, PlayerState } from '../types/game.js';
+import { Card, Suit, PlayerState, PlayerType } from '../types/game.js';
 import { EasyStrategy } from './strategies/EasyStrategy.js';
 import { NormalStrategy } from './strategies/NormalStrategy.js';
 import { HardStrategy } from './strategies/HardStrategy.js';
 export class BatakBot {
   private playerId: string;
   private playerName: string;
-  private playerIndex: number;
   private strategy: EasyStrategy | NormalStrategy | HardStrategy;
 
   constructor(playerId: string, playerName: string, playerIndex: number, difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
     this.playerId = playerId;
     this.playerName = playerName;
-    this.playerIndex = playerIndex;
 
     // Set strategy based on difficulty
     switch (difficulty) {
@@ -100,14 +98,17 @@ export class BatakBot {
   /**
    * Create a bot player state
    */
-  static createBotPlayer(id: string, name: string, difficulty: 'easy' | 'normal' | 'hard' = 'normal'): PlayerState {
+  static createBotPlayer(id: string, name: string, _difficulty: 'easy' | 'normal' | 'hard' = 'normal'): PlayerState {
     return {
       id,
       name,
-      type: 'bot',
+      type: PlayerType.BOT,
       hand: [],
       tricksWon: 0,
       score: 0,
+      totalScore: 0,
+      roundScores: [],
+      declaredKing: false,
       bid: null,
       isReady: true // Bots are always ready
     };

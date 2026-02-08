@@ -1,0 +1,148 @@
+/* Navbar - Normal mode */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 0.75rem;
+  background: #0f172a;
+  border-bottom: 2px solid #38bdf8;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.navbar-auth-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.navbar-username {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.navbar-id {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+.navbar-logout-btn {
+  padding: 0.25rem 0.75rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #f87171;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navbar-logout-btn:hover {
+  background: #7f1d1d;
+  border-color: #f87171;
+}
+
+/* Navbar - Minimal mode (in-game) */
+.navbar-minimal {
+  height: 32px;
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.navbar-minimal .navbar-name-minimal {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.navbar-minimal .navbar-menu-container {
+  position: relative;
+  pointer-events: auto;
+}
+
+.navbar-menu-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  line-height: 32px;
+  pointer-events: auto;
+}
+
+.navbar-menu-btn:hover {
+  color: #e2e8f0;
+}
+
+.navbar-dropdown {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.navbar-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-size: 0.8rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #e2e8f0;
+}
+
+.navbar-dropdown-id {
+  color: #64748b;
+  font-family: monospace;
+  font-size: 0.75rem;
+  border-bottom: 1px solid #334155;
+  cursor: default;
+}
+
+.navbar-dropdown-logout {
+  color: #f87171;
+}
+
+.navbar-dropdown-logout:hover {
+  background: #7f1d1d;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .navbar-id {
+    display: none;
+  }
+}

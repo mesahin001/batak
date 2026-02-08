@@ -33,8 +33,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       try {
         // Check if running in Solana Seeker mobile app
         if ((window as any).solanaMobileWalletAdapter) {
-          const adapter = (window as any).solanaMobileWalletAdapter;
-          // For MVP, just set a mock connection
+          // For MVP, just check existence
           // In production, would properly connect via adapter
         }
       } catch (error) {

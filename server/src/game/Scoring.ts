@@ -6,7 +6,7 @@
 import { PlayerState, Bid, Suit, BidType } from '../types/game.js';
 export function calculateScores(
   players: PlayerState[],
-  trumpSuit: Suit | null,
+  _trumpSuit: Suit | null,
   bids: Bid[],
   gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
 ): PlayerState[] {
@@ -24,15 +24,6 @@ export function calculateScores(
       roundScores: newRoundScores
     };
   });
-}
-
-/**
- * Get the bid for a specific player from the bids array
- */
-function getBidForPlayer(player: PlayerState): Bid | null {
-  // Note: The bid will be looked up from the room's bids array
-  // This function signature exists for type compatibility
-  return player.bid || null;
 }
 
 /**
@@ -142,7 +133,7 @@ export function calculatePlayerScore(player: PlayerState, gameMode: 'koz_maca' |
  *
  * For both game modes, use getLowestScorer() or getHighestScorer() when rounds complete
  */
-export function checkGameWinner(players: PlayerState[], gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'): string | null {
+export function checkGameWinner(_players: PlayerState[], _gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'): string | null {
   // NO EARLY GAME END for either mode
   // Game ends when max rounds are reached, not based on score threshold
   return null;

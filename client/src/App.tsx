@@ -1,26 +1,32 @@
 /**
- * Ana uygulama bileşeni.
- * Uygulama state'ini yönetir: loading → wallet → lobby → playing → results.
+ * Ana uygulama bileseni.
+ * Uygulama state'ini yonetir: loading -> auth -> username -> lobby -> playing -> results.
  */
 
 import React, { useState, useEffect } from 'react';
-import { WalletProvider, useWallet } from './solana/WalletContext';
+import { WalletProvider } from './solana/WalletContext';
 import { SocketProvider, useSocket } from './socket/SocketContext';
-import WalletConnect from './components/WalletConnect';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import AuthScreen from './components/AuthScreen';
+import UsernameInput from './components/UsernameInput';
+import Navbar from './components/Navbar';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
 import TournamentResults from './components/TournamentResults';
+import Leaderboard from './components/Leaderboard';
+import PlayerProfile from './components/PlayerProfile';
 import { RoundCompleteData, GameCompleteData, GameClientState } from './types/game';
 import './App.css';
 
 // App states
-type AppState = 'loading' | 'wallet' | 'lobby' | 'playing' | 'results';
+type AppState = 'loading' | 'auth' | 'username' | 'lobby' | 'playing' | 'results' | 'leaderboard' | 'profile';
 
 function AppContent() {
-  const { isConnected: socketConnected } = useSocket();
-  const { connected: walletConnected, publicKey } = useWallet();
+  const { socket, isConnected: socketConnected } = useSocket();
+  const { playerId, username, authType, isAuthenticated, isLoading: authLoading, logout, setUsername: authSetUsername } = useAuth();
   const [appState, setAppState] = useState<AppState>('loading');
   const [gameState, setGameState] = React.useState<GameClientState | null>(null);
+  const [selectedProfileKey, setSelectedProfileKey] = useState<string | null>(null);
 
   useEffect(() => {
     // First check if socket is connected
@@ -29,13 +35,44 @@ function AppContent() {
       return;
     }
 
-    // Then check wallet
-    if (!walletConnected || !publicKey) {
-      setAppState('wallet');
-    } else {
-      setAppState('lobby');
+    // Wait for auth loading to finish
+    if (authLoading) {
+      setAppState('loading');
+      return;
     }
-  }, [socketConnected, walletConnected, publicKey]);
+
+    // Not authenticated -> auth screen
+    if (!isAuthenticated || !playerId) {
+      setAppState('auth');
+      return;
+    }
+
+    // Authenticated but no username -> username screen
+    if (appState === 'loading' || appState === 'auth') {
+      if (username) {
+        setAppState('lobby');
+      } else {
+        setAppState('username');
+      }
+    }
+  }, [socketConnected, authLoading, isAuthenticated, playerId, username]);
+
+  // Listen for game_rejoined (reconnection)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleGameRejoined = (data: { roomId: string; gameState: GameClientState }) => {
+      console.log('Game rejoined (reconnect):', data);
+      setGameState(data.gameState);
+      setAppState('playing');
+    };
+
+    socket.on('game_rejoined', handleGameRejoined);
+
+    return () => {
+      socket.off('game_rejoined', handleGameRejoined);
+    };
+  }, [socket]);
 
   const handleJoinGame = (data: GameClientState) => {
     console.log('Joined game:', data);
@@ -45,8 +82,6 @@ function AppContent() {
 
   const handleRoundEnd = (data: RoundCompleteData) => {
     console.log('Round ended:', data);
-    // Round complete is handled in the GameRoom component with a modal
-    // We stay in the 'playing' state and let the user request next round
   };
 
   const handleGameEnd = (results: GameCompleteData) => {
@@ -57,8 +92,26 @@ function AppContent() {
 
   const handleBackToLobby = () => {
     setGameState(null);
+    setSelectedProfileKey(null);
     setAppState('lobby');
   };
+
+  const handleViewLeaderboard = () => {
+    setAppState('leaderboard');
+  };
+
+  const handleViewProfile = (pk: string) => {
+    setSelectedProfileKey(pk);
+    setAppState('profile');
+  };
+
+  const handleLogout = () => {
+    logout();
+    setGameState(null);
+    setAppState('auth');
+  };
+
+  const showNavbar = isAuthenticated && appState !== 'loading' && appState !== 'auth' && appState !== 'playing';
 
   const renderContent = () => {
     switch (appState) {
@@ -66,25 +119,31 @@ function AppContent() {
         return (
           <div className="loading-screen">
             <div className="spinner"></div>
-            <p>Bağlanıyor...</p>
+            <p>Baglaniyor...</p>
           </div>
         );
 
-      case 'wallet':
+      case 'auth':
+        return <AuthScreen />;
+
+      case 'username':
         return (
-          <div className="wallet-screen">
-            <div className="logo-container">
-              <h1>🃏 Batak Tournament</h1>
-              <p>NFT-Rewarded Card Game on Solana</p>
-            </div>
-            <WalletConnect />
-          </div>
+          <UsernameInput
+            onComplete={(name) => {
+              if (name) {
+                authSetUsername(name);
+              }
+              setAppState('lobby');
+            }}
+          />
         );
 
       case 'lobby':
         return (
           <Lobby
+            username={username || undefined}
             onJoinGame={handleJoinGame}
+            onViewLeaderboard={handleViewLeaderboard}
           />
         );
 
@@ -106,6 +165,22 @@ function AppContent() {
           />
         );
 
+      case 'leaderboard':
+        return (
+          <Leaderboard
+            onSelectPlayer={handleViewProfile}
+            onBack={handleBackToLobby}
+          />
+        );
+
+      case 'profile':
+        return (
+          <PlayerProfile
+            publicKey={selectedProfileKey!}
+            onBack={() => setAppState('leaderboard')}
+          />
+        );
+
       default:
         return null;
     }
@@ -113,18 +188,31 @@ function AppContent() {
 
   return (
     <div className="app">
-      {renderContent()}
+      {showNavbar && (
+        <Navbar
+          username={username}
+          playerId={playerId}
+          authType={authType}
+          onLogout={handleLogout}
+          minimal={false}
+        />
+      )}
+      <div className={`app-content ${showNavbar ? 'with-navbar' : ''}`}>
+        {renderContent()}
+      </div>
     </div>
   );
 }
 
 function App() {
-  const serverUrl = import.meta.env.VITE_SERVER_URL || 'ws://localhost:3001';
+  const serverUrl = import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? '' : 'ws://localhost:3001');
 
   return (
     <WalletProvider>
       <SocketProvider url={serverUrl}>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </SocketProvider>
     </WalletProvider>
   );

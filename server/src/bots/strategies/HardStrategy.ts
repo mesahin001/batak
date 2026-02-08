@@ -4,15 +4,14 @@
  */
 
 import { Card, Suit, PlayerState } from '../../types/game.js';
-import { analyzeHand, findBestTrumpSuit } from '../HandAnalyzer.js';
+import { analyzeHand } from '../HandAnalyzer.js';
 export class HardStrategy {
-  private playerIndex: number;
   private cardsPlayed: Map<string, Card[]> = new Map();
   private trumpsPlayed: Card[] = [];
   private acesPlayed: Card[] = [];
 
-  constructor(playerIndex: number) {
-    this.playerIndex = playerIndex;
+  constructor(_playerIndex: number) {
+    // playerIndex reserved for future use
   }
 
   /**
@@ -48,7 +47,7 @@ export class HardStrategy {
   decideBid(
     player: PlayerState,
     currentHighestBid: number,
-    allowedSuits: Suit[],
+    _allowedSuits: Suit[],
     gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
   ): { suit: Suit; amount: number } | null {
     const analysis = analyzeHand(player.hand);
@@ -102,28 +101,6 @@ export class HardStrategy {
   }
 
   /**
-   * Evaluate a suit as potential trump
-   */
-  private evaluateSuitForTrump(cards: Card[], suit: Suit): number {
-    let score = 0;
-
-    // Length bonus
-    score += cards.length * 2;
-
-    // High card bonus
-    for (const card of cards) {
-      score += card.rank;
-    }
-
-    // Check if opponents have played high cards in this suit
-    const playedInSuit = this.cardsPlayed.get(suit) || [];
-    const opponentHighCards = playedInSuit.filter(c => c.rank >= 12);
-    score -= opponentHighCards.length * 5;
-
-    return score;
-  }
-
-  /**
    * Decide which card to play
    */
   decideCard(
@@ -146,7 +123,7 @@ export class HardStrategy {
   /**
    * Choose card to lead with
    */
-  private chooseLeadCard(player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
+  private chooseLeadCard(_player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
     const sorted = [...validCards].sort((a, b) => b.rank - a.rank);
 
     // Strategy 1: Lead from short suits to force out trumps
@@ -252,7 +229,7 @@ export class HardStrategy {
   /**
    * Strategically dump a card when can't win
    */
-  private dumpCard(player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
+  private dumpCard(_player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
     // Dump from suits we're cutting
     // Prioritize: low cards, then cards from suits where we're short
 

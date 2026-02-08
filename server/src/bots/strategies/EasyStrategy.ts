@@ -4,7 +4,7 @@
  */
 
 import { Card, Suit, PlayerState } from '../../types/game.js';
-import { analyzeHand, findBestTrumpSuit, determineBidAmount, sortHand } from '../HandAnalyzer.js';
+import { analyzeHand } from '../HandAnalyzer.js';
 export class EasyStrategy {
   /**
    * Decide bid for easy bot
@@ -12,7 +12,7 @@ export class EasyStrategy {
   decideBid(
     player: PlayerState,
     currentHighestBid: number,
-    allowedSuits: Suit[],
+    _allowedSuits: Suit[],
     gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
   ): { suit: Suit; amount: number } | null {
     const analysis = analyzeHand(player.hand);
@@ -51,8 +51,8 @@ export class EasyStrategy {
   decideCard(
     player: PlayerState,
     leadSuit: Suit | null,
-    trumpSuit: Suit | null,
-    currentTrick: Card[]
+    _trumpSuit: Suit | null,
+    _currentTrick: Card[]
   ): Card {
     // Get valid cards
     const validCards = this.getValidCards(player, leadSuit);

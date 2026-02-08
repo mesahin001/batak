@@ -44,8 +44,8 @@ export function validateCardPlay(
  * Validate a bid
  */
 export function validateBid(
-  player: PlayerState,
-  suit: Suit,
+  _player: PlayerState,
+  _suit: Suit,
   amount: number,
   currentHighestBid: number,
   gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
@@ -83,7 +83,7 @@ export function validateBid(
  * Validate pass (no bid)
  */
 export function validatePass(
-  player: PlayerState,
+  _player: PlayerState,
   hasPassed: boolean
 ): ValidationResult {
   if (hasPassed) {

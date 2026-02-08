@@ -6,7 +6,7 @@
 import { PublicKey, Keypair } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { SolanaClient } from './SolanaClient.js';
-import { TournamentStatus, TournamentResult } from '../types/tournament.js';
+import { TournamentResult } from '../types/tournament.js';
 export class TournamentManager {
   private client: SolanaClient;
 

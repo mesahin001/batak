@@ -3,9 +3,8 @@
  * Solana RPC bağlantısı ve Anchor program etkileşimlerini yönetir.
  */
 
-import { Connection, Keypair, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
-import { IDL as BatakTournamentIdl } from '../../solana-program/programs/batak-tournament/src/lib';
 import { config } from '../config.js';
 export class SolanaClient {
   private connection: Connection;
@@ -24,15 +23,20 @@ export class SolanaClient {
     this.payer = Keypair.fromSecretKey(new Uint8Array(privateKeyArray));
 
     // Setup Anchor provider
+    const dummyKeypair = new web3.Keypair();
     const provider = new AnchorProvider(
       this.connection,
-      new web3.Keypair(), // Dummy wallet for server
+      {
+        publicKey: dummyKeypair.publicKey,
+        signTransaction: async (tx: any) => tx,
+        signAllTransactions: async (txs: any[]) => txs,
+      } as any,
       { commitment: 'confirmed' }
     );
 
-    // Load program
+    // Load program (IDL loaded at runtime)
     this.program = new Program(
-      BatakTournamentIdl as any,
+      {} as any,
       new PublicKey(config.programId),
       provider
     );

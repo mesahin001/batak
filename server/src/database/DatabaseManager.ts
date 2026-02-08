@@ -12,8 +12,10 @@
  */
 
 import Database from 'better-sqlite3';
-import { PlayerState, GameRoom, RoundRecord } from '../types/game.js';
+import { GameRoom, RoundRecord } from '../types/game.js';
+import { randomUUID } from 'crypto';
 import path from 'path';
+import fs from 'fs';
 
 interface PlayerStats {
   publicKey: string;
@@ -64,7 +66,6 @@ export class DatabaseManager {
 
   constructor(dbPath: string = './data/batak.db') {
     // Ensure data directory exists
-    const fs = require('fs');
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -137,11 +138,23 @@ export class DatabaseManager {
         image_url TEXT
       );
 
+      -- Auth table
+      CREATE TABLE IF NOT EXISTS auth (
+        player_id TEXT PRIMARY KEY,
+        auth_type TEXT NOT NULL DEFAULT 'wallet',
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login_at TIMESTAMP,
+        FOREIGN KEY (player_id) REFERENCES players(public_key)
+      );
+
       -- Indexes
       CREATE INDEX IF NOT EXISTS idx_players_rank ON players(rank_tier, current_season_points DESC);
       CREATE INDEX IF NOT EXISTS idx_players_games_won ON players(games_won DESC);
       CREATE INDEX IF NOT EXISTS idx_games_completed ON games(completed_at DESC);
       CREATE INDEX IF NOT EXISTS idx_nft_rewards_player ON nft_rewards(player_pk);
+      CREATE INDEX IF NOT EXISTS idx_auth_email ON auth(email);
     `);
 
     console.log('[Database] Schema initialized');
@@ -253,6 +266,26 @@ export class DatabaseManager {
     `).run(publicKey);
   }
 
+  /**
+   * Update username for a player
+   */
+  updateUsername(publicKey: string, username: string): void {
+    this.getOrCreatePlayer(publicKey);
+    this.db.prepare(`
+      UPDATE players SET username = ? WHERE public_key = ?
+    `).run(username, publicKey);
+  }
+
+  /**
+   * Check if username already exists (optionally exclude a publicKey)
+   */
+  usernameExists(username: string, excludePk?: string): boolean {
+    const row = excludePk
+      ? this.db.prepare(`SELECT 1 FROM players WHERE LOWER(username) = LOWER(?) AND public_key != ?`).get(username, excludePk)
+      : this.db.prepare(`SELECT 1 FROM players WHERE LOWER(username) = LOWER(?)`).get(username);
+    return !!row;
+  }
+
   // =====================================================
   // GAME OPERATIONS
   // =====================================================
@@ -285,14 +318,32 @@ export class DatabaseManager {
   }
 
   /**
-   * Complete game record
+   * Complete game record (insert if not exists, then update)
    */
   completeGame(
     gameId: string,
     winnerPk: string,
     finalScores: number[],
-    roundHistory: RoundRecord[]
+    roundHistory: RoundRecord[],
+    gameMode?: string,
+    totalRounds?: number,
+    playerIds?: string[]
   ): void {
+    // Ensure game record exists
+    this.db.prepare(`
+      INSERT OR IGNORE INTO games (id, game_mode, total_rounds, player_1_pk, player_2_pk, player_3_pk, player_4_pk, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'in_progress')
+    `).run(
+      gameId,
+      gameMode || 'koz_maca',
+      totalRounds || 5,
+      playerIds?.[0] || null,
+      playerIds?.[1] || null,
+      playerIds?.[2] || null,
+      playerIds?.[3] || null
+    );
+
+    // Update with completion data
     this.db.prepare(`
       UPDATE games SET
         completed_at = CURRENT_TIMESTAMP,
@@ -472,6 +523,72 @@ export class DatabaseManager {
       totalPlayers: playersRow.count,
       totalNftsMinted: nftsRow.count,
     };
+  }
+
+  // =====================================================
+  // AUTH OPERATIONS
+  // =====================================================
+
+  /**
+   * Register a new email user. Creates both auth and players records.
+   * Returns the generated player ID (E_<uuid>).
+   */
+  registerEmailUser(email: string, passwordHash: string): string {
+    const playerId = `E_${randomUUID()}`;
+
+    const insertPlayer = this.db.prepare(`
+      INSERT INTO players (public_key, username)
+      VALUES (?, ?)
+    `);
+    const insertAuth = this.db.prepare(`
+      INSERT INTO auth (player_id, auth_type, email, password_hash, last_login_at)
+      VALUES (?, 'email', ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    const txn = this.db.transaction(() => {
+      insertPlayer.run(playerId, `Player_${playerId.slice(0, 10)}`);
+      insertAuth.run(playerId, email, passwordHash);
+    });
+    txn();
+
+    console.log('[Database] Email user registered:', playerId.slice(0, 12));
+    return playerId;
+  }
+
+  /**
+   * Get auth record by email.
+   */
+  getAuthByEmail(email: string): { playerId: string; passwordHash: string; authType: string } | null {
+    const row = this.db.prepare(`
+      SELECT player_id, password_hash, auth_type FROM auth WHERE email = ?
+    `).get(email) as any;
+
+    if (!row) return null;
+    return {
+      playerId: row.player_id,
+      passwordHash: row.password_hash,
+      authType: row.auth_type,
+    };
+  }
+
+  /**
+   * Ensure a wallet user has an auth record (lazy migration).
+   */
+  ensureWalletAuth(publicKey: string): void {
+    this.getOrCreatePlayer(publicKey);
+    this.db.prepare(`
+      INSERT OR IGNORE INTO auth (player_id, auth_type)
+      VALUES (?, 'wallet')
+    `).run(publicKey);
+  }
+
+  /**
+   * Update last_login_at for a player.
+   */
+  updateLastLogin(playerId: string): void {
+    this.db.prepare(`
+      UPDATE auth SET last_login_at = CURRENT_TIMESTAMP WHERE player_id = ?
+    `).run(playerId);
   }
 
   /**

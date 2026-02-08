@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { createDeck, shuffleDeck, dealCards, canPlayCard, compareCards } from '../Card.js';
+import { createDeck, shuffleDeck, dealCards } from '../Card.js';
 import { Suit, Rank } from '../../types/game.js';
 
 describe('Card Module', () => {

@@ -4,12 +4,10 @@
  */
 
 import { Card, Suit, PlayerState } from '../../types/game.js';
-import { analyzeHand, findBestTrumpSuit, determineBidAmount } from '../HandAnalyzer.js';
+import { analyzeHand } from '../HandAnalyzer.js';
 export class NormalStrategy {
-  private playerIndex: number;
-
-  constructor(playerIndex: number) {
-    this.playerIndex = playerIndex;
+  constructor(_playerIndex: number) {
+    // playerIndex reserved for future use
   }
 
   /**
@@ -18,7 +16,7 @@ export class NormalStrategy {
   decideBid(
     player: PlayerState,
     currentHighestBid: number,
-    allowedSuits: Suit[],
+    _allowedSuits: Suit[],
     gameMode: 'koz_maca' | 'ihaleli_batak' = 'ihaleli_batak'
   ): { suit: Suit; amount: number } | null {
     const analysis = analyzeHand(player.hand);
@@ -73,7 +71,7 @@ export class NormalStrategy {
   /**
    * Choose card to lead with
    */
-  private chooseLeadCard(player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
+  private chooseLeadCard(_player: PlayerState, validCards: Card[], trumpSuit: Suit | null): Card {
     // Lead with high cards from strong suits
     // Sort by rank descending
     const sorted = [...validCards].sort((a, b) => b.rank - a.rank);
@@ -91,16 +89,12 @@ export class NormalStrategy {
    * Choose card when following
    */
   private chooseFollowCard(
-    player: PlayerState,
+    _player: PlayerState,
     validCards: Card[],
     leadSuit: Suit,
     trumpSuit: Suit | null,
     currentTrick: Card[]
   ): Card {
-    // Check if current trick has been trumped
-    const hasTrump = currentTrick.some(c => trumpSuit && c.suit === trumpSuit);
-    const partnerIndex = (this.getPlayerIndex(player) + 2) % 4;
-
     // Try to win if possible with lowest winning card
     const winningCards = this.getWinningCards(validCards, leadSuit, trumpSuit, currentTrick);
 
@@ -177,13 +171,6 @@ export class NormalStrategy {
     }
 
     return [...player.hand];
-  }
-
-  /**
-   * Get player index
-   */
-  private getPlayerIndex(player: PlayerState): number {
-    return this.playerIndex;
   }
 
   /**

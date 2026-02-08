@@ -44,7 +44,7 @@ export class GameHandler {
   /**
    * Broadcast game state to room
    */
-  static broadcastGameState(io: any, roomId: string, gameMachine: GameStateMachine, playerSockets: Map<string, Socket>): void {
+  static broadcastGameState(_io: any, _roomId: string, gameMachine: GameStateMachine, playerSockets: Map<string, Socket>): void {
     for (const [playerId, socket] of playerSockets) {
       const state = gameMachine.getStateForClient(playerId);
       socket.emit(ServerEvent.GAME_STATE_UPDATE, state);

@@ -54,7 +54,7 @@ describe('Scoring Module', () => {
         const player = createPlayer('p1', 'Player 1', 9);
         const bid: Bid = { playerId: 'p1', suit: Suit.SPADES, amount: 7, type: BidType.NORMAL };
         const score = calculatePlayerScoreWithBid(player, bid, 'ihaleli_batak');
-        expect(score).toBe(72); // 10 × 7 + 2 = 72
+        expect(score).toBe(90); // İhaleli Batak: tricksWon × 10 = 9 × 10 = 90
       });
 
       it('should calculate score for bid 1 taken 1', () => {
@@ -75,7 +75,7 @@ describe('Scoring Module', () => {
         const player = createPlayer('p1', 'Player 1', 8);
         const bid: Bid = { playerId: 'p1', suit: Suit.SPADES, amount: 5, type: BidType.NORMAL };
         const score = calculatePlayerScoreWithBid(player, bid, 'ihaleli_batak');
-        expect(score).toBe(53); // 10 × 5 + 3 = 53
+        expect(score).toBe(80); // İhaleli Batak: tricksWon × 10 = 8 × 10 = 80
       });
     });
 
@@ -146,21 +146,21 @@ describe('Scoring Module', () => {
       it('should calculate +50 for successful el almaz (bid 0, take 0)', () => {
         const player = createPlayer('p1', 'Player 1', 0);
         const bid: Bid = { playerId: 'p1', suit: Suit.SPADES, amount: 0, type: BidType.EL_ALMAZ };
-        const score = calculatePlayerScoreWithBid(player, bid, 'ihaleli_batak');
+        const score = calculatePlayerScoreWithBid(player, bid, 'koz_maca');
         expect(score).toBe(50);
       });
 
       it('should calculate -50 for failed el almaz (bid 0, take 1)', () => {
         const player = createPlayer('p1', 'Player 1', 1);
         const bid: Bid = { playerId: 'p1', suit: Suit.SPADES, amount: 0, type: BidType.EL_ALMAZ };
-        const score = calculatePlayerScoreWithBid(player, bid, 'ihaleli_batak');
+        const score = calculatePlayerScoreWithBid(player, bid, 'koz_maca');
         expect(score).toBe(-50);
       });
 
       it('should calculate -50 for failed el almaz (bid 0, take 5)', () => {
         const player = createPlayer('p1', 'Player 1', 5);
         const bid: Bid = { playerId: 'p1', suit: Suit.SPADES, amount: 0, type: BidType.EL_ALMAZ };
-        const score = calculatePlayerScoreWithBid(player, bid, 'ihaleli_batak');
+        const score = calculatePlayerScoreWithBid(player, bid, 'koz_maca');
         expect(score).toBe(-50);
       });
     });
@@ -233,7 +233,7 @@ describe('Scoring Module', () => {
   });
 
   describe('checkGameWinner', () => {
-    it('should return winner ID when player reaches ≤1 in ihaleli_batak', () => {
+    it('should return null for ihaleli_batak (no early ending)', () => {
       const players = [
         createPlayer('p1', 'Player 1', 0, 1),
         createPlayer('p2', 'Player 2', 0, 50),
@@ -242,10 +242,10 @@ describe('Scoring Module', () => {
       ];
 
       const winner = checkGameWinner(players, 'ihaleli_batak');
-      expect(winner).toBe('p1');
+      expect(winner).toBeNull();
     });
 
-    it('should return winner ID when player reaches 0 in ihaleli_batak', () => {
+    it('should return null even when player has 0 score in ihaleli_batak', () => {
       const players = [
         createPlayer('p1', 'Player 1', 0, 45),
         createPlayer('p2', 'Player 2', 0, 0),
@@ -253,7 +253,7 @@ describe('Scoring Module', () => {
       ];
 
       const winner = checkGameWinner(players, 'ihaleli_batak');
-      expect(winner).toBe('p2');
+      expect(winner).toBeNull();
     });
 
     it('should return null when no player has reached ≤1 in ihaleli_batak', () => {
@@ -278,7 +278,7 @@ describe('Scoring Module', () => {
       expect(winner).toBeNull();
     });
 
-    it('should return first player that reaches ≤1 (not necessarily lowest)', () => {
+    it('should return null regardless of low scores (no early ending in ihaleli_batak)', () => {
       const players = [
         createPlayer('p1', 'Player 1', 0, 10),
         createPlayer('p2', 'Player 2', 0, 1),
@@ -286,7 +286,7 @@ describe('Scoring Module', () => {
       ];
 
       const winner = checkGameWinner(players, 'ihaleli_batak');
-      expect(winner).toBe('p2');
+      expect(winner).toBeNull();
     });
   });
 

@@ -4,15 +4,14 @@
  */
 
 import { Socket } from 'socket.io';
-import { PlayerType, GameState, Suit } from '../types/game.js';
 import { GameStateMachine } from '../game/GameStateMachine.js';
-import { BatakBot, BotManager } from '../bots/BatakBot.js';
-import { BotManager as BotManagerClass } from '../bots/BatakBot.js';
+import { BotManager } from '../bots/BatakBot.js';
 
 interface QueueEntry {
   socketId: string;
   socket: Socket;  // Store socket reference to emit events
   publicKey: string;
+  username?: string;
   botDifficulty: 'easy' | 'normal' | 'hard';
   botCount: number;
   gameMode: 'koz_maca' | 'ihaleli_batak';
@@ -26,8 +25,20 @@ interface GameRoom {
   id: string;
   gameMachine: GameStateMachine;
   players: Map<string, Socket>;
-  botManager: BotManagerClass;
+  botManager: BotManager;
   createdAt: Date;
+}
+
+/**
+ * Private room entry (before game starts)
+ */
+interface PrivateRoomEntry {
+  code: string;
+  hostPk: string;
+  hostSocket: Socket;
+  players: Array<{ publicKey: string; socket: Socket; username?: string }>;
+  botDifficulty: 'easy' | 'normal' | 'hard';
+  gameMode: 'koz_maca' | 'ihaleli_batak';
 }
 
 /**
@@ -41,6 +52,7 @@ interface GameRoom {
 export class Matchmaker {
   private queue: QueueEntry[] = [];
   private rooms: Map<string, GameRoom> = new Map();
+  private privateRooms: Map<string, PrivateRoomEntry> = new Map();
   private botManager = new BotManager();
 
   // Queue matching settings
@@ -70,6 +82,28 @@ export class Matchmaker {
       ...entry,
       timestamp: new Date()
     };
+
+    // Instant bot game: if botCount === 3, skip queue entirely
+    if (entry.botCount === 3) {
+      console.log('[Matchmaker] Instant bot game for', entry.publicKey.slice(0, 8));
+
+      const botRoomId = this.createBotRoom(queueEntry);
+      this.addPlayerToRoom(botRoomId, entry.publicKey, entry.socket);
+      entry.socket.join(botRoomId);
+
+      const room = this.getRoom(botRoomId);
+      if (room) {
+        room.gameMachine.startGame();
+        const clientState = room.gameMachine.getStateForClient(entry.publicKey);
+        entry.socket.emit('match_found', {
+          roomId: botRoomId,
+          gameState: clientState
+        });
+        this.triggerBotTurns(botRoomId, room, entry.socket, entry.publicKey);
+      }
+
+      return botRoomId;
+    }
 
     this.queue.push(queueEntry);
 
@@ -316,7 +350,8 @@ export class Matchmaker {
 
     // Add all 4 human players using PUBLIC KEY as ID (stable across reconnections)
     entries.forEach((entry, index) => {
-      gameMachine.addPlayer(entry.publicKey, entry.publicKey.slice(0, 12), false, entry.publicKey);
+      const displayName = entry.username || entry.publicKey.slice(0, 12);
+      gameMachine.addPlayer(entry.publicKey, displayName, false, entry.publicKey);
       console.log('[Matchmaker] Added player:', {
         index,
         id: entry.publicKey,
@@ -374,7 +409,8 @@ export class Matchmaker {
     const gameMachine = new GameStateMachine(roomId, 5, entry.gameMode);
 
     // Add human player using PUBLIC KEY as ID
-    gameMachine.addPlayer(entry.publicKey, 'Player', false, entry.publicKey);
+    const displayName = entry.username || 'Player';
+    gameMachine.addPlayer(entry.publicKey, displayName, false, entry.publicKey);
 
     // Always add 3 bots to make 4 total players (indices 1, 2, 3)
     const BOT_COUNT = 3;
@@ -424,26 +460,42 @@ export class Matchmaker {
   }
 
   /**
-   * Find which room a player is in
-   * Now searches by socket.id since room.players uses publicKey as key
-   */
-  private findPlayerRoom(socketId: string): GameRoom | undefined {
-    for (const room of this.rooms.values()) {
-      // Iterate through room.players values to find matching socket
-      for (const socket of room.players.values()) {
-        if (socket.id === socketId) {
-          return room;
-        }
-      }
-    }
-    return undefined;
-  }
-
-  /**
    * Get room by ID
    */
   getRoom(roomId: string): GameRoom | undefined {
     return this.rooms.get(roomId);
+  }
+
+  /**
+   * Find room by player's publicKey
+   */
+  getRoomByPlayerId(publicKey: string): { roomId: string; room: GameRoom } | null {
+    for (const [roomId, room] of this.rooms) {
+      if (room.players.has(publicKey)) {
+        return { roomId, room };
+      }
+      // Also check game state players (in case socket was removed but player still in game)
+      const roomData = room.gameMachine.getRoom();
+      const playerInGame = roomData.players.find((p: any) => p.id === publicKey);
+      if (playerInGame) {
+        return { roomId, room };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Find room and publicKey by socket ID
+   */
+  findRoomBySocketId(socketId: string): { roomId: string; publicKey: string } | null {
+    for (const [roomId, room] of this.rooms) {
+      for (const [publicKey, socket] of room.players) {
+        if (socket.id === socketId) {
+          return { roomId, publicKey };
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -489,7 +541,7 @@ export class Matchmaker {
    */
   private getHumanPlayerCount(room: GameRoom): number {
     let count = 0;
-    for (const [id, player] of room.gameMachine.getRoom().players) {
+    for (const player of room.gameMachine.getRoom().players) {
       if (player.type === 'human') {
         count++;
       }
@@ -530,5 +582,128 @@ export class Matchmaker {
    */
   getAllRooms(): GameRoom[] {
     return Array.from(this.rooms.values());
+  }
+
+  // =====================================================
+  // PRIVATE ROOMS
+  // =====================================================
+
+  /**
+   * Generate a 6-char room code (uppercase, excluding ambiguous chars)
+   */
+  private generateRoomCode(): string {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
+    let code: string;
+    do {
+      code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+    } while (this.privateRooms.has(code));
+    return code;
+  }
+
+  /**
+   * Create a private room
+   */
+  createPrivateRoom(params: {
+    hostPk: string;
+    hostSocket: Socket;
+    username?: string;
+    botDifficulty: 'easy' | 'normal' | 'hard';
+    gameMode: 'koz_maca' | 'ihaleli_batak';
+  }): string {
+    const code = this.generateRoomCode();
+    const entry: PrivateRoomEntry = {
+      code,
+      hostPk: params.hostPk,
+      hostSocket: params.hostSocket,
+      players: [{ publicKey: params.hostPk, socket: params.hostSocket, username: params.username }],
+      botDifficulty: params.botDifficulty,
+      gameMode: params.gameMode
+    };
+    this.privateRooms.set(code, entry);
+    console.log('[Matchmaker] Private room created:', code, 'by', params.hostPk.slice(0, 8));
+    return code;
+  }
+
+  /**
+   * Join a private room
+   */
+  joinPrivateRoom(code: string, player: { publicKey: string; socket: Socket; username?: string }): PrivateRoomEntry | null {
+    const room = this.privateRooms.get(code.toUpperCase());
+    if (!room) return null;
+    if (room.players.length >= 4) return null;
+    if (room.players.some(p => p.publicKey === player.publicKey)) return room; // Already in
+    room.players.push(player);
+    console.log('[Matchmaker] Player', player.publicKey.slice(0, 8), 'joined private room', code);
+    return room;
+  }
+
+  /**
+   * Start a private room game (host only). Returns roomId or null.
+   */
+  startPrivateRoom(code: string, hostPk: string): { roomId: string; room: GameRoom } | null {
+    const privateRoom = this.privateRooms.get(code);
+    if (!privateRoom || privateRoom.hostPk !== hostPk) return null;
+    if (privateRoom.players.length < 1) return null;
+
+    const roomId = `room_private_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const gameMachine = new GameStateMachine(roomId, 5, privateRoom.gameMode);
+    const gameRoom: GameRoom = {
+      id: roomId,
+      gameMachine,
+      players: new Map(),
+      botManager: this.botManager,
+      createdAt: new Date()
+    };
+
+    // Add human players
+    for (const p of privateRoom.players) {
+      const displayName = p.username || p.publicKey.slice(0, 12);
+      gameMachine.addPlayer(p.publicKey, displayName, false, p.publicKey);
+      gameRoom.players.set(p.publicKey, p.socket);
+      p.socket.join(roomId);
+    }
+
+    // Fill remaining slots with bots
+    const humanCount = privateRoom.players.length;
+    for (let i = humanCount; i < 4; i++) {
+      const bot = this.botManager.createBot(i, privateRoom.botDifficulty);
+      gameMachine.addPlayer(bot.getId(), bot.getName(), true);
+    }
+
+    this.rooms.set(roomId, gameRoom);
+    this.privateRooms.delete(code);
+
+    gameMachine.startGame();
+    console.log('[Matchmaker] Private room', code, 'started as game room', roomId, `(${humanCount} humans + ${4 - humanCount} bots)`);
+
+    return { roomId, room: gameRoom };
+  }
+
+  /**
+   * Leave a private room
+   */
+  leavePrivateRoom(code: string, publicKey: string): { closed: boolean } {
+    const room = this.privateRooms.get(code);
+    if (!room) return { closed: false };
+
+    if (room.hostPk === publicKey) {
+      // Host left - close room
+      this.privateRooms.delete(code);
+      console.log('[Matchmaker] Private room', code, 'closed (host left)');
+      return { closed: true };
+    }
+
+    room.players = room.players.filter(p => p.publicKey !== publicKey);
+    return { closed: false };
+  }
+
+  /**
+   * Get a private room by code
+   */
+  getPrivateRoom(code: string): PrivateRoomEntry | undefined {
+    return this.privateRooms.get(code.toUpperCase());
   }
 }

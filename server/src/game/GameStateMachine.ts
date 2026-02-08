@@ -4,7 +4,7 @@
  * Tüm oyun mantığının merkezi: kart dağıtma, ihale, oynama, skor hesaplama.
  */
 
-import { GameState, GameRoom, PlayerState, Trick, Suit, RoundRecord, PlayerType } from '../types/game.js';
+import { GameState, GameRoom, Suit, RoundRecord, PlayerType } from '../types/game.js';
 import { Deck } from './Deck.js';
 import {
   createPlayer,
@@ -15,12 +15,11 @@ import {
 import {
   calculateScores,
   calculateTrickWinner,
-  checkGameWinner,
   checkKingWinner,
   getLowestScorer,
   getHighestScorer
 } from './Scoring.js';
-import { validateCardPlay, validateBid, validatePass } from './TurnValidator.js';
+import { validateCardPlay, validateBid } from './TurnValidator.js';
 
 /**
  * Configuration for game duration
@@ -514,6 +513,57 @@ export class GameStateMachine {
   }
 
   /**
+   * Replace a human player with a bot (disconnect scenario)
+   * Preserves hand, tricks, score, but changes identity to bot
+   */
+  replacePlayerWithBot(humanPlayerId: string, botId: string, botName: string): boolean {
+    const playerIndex = this.room.players.findIndex(p => p.id === humanPlayerId);
+    if (playerIndex === -1) return false;
+
+    const oldId = this.room.players[playerIndex].id;
+
+    // Update player identity
+    this.room.players[playerIndex].id = botId;
+    this.room.players[playerIndex].name = botName;
+    this.room.players[playerIndex].type = PlayerType.BOT;
+
+    // Update references in bids
+    for (const bid of this.room.bids) {
+      if (bid.playerId === oldId) {
+        bid.playerId = botId;
+      }
+    }
+
+    // Update references in current trick
+    for (const play of this.room.currentTrick.cards) {
+      if (play.playerId === oldId) {
+        play.playerId = botId;
+      }
+    }
+
+    // Update references in past tricks
+    for (const trick of this.room.tricks) {
+      for (const play of trick.cards) {
+        if (play.playerId === oldId) {
+          play.playerId = botId;
+        }
+      }
+      if (trick.winnerId === oldId) {
+        trick.winnerId = botId;
+      }
+    }
+
+    // Update winner reference
+    if (this.room.winner === oldId) {
+      this.room.winner = botId;
+    }
+
+    this.room.lastUpdated = new Date();
+    console.log(`[GameStateMachine] Replaced player ${oldId.slice(0, 8)} with bot ${botName}`);
+    return true;
+  }
+
+  /**
    * Get game winner
    */
   getWinner(): string | null {
@@ -616,7 +666,7 @@ export class GameStateMachine {
         totalScore: p.totalScore,  // Cumulative score
         roundScores: p.roundScores,
         bid: p.bid,
-        hand: i === playerIndex ? p.hand : p.hand.map((c, idx) => ({ id: `hidden-${i}-${idx}` })),
+        hand: i === playerIndex ? p.hand : p.hand.map((_c, idx) => ({ id: `hidden-${i}-${idx}` })),
         handSize: p.hand.length
       }))
     };

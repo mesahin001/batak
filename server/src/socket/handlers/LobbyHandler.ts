@@ -17,6 +17,7 @@ export class LobbyHandler {
 
     const roomId = this.matchmaker.joinQueue({
       socketId: socket.id,
+      socket,
       publicKey,
       botDifficulty,
       botCount,

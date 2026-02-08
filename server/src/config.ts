@@ -21,6 +21,9 @@ export const config = {
   programId: process.env.PROGRAM_ID || '',
   merkleTree: process.env.MERKLE_TREE || '',
 
+  // Auth
+  jwtSecret: process.env.JWT_SECRET || 'batak-dev-secret-change-in-production',
+
   // Game
   maxPlayers: parseInt(process.env.MAX_PLAYERS || '4', 10),
   defaultBotDifficulty: process.env.DEFAULT_BOT_DIFFICULTY || 'normal',

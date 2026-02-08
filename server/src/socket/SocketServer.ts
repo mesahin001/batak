@@ -7,12 +7,18 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Matchmaker } from '../matchmaker/Matchmaker.js';
 import { ClientEvent, ServerEvent, JoinQueuePayload, PlayCardPayload, BidTrumpPayload } from '../types/socket.js';
-import { config } from '../config.js';
+import { DatabaseManager } from '../database/DatabaseManager.js';
+import { CNFTMinter } from '../solana/CNFTMinter.js';
+import { AuthService } from '../auth/AuthService.js';
+
 export class SocketServer {
   private io: SocketIOServer;
   private matchmaker: Matchmaker;
+  private db: DatabaseManager | null;
+  private cnftMinter: CNFTMinter | null;
+  private authService: AuthService | null;
 
-  constructor(httpServer: HTTPServer) {
+  constructor(httpServer: HTTPServer, db?: DatabaseManager | null, cnftMinter?: CNFTMinter | null, authService?: AuthService | null) {
     this.io = new SocketIOServer(httpServer, {
       cors: {
         origin: '*',
@@ -22,6 +28,9 @@ export class SocketServer {
     });
 
     this.matchmaker = new Matchmaker();
+    this.db = db || null;
+    this.cnftMinter = cnftMinter || null;
+    this.authService = authService || null;
     this.setupEventHandlers();
   }
 
@@ -66,6 +75,208 @@ export class SocketServer {
       socket.on(ClientEvent.DISCONNECT, () => {
         this.handleDisconnect(socket);
       });
+
+      // Handle rejoin game (reconnect)
+      socket.on(ClientEvent.REJOIN_GAME, (payload: { publicKey: string }) => {
+        this.handleRejoinGame(socket, payload);
+      });
+
+      // Handle create_private_room
+      socket.on('create_private_room', (payload: { publicKey: string; username?: string; botDifficulty?: string; gameMode?: string }, callback: (data: any) => void) => {
+        const code = this.matchmaker.createPrivateRoom({
+          hostPk: payload.publicKey,
+          hostSocket: socket,
+          username: payload.username,
+          botDifficulty: (payload.botDifficulty as any) || 'normal',
+          gameMode: (payload.gameMode as any) || 'koz_maca'
+        });
+        const room = this.matchmaker.getPrivateRoom(code);
+        callback({
+          code,
+          players: room?.players.map(p => ({ publicKey: p.publicKey, username: p.username })) || []
+        });
+      });
+
+      // Handle join_private_room
+      socket.on('join_private_room', (payload: { code: string; publicKey: string; username?: string }, callback: (data: any) => void) => {
+        const room = this.matchmaker.joinPrivateRoom(payload.code, {
+          publicKey: payload.publicKey,
+          socket,
+          username: payload.username
+        });
+        if (!room) {
+          return callback({ error: 'Oda bulunamadi veya dolu' });
+        }
+        callback({
+          code: room.code,
+          players: room.players.map(p => ({ publicKey: p.publicKey, username: p.username })),
+          hostPk: room.hostPk
+        });
+        // Broadcast update to all room members
+        for (const p of room.players) {
+          p.socket.emit(ServerEvent.PRIVATE_ROOM_UPDATE, {
+            code: room.code,
+            players: room.players.map(pl => ({ publicKey: pl.publicKey, username: pl.username })),
+            hostPk: room.hostPk
+          });
+        }
+      });
+
+      // Handle start_private_room
+      socket.on('start_private_room', (payload: { code: string; publicKey: string }) => {
+        const result = this.matchmaker.startPrivateRoom(payload.code, payload.publicKey);
+        if (!result) {
+          socket.emit(ServerEvent.ERROR, { message: 'Oda baslatilamadi' });
+          return;
+        }
+        const { roomId, room } = result;
+        // Send match_found to all human players
+        for (const [pk, playerSocket] of room.players) {
+          const clientState = room.gameMachine.getStateForClient(pk);
+          playerSocket.emit(ServerEvent.MATCH_FOUND, { roomId, gameState: clientState });
+        }
+        // Start bot bidding
+        this.handleBotBidding(roomId, room);
+      });
+
+      // Handle leave_private_room
+      socket.on('leave_private_room', (payload: { code: string; publicKey: string }) => {
+        const privateRoom = this.matchmaker.getPrivateRoom(payload.code);
+        const { closed } = this.matchmaker.leavePrivateRoom(payload.code, payload.publicKey);
+        if (closed && privateRoom) {
+          // Notify remaining players
+          for (const p of privateRoom.players) {
+            if (p.publicKey !== payload.publicKey) {
+              p.socket.emit(ServerEvent.PRIVATE_ROOM_CLOSED, { code: payload.code });
+            }
+          }
+        } else if (privateRoom) {
+          // Broadcast updated player list
+          const updatedRoom = this.matchmaker.getPrivateRoom(payload.code);
+          if (updatedRoom) {
+            for (const p of updatedRoom.players) {
+              p.socket.emit(ServerEvent.PRIVATE_ROOM_UPDATE, {
+                code: updatedRoom.code,
+                players: updatedRoom.players.map(pl => ({ publicKey: pl.publicKey, username: pl.username })),
+                hostPk: updatedRoom.hostPk
+              });
+            }
+          }
+        }
+      });
+
+      // Handle set_username
+      socket.on('set_username', (payload: { publicKey: string; username: string }, callback: (data: any) => void) => {
+        if (!this.db) return callback({ error: 'Database not available' });
+        const { publicKey: pk, username } = payload;
+        if (!pk || !username) return callback({ error: 'Missing fields' });
+        // Validate: 3-20 chars, alphanumeric + underscore
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+          return callback({ error: '3-20 karakter, harf/rakam/alt çizgi kullanın' });
+        }
+        if (this.db.usernameExists(username, pk)) {
+          return callback({ error: 'Bu kullanıcı adı zaten alınmış' });
+        }
+        this.db.updateUsername(pk, username);
+        callback({ success: true, username });
+      });
+
+      // Handle get_username
+      socket.on('get_username', (payload: { publicKey: string }, callback: (data: any) => void) => {
+        if (!this.db) return callback({ username: null });
+        const player = this.db.getPlayer(payload.publicKey);
+        callback({ username: player?.username || null });
+      });
+
+      // API: Get leaderboard
+      socket.on('get_leaderboard', (options: { limit?: number }, callback: (data: any) => void) => {
+        if (!this.db) return callback({ error: 'Database not available' });
+        try {
+          const leaderboard = this.db.getLeaderboard(options?.limit || 100);
+          callback({ leaderboard });
+        } catch (error) {
+          callback({ error: 'Failed to fetch leaderboard' });
+        }
+      });
+
+      // API: Get player stats
+      socket.on('get_player_stats', (payload: { publicKey: string }, callback: (data: any) => void) => {
+        if (!this.db) return callback({ error: 'Database not available' });
+        try {
+          const player = this.db.getPlayer(payload.publicKey);
+          const nfts = this.db.getPlayerNfts(payload.publicKey);
+          callback({ player, nfts });
+        } catch (error) {
+          callback({ error: 'Failed to fetch player stats' });
+        }
+      });
+
+      // API: Get player games
+      socket.on('get_player_games', (payload: { publicKey: string; limit?: number }, callback: (data: any) => void) => {
+        if (!this.db) return callback({ error: 'Database not available' });
+        try {
+          const games = this.db.getPlayerGames(payload.publicKey, payload.limit || 20);
+          callback({ games });
+        } catch (error) {
+          callback({ error: 'Failed to fetch player games' });
+        }
+      });
+
+      // =====================================================
+      // AUTH HANDLERS
+      // =====================================================
+
+      // Auth: Register with email
+      socket.on(ClientEvent.AUTH_REGISTER, async (payload: { email: string; password: string }, callback: (data: any) => void) => {
+        if (!this.authService) return callback({ error: 'Auth not available' });
+        const result = await this.authService.register(payload.email, payload.password);
+        if (result.success) {
+          socket.data.playerId = result.playerId;
+          socket.data.authType = 'email';
+        }
+        callback(result);
+      });
+
+      // Auth: Login with email
+      socket.on(ClientEvent.AUTH_LOGIN, async (payload: { email: string; password: string }, callback: (data: any) => void) => {
+        if (!this.authService) return callback({ error: 'Auth not available' });
+        const result = await this.authService.login(payload.email, payload.password);
+        if (result.success) {
+          socket.data.playerId = result.playerId;
+          socket.data.authType = 'email';
+        }
+        callback(result);
+      });
+
+      // Auth: Validate existing token (auto-login on page refresh)
+      socket.on(ClientEvent.AUTH_VALIDATE, (payload: { token: string }, callback: (data: any) => void) => {
+        if (!this.authService) return callback({ success: false, error: 'Auth not available' });
+        const decoded = this.authService.verifyToken(payload.token);
+        if (!decoded) return callback({ success: false, error: 'Token gecersiz' });
+
+        socket.data.playerId = decoded.playerId;
+        socket.data.authType = decoded.authType;
+
+        // Get username from DB
+        const player = this.db?.getPlayer(decoded.playerId);
+        callback({
+          success: true,
+          playerId: decoded.playerId,
+          authType: decoded.authType,
+          username: player?.username || null,
+        });
+      });
+
+      // Auth: Generate token for wallet user
+      socket.on(ClientEvent.AUTH_WALLET, (payload: { publicKey: string }, callback: (data: any) => void) => {
+        if (!this.authService) return callback({ error: 'Auth not available' });
+        const result = this.authService.generateWalletToken(payload.publicKey);
+        if (result.success) {
+          socket.data.playerId = result.playerId;
+          socket.data.authType = 'wallet';
+        }
+        callback(result);
+      });
     });
   }
 
@@ -76,10 +287,31 @@ export class SocketServer {
     console.log(`[Matchmaker] Player ${socket.id} joining queue`);
     console.log('[Matchmaker] Payload:', payload);
 
+    // Check if player is already in an active game (reconnection scenario)
+    if (payload.publicKey) {
+      const existingRoom = this.matchmaker.getRoomByPlayerId(payload.publicKey);
+      if (existingRoom) {
+        const roomData = existingRoom.room.gameMachine.getRoom();
+        if (roomData.state !== 'finished') {
+          console.log(`[Reconnect] Player ${payload.publicKey.slice(0, 8)} already in active game, rejoining`);
+          this.handleRejoinGame(socket, { publicKey: payload.publicKey });
+          return;
+        }
+      }
+    }
+
+    // Look up username from DB or use payload
+    let username = payload.username;
+    if (!username && this.db && payload.publicKey) {
+      const player = this.db.getPlayer(payload.publicKey);
+      username = player?.username || undefined;
+    }
+
     const roomId = this.matchmaker.joinQueue({
       socketId: socket.id,
       socket,  // Pass socket reference for emitting queue_status
       publicKey: payload.publicKey,
+      username,
       botDifficulty: payload.botDifficulty || 'normal',
       botCount: payload.botCount !== undefined ? payload.botCount : 3,
       gameMode: payload.gameMode || 'koz_maca'
@@ -222,6 +454,9 @@ export class SocketServer {
         totalRounds: roomData.totalRounds,
         roundsPlayed: roomData.currentRound
       });
+
+      // Save to database and mint cNFT
+      this.handleGameCompletion(roomId, room);
     } else if (roomData.state === 'scoring') {
       // Round is complete but game continues - send ROUND_COMPLETE
       console.log('[checkRoundComplete] Round complete! Sending round_complete event');
@@ -372,8 +607,11 @@ export class SocketServer {
     }
   }
 
+  // Track disconnect grace periods (publicKey -> timeout)
+  private disconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+
   /**
-   * Handle disconnect
+   * Handle disconnect with grace period for reconnection
    */
   private handleDisconnect(socket: Socket): void {
     console.log(`Client disconnected: ${socket.id}`);
@@ -382,10 +620,162 @@ export class SocketServer {
     const queueEntry = this.matchmaker.getQueueEntryBySocketId(socket.id);
     this.matchmaker.leaveQueue(socket.id, queueEntry?.publicKey);
 
-    // Find and remove from room
-    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
-    for (const roomId of rooms) {
+    // Find player's room and publicKey
+    const roomInfo = this.matchmaker.findRoomBySocketId(socket.id);
+    if (!roomInfo) return;
+
+    const { roomId, publicKey } = roomInfo;
+    const room = this.matchmaker.getRoom(roomId);
+    if (!room) return;
+
+    const roomData = room.gameMachine.getRoom();
+    const isGameActive = roomData.state !== 'finished' && roomData.state !== 'lobby';
+
+    if (isGameActive && publicKey) {
+      // Game in progress: wait 30 seconds, then replace with bot
+      console.log(`[Reconnect] Player ${publicKey.slice(0, 8)} disconnected during active game. Grace period: 30s`);
+
+      const timer = setTimeout(() => {
+        console.log(`[Reconnect] Grace period expired for ${publicKey.slice(0, 8)}, replacing with bot`);
+        this.disconnectTimers.delete(publicKey);
+        // Replace with bot instead of removing
+        const currentRoom = this.matchmaker.getRoom(roomId);
+        if (currentRoom) {
+          const currentRoomData = currentRoom.gameMachine.getRoom();
+          if (currentRoomData.state !== 'finished') {
+            this.replaceDisconnectedPlayerWithBot(roomId, publicKey, currentRoom);
+          } else {
+            this.matchmaker.removePlayerFromRoom(roomId, socket.id);
+          }
+        }
+      }, 30000);
+
+      this.disconnectTimers.set(publicKey, timer);
+    } else {
+      // No active game: remove immediately
       this.matchmaker.removePlayerFromRoom(roomId, socket.id);
+    }
+  }
+
+  /**
+   * Handle rejoin game (reconnect after disconnect)
+   */
+  private handleRejoinGame(socket: Socket, payload: { publicKey: string }): void {
+    const { publicKey } = payload;
+    if (!publicKey) return;
+
+    // Check for active room with this player
+    const roomInfo = this.matchmaker.getRoomByPlayerId(publicKey);
+    if (!roomInfo) {
+      socket.emit(ServerEvent.ERROR, { message: 'No active game found' });
+      return;
+    }
+
+    const { roomId, room } = roomInfo;
+    const roomData = room.gameMachine.getRoom();
+
+    if (roomData.state === 'finished') {
+      socket.emit(ServerEvent.ERROR, { message: 'Game already finished' });
+      return;
+    }
+
+    // Clear grace period timer
+    const timer = this.disconnectTimers.get(publicKey);
+    if (timer) {
+      clearTimeout(timer);
+      this.disconnectTimers.delete(publicKey);
+    }
+
+    // Replace old socket with new socket
+    room.players.set(publicKey, socket);
+    socket.join(roomId);
+
+    console.log(`[Reconnect] Player ${publicKey.slice(0, 8)} rejoined room ${roomId}`);
+
+    // Send current game state
+    const clientState = room.gameMachine.getStateForClient(publicKey);
+    socket.emit(ServerEvent.GAME_REJOINED, {
+      roomId,
+      gameState: clientState
+    });
+  }
+
+  /**
+   * Handle game completion - save stats to DB and mint cNFT
+   */
+  private async handleGameCompletion(roomId: string, room: any): Promise<void> {
+    if (!this.db) return;
+
+    const roomData = room.gameMachine.getRoom();
+    const winnerId = roomData.winner;
+
+    try {
+      // Save game record
+      const finalScores = roomData.players.map((p: any) => p.totalScore);
+      const playerIds = roomData.players.map((p: any) => p.id);
+      this.db.completeGame(
+        roomId,
+        winnerId || '',
+        finalScores,
+        roomData.roundHistory || [],
+        roomData.gameMode,
+        roomData.totalRounds,
+        playerIds
+      );
+
+      // Update stats for each human player
+      for (const player of roomData.players) {
+        if (player.type !== 'human') continue;
+
+        // Get or create player in DB
+        this.db.getOrCreatePlayer(player.id, player.name);
+
+        // Find this player's bid in the last round
+        const lastBids = roomData.bids || [];
+        const playerBid = lastBids.find((b: any) => b.playerId === player.id);
+        const bidAmount = playerBid?.amount || 0;
+
+        this.db.updatePlayerStats(
+          player.id,
+          player.tricksWon,
+          bidAmount,
+          player.totalScore,
+          player.id === winnerId
+        );
+      }
+
+      // Mint cNFT for winner (if configured and winner is human)
+      const winner = roomData.players.find((p: any) => p.id === winnerId);
+      if (this.cnftMinter && winner && winner.type === 'human') {
+        try {
+          const result = await this.cnftMinter.mintTournamentReward(roomId, winnerId, 'gold');
+          console.log(`[cNFT] Minted reward for winner ${winnerId.slice(0, 8)}: ${result.signature}`);
+
+          // Record in DB
+          this.db.recordNftReward({
+            playerPk: winnerId,
+            tournamentId: 0,
+            gameId: roomId,
+            tier: 3, // Gold
+            metadataUri: '',
+            signature: result.signature,
+            onChainMinted: true
+          });
+
+          // Notify winner
+          const winnerSocket = room.players.get(winnerId);
+          if (winnerSocket) {
+            winnerSocket.emit(ServerEvent.REWARD_MINTED, {
+              signature: result.signature,
+              tier: 'gold'
+            });
+          }
+        } catch (error) {
+          console.error('[cNFT] Failed to mint reward, continuing without it:', error);
+        }
+      }
+    } catch (error) {
+      console.error('[Database] Error handling game completion:', error);
     }
   }
 
@@ -547,6 +937,48 @@ export class SocketServer {
   }
 
   /**
+   * Replace a disconnected player with a bot
+   */
+  private replaceDisconnectedPlayerWithBot(roomId: string, publicKey: string, room: any): void {
+    const roomData = room.gameMachine.getRoom();
+    const playerIndex = roomData.players.findIndex((p: any) => p.id === publicKey);
+    if (playerIndex === -1) return;
+
+    // Create a bot for this player index
+    const bot = room.botManager.createBot(playerIndex, 'normal');
+    const botId = bot.getId();
+    const botName = bot.getName();
+
+    // Replace in game state
+    const replaced = room.gameMachine.replacePlayerWithBot(publicKey, botId, botName);
+    if (!replaced) return;
+
+    // Remove old socket from room.players
+    room.players.delete(publicKey);
+
+    console.log(`[Disconnect→Bot] Player ${publicKey.slice(0, 8)} replaced with bot ${botName} in room ${roomId}`);
+
+    // Broadcast updated state + notify
+    this.broadcastGameState(roomId, room);
+    this.io.to(roomId).emit(ServerEvent.PLAYER_REPLACED, {
+      oldPlayerId: publicKey,
+      newPlayerId: botId,
+      newPlayerName: botName
+    });
+
+    // If it's now the bot's turn, trigger bot action
+    const updatedRoom = room.gameMachine.getRoom();
+    const currentPlayer = updatedRoom.players[updatedRoom.currentPlayerIndex];
+    if (currentPlayer && currentPlayer.id === botId) {
+      if (updatedRoom.state === 'bidding') {
+        this.handleBotBidding(roomId, room);
+      } else if (updatedRoom.state === 'playing') {
+        this.handleBotTurns(roomId, room);
+      }
+    }
+  }
+
+  /**
    * Get player ID (publicKey for humans) from socket
    * Iterates through room.players Map to find the key (publicKey) that maps to this socket
    */
@@ -563,11 +995,11 @@ export class SocketServer {
    * Broadcast game state to all players in room
    * Iterates over actual players from gameMachine using their player ID (publicKey for humans)
    */
-  private broadcastGameState(roomId: string, room: any): void {
+  private broadcastGameState(_roomId: string, room: any): void {
     const roomData = room.gameMachine.getRoom();
 
     console.log('[broadcastGameState] Room data players (first 20 chars of id):', roomData.players.map((p: any) => ({ id: p.id.slice(0, 20), name: p.name, type: p.type })));
-    console.log('[broadcastGameState] Room.players Map keys (first 20 chars):', Array.from(room.players.keys()).map(k => k.slice(0, 20)));
+    console.log('[broadcastGameState] Room.players Map keys (first 20 chars):', Array.from(room.players.keys() as Iterable<string>).map((k: string) => k.slice(0, 20)));
 
     // Send customized state to each player using their actual player ID (publicKey for humans)
     for (const player of roomData.players) {

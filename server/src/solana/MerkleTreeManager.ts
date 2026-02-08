@@ -3,15 +3,11 @@
  * Bubblegum cNFT'ler için merkle tree oluşturma ve yönetim.
  */
 
-import { PublicKey, Keypair, SystemProgram } from '@solana/web3.js';
-import { Transaction } from '@solana/web3.js';
-import { SolanaClient } from './SolanaClient.js';
+import { Keypair } from '@solana/web3.js';
 import { config } from '../config.js';
 export class MerkleTreeManager {
-  private client: SolanaClient;
-
   constructor() {
-    this.client = new SolanaClient();
+    // SolanaClient initialization deferred until needed
   }
 
   /**
@@ -28,9 +24,6 @@ export class MerkleTreeManager {
     maxDepth: number = 14,
     maxBufferSize: number = 64
   ): Promise<{ treeAddress: string; signature: string }> {
-    const connection = this.client.getConnection();
-    const payer = this.client.getPayer();
-
     try {
       // In production, would create actual Bubblegum tree account
       // For MVP, using a placeholder
@@ -61,7 +54,7 @@ export class MerkleTreeManager {
   /**
    * Get current tree usage
    */
-  async getTreeUsage(treeAddress: string): Promise<number> {
+  async getTreeUsage(_treeAddress: string): Promise<number> {
     try {
       // In production, would fetch from Bubblegum account
       // For MVP, returning mock value

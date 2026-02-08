@@ -21,6 +21,17 @@ export enum ClientEvent {
   PLAYER_READY = 'player_ready',
   CLAIM_REWARD = 'claim_reward',
   REQUEST_NEXT_ROUND = 'request_next_round',
+  REJOIN_GAME = 'rejoin_game',
+  SET_USERNAME = 'set_username',
+  GET_USERNAME = 'get_username',
+  CREATE_PRIVATE_ROOM = 'create_private_room',
+  JOIN_PRIVATE_ROOM = 'join_private_room',
+  LEAVE_PRIVATE_ROOM = 'leave_private_room',
+  START_PRIVATE_ROOM = 'start_private_room',
+  AUTH_REGISTER = 'auth_register',
+  AUTH_LOGIN = 'auth_login',
+  AUTH_VALIDATE = 'auth_validate',
+  AUTH_WALLET = 'auth_wallet',
   DISCONNECT = 'disconnect'
 }
 
@@ -39,11 +50,17 @@ export enum ServerEvent {
   GAME_COMPLETE = 'game_complete',
   REWARD_MINTED = 'reward_minted',
   TOURNAMENT_ERROR = 'tournament_error',
+  GAME_REJOINED = 'game_rejoined',
+  PLAYER_REPLACED = 'player_replaced',
+  PRIVATE_ROOM_CREATED = 'private_room_created',
+  PRIVATE_ROOM_UPDATE = 'private_room_update',
+  PRIVATE_ROOM_CLOSED = 'private_room_closed',
   ERROR = 'error'
 }
 
 export interface JoinQueuePayload {
   publicKey: string;
+  username?: string;
   gameMode?: GameMode;  // NEW: Game mode selection
   botDifficulty?: 'easy' | 'normal' | 'hard';
   botCount?: number;

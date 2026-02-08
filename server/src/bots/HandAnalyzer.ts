@@ -138,7 +138,7 @@ export function findBestTrumpSuit(hand: Card[]): Suit {
  * Check if should bid or pass
  */
 export function shouldBid(
-  hand: Card[],
+  _hand: Card[],
   currentHighestBid: number,
   analysis: HandAnalysis
 ): boolean {
@@ -186,7 +186,7 @@ export function determineBidAmount(
  * Sort hand by suit and rank
  */
 export function sortHand(hand: Card[]): Card[] {
-  const suitOrder = { [Suit.SPADES]: 0, [Suit.HEARTS]: 1, [Suit.DIAMONDS]: 2, [Suit.CLUBS]: 3 };
+  const suitOrder: Record<Suit, number> = { [Suit.SPADES]: 0, [Suit.HEARTS]: 1, [Suit.DIAMONDS]: 2, [Suit.CLUBS]: 3, [Suit.NONE]: 4 };
 
   return [...hand].sort((a, b) => {
     const suitDiff = suitOrder[a.suit] - suitOrder[b.suit];

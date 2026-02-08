@@ -9,7 +9,7 @@ export class TournamentHandler {
   /**
    * Handle reward claim
    */
-  static handleClaimReward(socket: Socket, tournamentId: string, publicKey: string): void {
+  static handleClaimReward(socket: Socket, tournamentId: string, _publicKey: string): void {
     console.log(`[Tournament] Player claiming reward for tournament ${tournamentId}`);
 
     // In production, would verify with Solana program

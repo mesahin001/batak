@@ -15,7 +15,7 @@ export default defineConfig({
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'landscape',
         icons: [
           {
             src: '/icons/icon-192x192.png',
@@ -48,7 +48,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    host: true
+    host: true,
+    allowedHosts: true
   },
   build: {
     target: 'esnext',

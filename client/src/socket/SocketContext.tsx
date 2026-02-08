@@ -8,6 +8,7 @@ import { io, Socket } from 'socket.io-client';
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
+  isReconnecting: boolean;
   connect: () => void;
   disconnect: () => void;
 }
@@ -25,6 +26,7 @@ interface SocketProviderProps {
 export const SocketProvider: React.FC<SocketProviderProps> = ({ url, children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Connect to socket
   const connect = useCallback(() => {
@@ -32,17 +34,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ url, children })
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
     });
 
     socketInstance.on('connect', () => {
       console.log('Socket connected:', socketInstance.id);
       setIsConnected(true);
+      setIsReconnecting(false);
     });
 
     socketInstance.on('disconnect', () => {
       console.log('Socket disconnected');
       setIsConnected(false);
+    });
+
+    socketInstance.on('reconnect_attempt', (attempt) => {
+      console.log(`Socket reconnecting... attempt ${attempt}`);
+      setIsReconnecting(true);
+    });
+
+    socketInstance.on('reconnect', () => {
+      console.log('Socket reconnected');
+      setIsReconnecting(false);
+    });
+
+    socketInstance.on('reconnect_failed', () => {
+      console.log('Socket reconnection failed');
+      setIsReconnecting(false);
     });
 
     socketInstance.on('connect_error', (error) => {
@@ -73,6 +91,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ url, children })
   const value: SocketContextType = {
     socket,
     isConnected,
+    isReconnecting,
     connect,
     disconnect,
   };

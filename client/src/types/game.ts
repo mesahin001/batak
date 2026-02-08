@@ -164,3 +164,54 @@ export enum GameMode {
   KOZ_MACA = 'koz_maca',        // No bidding, everyone tries to win tricks
   IHALELI_BATAK = 'ihaleli_batak'  // Bidding determines declarer
 }
+
+/**
+ * Leaderboard entry from server
+ */
+export interface LeaderboardEntry {
+  publicKey: string;
+  username: string;
+  gamesPlayed: number;
+  gamesWon: number;
+  gamesLost: number;
+  totalScore: number;
+  nftsEarned: number;
+  rankTier: number;
+  currentSeasonPoints: number;
+  totalTricksWon: number;
+  totalBidsMade: number;
+  bidsSuccessful: number;
+  bestScore: number;
+  worstScore: number;
+}
+
+/**
+ * Player profile with game history and NFTs
+ */
+export interface PlayerProfile extends LeaderboardEntry {
+  recentGames: GameHistoryEntry[];
+  nftRewards: NftRewardEntry[];
+}
+
+/**
+ * Game history entry from server
+ */
+export interface GameHistoryEntry {
+  id: string;
+  gameMode: string;
+  totalRounds: number;
+  winnerPk: string;
+  finalScores: number[];
+  completedAt?: string;
+}
+
+/**
+ * NFT reward entry from server
+ */
+export interface NftRewardEntry {
+  playerPk: string;
+  tier: number;
+  metadataUri: string;
+  signature?: string;
+  onChainMinted: boolean;
+}
