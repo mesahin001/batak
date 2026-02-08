@@ -8,8 +8,8 @@ Complete guide for deploying Batak Tournament to a Hetzner VPS with domain `bata
 2. [Phase 1: Initial VPS Setup](#phase-1-initial-vps-setup)
 3. [Phase 2: Install Docker](#phase-2-install-docker)
 4. [Phase 3: Deploy Application](#phase-3-deploy-application)
-5. [Phase 4: DNS Configuration](#phase-4-dns-configuration)
-6. [Phase 5: SSL Certificate](#phase-5-ssl-certificate)
+5. [Phase 4: Cloudflare Configuration](#phase-4-cloudflare-configuration)
+6. [Phase 5: Verify SSL Connection](#phase-5-verify-ssl-connection)
 7. [Phase 6: Security Hardening](#phase-6-security-hardening)
 8. [Phase 7: Monitoring & Maintenance](#phase-7-monitoring--maintenance)
 9. [Troubleshooting](#troubleshooting)
@@ -101,9 +101,8 @@ ufw default allow outgoing
 # Allow SSH (first!)
 ufw allow 22/tcp
 
-# Allow HTTP/HTTPS
+# Allow HTTP only (Cloudflare handles HTTPS)
 ufw allow 80/tcp
-ufw allow 443/tcp
 
 # Enable firewall
 ufw enable
@@ -244,10 +243,34 @@ docker compose logs nginx
    - **Type:** A
    - **Name:** s
    - **IPv4 address:** `<your-hetzner-vps-ip>`
-   - **Proxy status:** DNS only (gray cloud) - *for SSL certificate*
+   - **Proxy status:** Proxied (orange cloud) - *Cloudflare handles SSL*
    - **TTL:** Auto
 
-### 4.2 Verify DNS Propagation
+### 4.2 Cloudflare SSL/TLS Configuration
+
+1. Go to Cloudflare Dashboard → batakci.xyz → SSL/TLS
+2. Configure:
+   - **Overview:**
+     - Encryption mode: **Full** or **Full (strict)**
+     - Always Use HTTPS: **ON**
+     - Automatic HTTPS Rewrites: **ON**
+   - **Edge Certificates:**
+     - Minimum TLS Version: **1.2** or **1.3**
+     - Opportunistic Encryption: Optional (your choice)
+
+### 4.2 Cloudflare SSL/TLS Configuration
+
+1. Go to Cloudflare Dashboard → batakci.xyz → SSL/TLS
+2. Configure:
+   - **Overview:**
+     - Encryption mode: **Full** or **Full (strict)**
+     - Always Use HTTPS: **ON**
+     - Automatic HTTPS Rewrites: **ON**
+   - **Edge Certificates:**
+     - Minimum TLS Version: **1.2** or **1.3**
+     - Opportunistic Encryption: Optional (your choice)
+
+### 4.3 Verify DNS Propagation
 
 ```bash
 # From local machine
@@ -258,54 +281,28 @@ nslookup s.batakci.xyz
 # https://dnschecker.org/
 ```
 
+**Note:** With Cloudflare proxy enabled, the IP will show Cloudflare's IP, not your VPS IP. This is expected.
+
 ---
 
-## Phase 5: SSL Certificate
+## Phase 5: Verify SSL Connection
 
-### 5.1 Get Let's Encrypt Certificate
+Since Cloudflare handles SSL termination, no certificates are needed on the VPS.
 
-```bash
-# On VPS, stop nginx temporarily
-docker compose stop nginx
+### 5.1 Test from Browser
 
-# Get certificate
-sudo certbot certonly --standalone -d s.batakci.xyz
+1. Visit `https://s.batakci.xyz`
+2. Check the certificate in browser - should show Cloudflare certificate
+3. Verify the site loads correctly
 
-# Certificates saved to:
-# /etc/letsencrypt/live/s.batakci.xyz/fullchain.pem
-# /etc/letsencrypt/live/s.batakci.xyz/privkey.pem
-```
-
-### 5.2 Restart with SSL
+### 5.2 Test from Command Line
 
 ```bash
-# Start nginx with SSL
-docker compose start nginx
+# From local machine
+curl -I https://s.batakci.xyz
 
-# Verify HTTPS
-curl https://s.batakci.xyz
+# Should return HTTP/2 200 with Cloudflare headers
 ```
-
-### 5.3 Setup Auto-Renewal
-
-```bash
-# Test renewal
-sudo certbot renew --dry-run
-
-# Setup cron job
-(crontab -l 2>/dev/null; echo "0 0 * * 0 certbot renew --quiet --post-hook 'cd /home/batak/app && docker compose restart nginx'") | crontab -
-```
-
-### 5.4 Enable Cloudflare Proxy (Optional)
-
-After SSL is working:
-
-1. Go to Cloudflare DNS
-2. Change s.batakci.xyz from "DNS only" to "Proxied" (orange cloud)
-3. Enable:
-   - SSL/TLS → Full (strict)
-   - Always Use HTTPS → ON
-   - Brotli compression → ON
 
 ---
 
@@ -441,13 +438,20 @@ docker compose logs batak-server
 
 ### SSL Certificate Issues
 
-```bash
-# Renew certificate manually
-sudo certbot renew --force-renewal
+Since Cloudflare handles SSL/TLS, certificate issues are unlikely. If you see SSL errors:
 
-# Restart nginx
-docker compose restart nginx
-```
+1. **Check Cloudflare SSL/TLS settings:**
+   - Ensure encryption mode is set to **Full** or **Full (strict)**
+   - Verify "Always Use HTTPS" is enabled
+
+2. **Clear browser cache** and test in incognito mode
+
+3. **Check Cloudflare status:** https://www.cloudflarestatus.com/
+
+4. **Temporarily bypass Cloudflare** for testing:
+   - Go to DNS → Change s.batakci.xyz to "DNS only" (gray cloud)
+   - Test direct HTTP connection to VPS
+   - Remember to change back to "Proxied" when done
 
 ### Database Issues
 
@@ -467,7 +471,6 @@ docker cp ~/backup.db batak-server:/app/data/batak.db
 ```bash
 # Check what's using the port
 sudo lsof -i :80
-sudo lsof -i :443
 
 # Stop conflicting service
 sudo systemctl stop nginx  # if system nginx is running
@@ -520,7 +523,7 @@ To manually trigger:
 |------|------|
 | Hetzner VPS (CX22) | ~€4-6/mo |
 | Domain (batakci.xyz) | ~€10-15/year |
-| SSL/TLS | Free (Let's Encrypt) |
+| SSL/TLS | Free (Cloudflare) |
 | Cloudflare Free Tier | Free |
 | **Total** | **~€5-8/mo** |
 
@@ -551,8 +554,8 @@ When you need to scale:
 - [ ] Password authentication disabled
 - [ ] Firewall (UFW) enabled
 - [ ] Fail2Ban configured
-- [ ] SSL/TLS certificate installed
-- [ ] Auto-renewal configured
+- [ ] Cloudflare proxy enabled (orange cloud)
+- [ ] Cloudflare SSL/TLS set to Full or Full (strict)
 - [ ] JWT_SECRET is strong and random
 - [ ] Database backups scheduled
 - [ ] Health checks configured
@@ -614,7 +617,6 @@ docker compose up -d
 - **Database:** `/home/batak/app/server/data/batak.db`
 - **Backups:** `/home/batak/backups/`
 - **Logs:** `/home/batak/app/logs/`
-- **SSL Certs:** `/etc/letsencrypt/live/s.batakci.xyz/`
 
 ---
 
