@@ -51,14 +51,21 @@ export const config = {
       if (!this.programId || this.programId.includes('111111')) {
         errors.push('Valid PROGRAM_ID is required in production (current value appears to be placeholder)');
       }
+      // MERKLE_TREE is optional for MVP - cNFT minting can be mocked
       if (!this.merkleTree) {
-        errors.push('MERKLE_TREE is required in production');
+        warnings.push('MERKLE_TREE not set - cNFT minting will be mocked');
       }
 
       if (errors.length > 0) {
         console.error('❌ Config validation failed:');
         errors.forEach(err => console.error(`  - ${err}`));
         throw new Error(`Config validation failed:\n${errors.join('\n')}`);
+      }
+
+      // Show warnings in production too
+      if (warnings.length > 0) {
+        console.warn('⚠️  Config warnings:');
+        warnings.forEach(warn => console.warn(`  - ${warn}`));
       }
     }
     // Development: Warn only
