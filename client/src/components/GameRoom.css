@@ -1,12 +1,14 @@
 /* ============================
-   GameRoom — Landscape-First Layout
-   Target: ~844x390 (landscape phone)
+   GameRoom — Mobile-First Portrait Layout
+   Target: ~390x844 (portrait phone) with landscape fallback
    ============================ */
 
 /* --- Root container: full viewport, no scroll --- */
 .game-room {
   height: 100dvh;
   height: 100vh; /* fallback */
+  width: 100vw;
+  width: 100dvw; /* fallback */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -79,54 +81,53 @@
   line-height: 1;
 }
 
-/* --- Game Table (CSS Grid 3x3) --- */
+/* --- Game Table (CSS Grid - Portrait First) --- */
 .game-table {
   flex: 1;
   display: grid;
-  grid-template-columns: 60px 1fr 60px;
-  grid-template-rows: auto 1fr auto;
-  gap: 0;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 4px;
   min-height: 0; /* allow shrink */
   overflow: hidden;
-  padding: 2px 4px;
+  padding: 4px 8px;
 }
 
-/* --- Opponent Slots --- */
+/* --- Opponent Slots (Portrait Layout) --- */
 .opponent-top {
   grid-column: 1 / -1;
   grid-row: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2px 0;
+  padding: 4px 0;
+  gap: 12px;
 }
 
 .opponent-left {
   grid-column: 1;
   grid-row: 2;
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  padding: 2px;
+  align-items: flex-start;
+  padding: 4px;
 }
 
 .opponent-right {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 2;
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  padding: 2px;
+  align-items: flex-start;
+  padding: 4px;
 }
 
 .opponent-slot {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Changed to row for portrait */
   align-items: center;
-  gap: 1px;
-  padding: 3px 6px;
+  gap: 4px;
+  padding: 4px 8px;
   background: rgba(22, 33, 62, 0.7);
   border-radius: 6px;
   border: 1.5px solid transparent;
@@ -147,46 +148,48 @@
 }
 
 .opponent-slot .opp-name {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: #e0e0e0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 64px;
+  max-width: 80px;
 }
 
 .opponent-slot .opp-icon {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
 }
 
 .opponent-slot .opp-tricks {
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   color: #4ade80;
 }
 
 .opponent-slot .opp-bid {
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   color: #fbbf24;
   font-weight: 500;
 }
 
 .opponent-slot .opp-score {
-  font-size: 0.5rem;
+  font-size: 0.55rem;
   color: #a0a0a0;
 }
 
-/* Side opponents: compact vertical */
+/* Side opponents: portrait layout - horizontal */
 .opponent-left .opponent-slot,
 .opponent-right .opponent-slot {
-  padding: 3px 4px;
-  max-width: 54px;
+  padding: 4px 6px;
+  max-width: 100%;
+  flex-direction: row;
+  gap: 4px;
 }
 
 .opponent-left .opp-name,
 .opponent-right .opp-name {
-  max-width: 48px;
-  font-size: 0.55rem;
+  max-width: 80px;
+  font-size: 0.6rem;
 }
 
 /* Score popup on opponent areas */
@@ -212,19 +215,20 @@
 
 /* --- Trick Area (center of grid) --- */
 .trick-area {
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 1 / -1;
+  grid-row: 3;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0;
+  min-height: 120px;
+  max-height: 180px;
 }
 
 .trick-slots {
   position: relative;
-  width: 120px;
-  height: 100px;
+  width: 140px;
+  height: 120px;
 }
 
 .trick-slot {
@@ -241,8 +245,8 @@
 .trick-slot-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
 
 .trick-card {
-  width: 32px;
-  height: 44px;
+  width: 36px;
+  height: 50px;
   background: linear-gradient(145deg, #ffffff, #f0f0f0);
   border-radius: 4px;
   display: flex;
@@ -321,19 +325,19 @@
 /* --- My Info Bar --- */
 .my-info-bar {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 2px 8px;
+  padding: 4px 8px;
   background: rgba(13, 17, 30, 0.8);
   border-radius: 4px;
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   color: #ccc;
   gap: 4px;
-  margin: 0 2px;
-  height: 22px;
-  min-height: 22px;
+  margin: 0 4px;
+  height: 28px;
+  min-height: 28px;
 }
 
 .my-info-bar .info-item {
@@ -358,18 +362,20 @@
 
 /* --- My Hand Strip (centered, spaced cards) --- */
 .my-hand-strip {
+  grid-column: 1 / -1;
+  grid-row: 5;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  gap: 3px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   background: rgba(13, 17, 30, 0.6);
-  min-height: 68px;
-  height: 68px;
+  min-height: 72px;
+  height: 72px;
 }
 
 .my-hand-strip::-webkit-scrollbar {
@@ -378,8 +384,8 @@
 
 .hand-card {
   flex-shrink: 0;
-  width: 42px;
-  height: 58px;
+  width: 38px;
+  height: 54px;
   background: linear-gradient(145deg, #ffffff, #f0f0f0);
   border-radius: 5px;
   display: flex;
@@ -828,3 +834,178 @@
 .suit-hearts   { color: #dc2626; }
 .suit-diamonds { color: #b45309; }
 .suit-clubs    { color: #15803d; }
+
+/* ============================
+   Landscape Mode Media Query
+   For tablets, desktops, and landscape phones
+   ============================ */
+@media (orientation: landscape) and (min-width: 600px) {
+  .game-table {
+    grid-template-columns: 70px 1fr 70px;
+    grid-template-rows: auto 1fr auto;
+    gap: 0;
+    padding: 2px 6px;
+  }
+
+  .opponent-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding: 2px 0;
+  }
+
+  .opponent-left {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 2px;
+  }
+
+  .opponent-right {
+    grid-column: 3;
+    grid-row: 2;
+    padding: 2px;
+  }
+
+  .opponent-slot {
+    flex-direction: column;
+    padding: 3px 6px;
+  }
+
+  .opponent-slot .opp-name {
+    max-width: 64px;
+    font-size: 0.6rem;
+  }
+
+  .opponent-left .opponent-slot,
+  .opponent-right .opponent-slot {
+    max-width: 60px;
+    padding: 3px 4px;
+  }
+
+  .opponent-left .opp-name,
+  .opponent-right .opp-name {
+    max-width: 48px;
+    font-size: 0.55rem;
+  }
+
+  .trick-area {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .trick-slots {
+    width: 120px;
+    height: 100px;
+  }
+
+  .my-info-bar {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    height: 22px;
+    min-height: 22px;
+    font-size: 0.6rem;
+    margin: 0 2px;
+  }
+
+  .my-hand-strip {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 68px;
+    height: 68px;
+    padding: 4px 8px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hand-card {
+    width: 42px;
+    height: 58px;
+  }
+
+  .trick-card {
+    width: 32px;
+    height: 44px;
+  }
+
+  .my-hand-strip {
+    grid-row: auto;
+  }
+
+  .game-table {
+    grid-template-rows: auto 1fr auto;
+  }
+}
+
+/* Small landscape (phones in landscape) */
+@media (orientation: landscape) and (max-width: 599px) {
+  .game-table {
+    grid-template-columns: 50px 1fr 50px;
+    grid-template-rows: auto 1fr auto;
+    gap: 2px;
+    padding: 2px 4px;
+  }
+
+  .opponent-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .opponent-left {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .opponent-right {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .opponent-slot {
+    flex-direction: column;
+    padding: 2px 4px;
+  }
+
+  .opponent-slot .opp-name {
+    max-width: 50px;
+    font-size: 0.55rem;
+  }
+
+  .trick-area {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .trick-slots {
+    width: 100px;
+    height: 80px;
+  }
+
+  .my-info-bar {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    height: 20px;
+    min-height: 20px;
+    font-size: 0.55rem;
+  }
+
+  .my-hand-strip {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 56px;
+    height: 56px;
+    padding: 3px 6px;
+    padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hand-card {
+    width: 36px;
+    height: 50px;
+  }
+
+  .trick-card {
+    width: 28px;
+    height: 40px;
+  }
+}

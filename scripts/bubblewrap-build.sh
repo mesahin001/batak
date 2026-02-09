@@ -9,7 +9,7 @@ echo "🃏 Batak Tournament - APK Build Script"
 echo "========================================"
 
 # Configuration
-MANIFEST_URL="${MANIFEST_URL:-http://localhost:5173/manifest.json}"
+MANIFEST_URL="${MANIFEST_URL:-https://s.batakci.xyz/manifest.json}"
 APP_NAME="Batak Tournament"
 APP_PACKAGE_NAME="com.bataktournament.game"
 OUTPUT_DIR="./dist/apk"

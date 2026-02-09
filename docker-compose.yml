@@ -16,10 +16,42 @@ services:
       - SOLANA_NETWORK=${SOLANA_NETWORK:-devnet}
       - PROGRAM_ID=${PROGRAM_ID:-}
       - MERKLE_TREE=${MERKLE_TREE:-}
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     volumes:
       - server-data:/app/data
     expose:
       - "3001"
+    depends_on: []
+
+  redis:
+    image: redis:7-alpine
+    container_name: batak-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+    # Only enable if you want Redis (set REDIS_ENABLED=true)
+    profiles:
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: batak-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=batak
+      - POSTGRES_USER=${POSTGRES_USER:-batak}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    # Only enable if you want PostgreSQL (set DATABASE_TYPE=postgresql)
+    profiles:
+      - postgres
 
   nginx:
     image: nginx:alpine
@@ -35,3 +67,5 @@ services:
 
 volumes:
   server-data:
+  redis-data:
+  postgres-data:
