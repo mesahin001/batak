@@ -1,6 +1,6 @@
 /* ============================
-   GameRoom — Mobile-First Portrait Layout
-   Target: ~390x844 (portrait phone) with landscape fallback
+   GameRoom — Landscape-First Layout
+   Target: ~844x390 (landscape phone)
    ============================ */
 
 /* --- Root container: full viewport, no scroll --- */
@@ -81,53 +81,54 @@
   line-height: 1;
 }
 
-/* --- Game Table (CSS Grid - Portrait First) --- */
+/* --- Game Table (CSS Grid - Landscape First) --- */
 .game-table {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr auto auto;
-  gap: 4px;
+  grid-template-columns: 60px 1fr 60px;
+  grid-template-rows: auto 1fr auto;
+  gap: 0;
   min-height: 0; /* allow shrink */
   overflow: hidden;
-  padding: 4px 8px;
+  padding: 2px 4px;
 }
 
-/* --- Opponent Slots (Portrait Layout) --- */
+/* --- Opponent Slots (Landscape Layout) --- */
 .opponent-top {
   grid-column: 1 / -1;
   grid-row: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 4px 0;
-  gap: 12px;
+  padding: 2px 0;
 }
 
 .opponent-left {
   grid-column: 1;
   grid-row: 2;
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
-  padding: 4px;
+  align-items: center;
+  padding: 2px;
 }
 
 .opponent-right {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 2;
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
-  padding: 4px;
+  align-items: center;
+  padding: 2px;
 }
 
 .opponent-slot {
   display: flex;
-  flex-direction: row; /* Changed to row for portrait */
+  flex-direction: column; /* Vertical layout for landscape */
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 1px;
+  padding: 3px 6px;
   background: rgba(22, 33, 62, 0.7);
   border-radius: 6px;
   border: 1.5px solid transparent;
@@ -148,48 +149,46 @@
 }
 
 .opponent-slot .opp-name {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 600;
   color: #e0e0e0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80px;
+  max-width: 64px;
 }
 
 .opponent-slot .opp-icon {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
 }
 
 .opponent-slot .opp-tricks {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   color: #4ade80;
 }
 
 .opponent-slot .opp-bid {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   color: #fbbf24;
   font-weight: 500;
 }
 
 .opponent-slot .opp-score {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   color: #a0a0a0;
 }
 
-/* Side opponents: portrait layout - horizontal */
+/* Side opponents: compact vertical */
 .opponent-left .opponent-slot,
 .opponent-right .opponent-slot {
-  padding: 4px 6px;
-  max-width: 100%;
-  flex-direction: row;
-  gap: 4px;
+  padding: 3px 4px;
+  max-width: 54px;
 }
 
 .opponent-left .opp-name,
 .opponent-right .opp-name {
-  max-width: 80px;
-  font-size: 0.6rem;
+  max-width: 48px;
+  font-size: 0.55rem;
 }
 
 /* Score popup on opponent areas */
@@ -215,20 +214,19 @@
 
 /* --- Trick Area (center of grid) --- */
 .trick-area {
-  grid-column: 1 / -1;
-  grid-row: 3;
+  grid-column: 2;
+  grid-row: 2;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 120px;
-  max-height: 180px;
+  min-height: 0;
 }
 
 .trick-slots {
   position: relative;
-  width: 140px;
-  height: 120px;
+  width: 120px;
+  height: 100px;
 }
 
 .trick-slot {
@@ -245,8 +243,8 @@
 .trick-slot-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
 
 .trick-card {
-  width: 36px;
-  height: 50px;
+  width: 32px;
+  height: 44px;
   background: linear-gradient(145deg, #ffffff, #f0f0f0);
   border-radius: 4px;
   display: flex;
@@ -325,19 +323,19 @@
 /* --- My Info Bar --- */
 .my-info-bar {
   grid-column: 1 / -1;
-  grid-row: 4;
+  grid-row: 3;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 4px 8px;
+  padding: 2px 8px;
   background: rgba(13, 17, 30, 0.8);
   border-radius: 4px;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   color: #ccc;
   gap: 4px;
-  margin: 0 4px;
-  height: 28px;
-  min-height: 28px;
+  margin: 0 2px;
+  height: 22px;
+  min-height: 22px;
 }
 
 .my-info-bar .info-item {
@@ -362,20 +360,18 @@
 
 /* --- My Hand Strip (centered, spaced cards) --- */
 .my-hand-strip {
-  grid-column: 1 / -1;
-  grid-row: 5;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 3px;
-  padding: 6px 8px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  gap: 4px;
+  padding: 4px 8px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   background: rgba(13, 17, 30, 0.6);
-  min-height: 72px;
-  height: 72px;
+  min-height: 68px;
+  height: 68px;
 }
 
 .my-hand-strip::-webkit-scrollbar {
@@ -384,8 +380,8 @@
 
 .hand-card {
   flex-shrink: 0;
-  width: 38px;
-  height: 54px;
+  width: 42px;
+  height: 58px;
   background: linear-gradient(145deg, #ffffff, #f0f0f0);
   border-radius: 5px;
   display: flex;
@@ -836,8 +832,35 @@
 .suit-clubs    { color: #15803d; }
 
 /* ============================
+   Portrait Mode Warning
+   Show warning when device is in portrait mode
+   ============================ */
+@media (orientation: portrait) {
+  /* Show rotation warning overlay */
+  .game-room::before {
+    content: "📱 Lütfen telefonunuzu yatay (landscape) konumda tutun";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 9999;
+    pointer-events: none;
+    padding: 20px;
+  }
+}
+
+/* ============================
    Landscape Mode Media Query
-   For tablets and desktops ONLY (NOT mobile phones)
+   For tablets and desktops
    ============================ */
 @media (orientation: landscape) and (min-width: 768px) {
   .game-table {
@@ -936,97 +959,73 @@
   }
 }
 
-/* Small landscape (phones in landscape) - Force portrait mode */
+/* Small landscape (phones in landscape) - optimized layout */
 @media (orientation: landscape) and (max-width: 767px) {
-  /* Keep portrait layout on mobile phones */
   .game-table {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr auto auto;
-    gap: 4px;
-    padding: 4px 8px;
+    grid-template-columns: 50px 1fr 50px;
+    grid-template-rows: auto 1fr auto;
+    gap: 2px;
+    padding: 2px 4px;
   }
 
   .opponent-top {
     grid-column: 1 / -1;
     grid-row: 1;
-    padding: 4px 0;
   }
 
   .opponent-left {
     grid-column: 1;
     grid-row: 2;
-    padding: 4px;
   }
 
   .opponent-right {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 2;
-    padding: 4px;
   }
 
   .opponent-slot {
-    flex-direction: row;
-    padding: 4px 8px;
+    flex-direction: column;
+    padding: 2px 4px;
   }
 
   .opponent-slot .opp-name {
-    max-width: 80px;
-    font-size: 0.65rem;
+    max-width: 50px;
+    font-size: 0.55rem;
   }
 
   .trick-area {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    min-height: 120px;
-    max-height: 180px;
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
   }
 
   .trick-slots {
-    width: 140px;
-    height: 120px;
+    width: 100px;
+    height: 80px;
   }
 
   .my-info-bar {
     grid-column: 1 / -1;
-    grid-row: 4;
-    height: 28px;
-    min-height: 28px;
-    font-size: 0.65rem;
+    grid-row: 3;
+    height: 20px;
+    min-height: 20px;
+    font-size: 0.55rem;
   }
 
   .my-hand-strip {
-    grid-column: 1 / -1;
-    grid-row: 5;
-    min-height: 72px;
-    height: 72px;
-    padding: 6px 8px;
-    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    min-height: 56px;
+    height: 56px;
+    padding: 3px 6px;
+    padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px));
   }
 
   .hand-card {
-    width: 38px;
-    height: 54px;
-  }
-
-  .trick-card {
     width: 36px;
     height: 50px;
   }
 
-  /* Add rotation warning overlay */
-  .game-room::before {
-    content: "📱 Lütfen telefonunuzu dikey (portrait) konumda tutun";
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 14px;
-    z-index: 9999;
-    pointer-events: none;
+  .trick-card {
+    width: 28px;
+    height: 40px;
   }
 }

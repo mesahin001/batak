@@ -32,15 +32,15 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevScoresRef = useRef<Record<string, number>>({});
 
-  // Force portrait mode on mobile devices
+  // Force landscape mode on mobile devices
   useEffect(() => {
     const lockOrientation = async () => {
       // Check if screen orientation API is available
       if ('screen' in window && 'orientation' in window.screen && 'lock' in window.screen.orientation) {
         try {
-          // Try to lock to portrait mode
-          await (window.screen.orientation as any).lock('portrait');
-          console.log('[GameRoom] Orientation locked to portrait');
+          // Try to lock to landscape mode
+          await (window.screen.orientation as any).lock('landscape');
+          console.log('[GameRoom] Orientation locked to landscape');
         } catch (err) {
           console.log('[GameRoom] Could not lock orientation (may require user interaction):', err);
         }
