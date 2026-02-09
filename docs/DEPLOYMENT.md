@@ -251,24 +251,14 @@ docker compose logs nginx
 1. Go to Cloudflare Dashboard → batakci.xyz → SSL/TLS
 2. Configure:
    - **Overview:**
-     - Encryption mode: **Full** or **Full (strict)**
+     - Encryption mode: **Flexible** ⚠️ (IMPORTANT - origin server is HTTP only)
      - Always Use HTTPS: **ON**
      - Automatic HTTPS Rewrites: **ON**
    - **Edge Certificates:**
      - Minimum TLS Version: **1.2** or **1.3**
      - Opportunistic Encryption: Optional (your choice)
 
-### 4.2 Cloudflare SSL/TLS Configuration
-
-1. Go to Cloudflare Dashboard → batakci.xyz → SSL/TLS
-2. Configure:
-   - **Overview:**
-     - Encryption mode: **Full** or **Full (strict)**
-     - Always Use HTTPS: **ON**
-     - Automatic HTTPS Rewrites: **ON**
-   - **Edge Certificates:**
-     - Minimum TLS Version: **1.2** or **1.3**
-     - Opportunistic Encryption: Optional (your choice)
+**Note:** "Flexible" mode is required because nginx serves HTTP only on port 80. Cloudflare terminates SSL and connects to origin over HTTP.
 
 ### 4.3 Verify DNS Propagation
 
@@ -441,7 +431,7 @@ docker compose logs batak-server
 Since Cloudflare handles SSL/TLS, certificate issues are unlikely. If you see SSL errors:
 
 1. **Check Cloudflare SSL/TLS settings:**
-   - Ensure encryption mode is set to **Full** or **Full (strict)**
+   - Ensure encryption mode is set to **Flexible** (origin is HTTP only)
    - Verify "Always Use HTTPS" is enabled
 
 2. **Clear browser cache** and test in incognito mode
@@ -452,6 +442,11 @@ Since Cloudflare handles SSL/TLS, certificate issues are unlikely. If you see SS
    - Go to DNS → Change s.batakci.xyz to "DNS only" (gray cloud)
    - Test direct HTTP connection to VPS
    - Remember to change back to "Proxied" when done
+
+5. **HTTP 521 errors:** This means Cloudflare cannot reach your origin server. Check:
+   - VPS firewall allows port 80
+   - nginx container is running
+   - DNS record points to correct VPS IP
 
 ### Database Issues
 
