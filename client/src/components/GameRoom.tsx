@@ -32,6 +32,43 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevScoresRef = useRef<Record<string, number>>({});
 
+  // Force portrait mode on mobile devices
+  useEffect(() => {
+    const lockOrientation = async () => {
+      // Check if screen orientation API is available
+      if ('screen' in window && 'orientation' in window.screen && 'lock' in window.screen.orientation) {
+        try {
+          // Try to lock to portrait mode
+          await (window.screen.orientation as any).lock('portrait');
+          console.log('[GameRoom] Orientation locked to portrait');
+        } catch (err) {
+          console.log('[GameRoom] Could not lock orientation (may require user interaction):', err);
+        }
+      }
+    };
+
+    // Lock orientation on mount
+    lockOrientation();
+
+    // Also try on user interaction (first touch/click)
+    const handleUserInteraction = () => {
+      lockOrientation();
+      // Remove listener after first interaction
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('click', handleUserInteraction);
+    };
+
+    document.addEventListener('touchstart', handleUserInteraction, { once: true });
+    document.addEventListener('click', handleUserInteraction, { once: true });
+
+    // Cleanup: unlock orientation when unmounting
+    return () => {
+      if ('screen' in window && 'orientation' in window.screen && 'unlock' in window.screen.orientation) {
+        (window.screen.orientation as any).unlock();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
 
