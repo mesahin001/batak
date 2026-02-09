@@ -80,26 +80,36 @@ export const GameRoomScreen = () => {
 
   // Initialize game state from socket
   useEffect(() => {
-    if (!socket || !roomId) return;
+    if (!socket || !roomId || !playerId) return;
 
     setIsLoading(true);
     setConnectionError(null);
 
-    // Request initial game state
-    socket.emit('rejoin_game', { roomId }, (response: any) => {
-      if (response.success && response.gameState) {
-        setCurrentGameState(response.gameState);
-        setIsLoading(false);
+    // Check if gameState was passed in route params (from match_found)
+    const initialGameState = (route.params as any)?.gameState;
+    if (initialGameState) {
+      console.log('[GameRoom] Using gameState from route params');
+      setCurrentGameState(initialGameState);
+      setIsLoading(false);
 
-        // Set default suit for Koz Maça
-        if (response.gameState.state === 'bidding' && response.gameState.gameMode === 'koz_maca') {
-          setSelectedSuit('spades');
-        }
-      } else {
-        setConnectionError('Failed to load game state');
-        setIsLoading(false);
+      // Set default suit for Koz Maça
+      if (initialGameState.state === 'bidding' && initialGameState.gameMode === 'koz_maca') {
+        setSelectedSuit('spades');
       }
-    });
+    } else {
+      // Rejoin existing game using publicKey
+      console.log('[GameRoom] Rejoining game with publicKey');
+      socket.emit('rejoin_game', { publicKey: playerId });
+
+      // Set a timeout to show error if no game_state_update received
+      const timeout = setTimeout(() => {
+        setConnectionError('Unable to load game. Please try again.');
+        setIsLoading(false);
+      }, 5000);
+
+      // Clean up timeout when we receive game state
+      return () => clearTimeout(timeout);
+    }
 
     const clearPlayingState = () => {
       setSelectedCard(null);
@@ -119,6 +129,10 @@ export const GameRoomScreen = () => {
         }
         return state;
       });
+
+      // Clear loading state on first game state update
+      setIsLoading(false);
+      setConnectionError(null);
 
       clearPlayingState();
 

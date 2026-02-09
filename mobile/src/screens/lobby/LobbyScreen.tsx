@@ -69,7 +69,10 @@ export const LobbyScreen = () => {
       if (rootNavigation) {
         rootNavigation.navigate('Game', {
           screen: 'GameRoom',
-          params: { roomId: data.roomId },
+          params: {
+            roomId: data.roomId,
+            gameState: data.gameState, // Pass initial game state
+          },
         });
       } else {
         console.error('[Lobby] Could not access root navigator');
