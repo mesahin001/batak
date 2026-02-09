@@ -13,9 +13,11 @@ type EmailMode = 'login' | 'register';
 
 const AuthScreen: React.FC = () => {
   const { connectWallet, loginWithEmail, registerWithEmail } = useAuth();
-  const { connecting } = useWallet();
+  const { connecting, connected, availableWallets } = useWallet();
 
-  const [activeTab, setActiveTab] = useState<AuthTab>('wallet');
+  // Default to email tab on mobile, wallet on desktop
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const [activeTab, setActiveTab] = useState<AuthTab>(isMobile ? 'email' : 'wallet');
   const [emailMode, setEmailMode] = useState<EmailMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,8 @@ const AuthScreen: React.FC = () => {
     try {
       await connectWallet();
     } catch (err: any) {
-      setError(err.message || 'Cuzdan baglanamiyor');
+      console.error('[AuthScreen] Wallet connection error:', err);
+      setError(err.message || 'Cüzdan bağlanamadı. Lütfen tekrar deneyin.');
     }
   };
 
@@ -83,18 +86,34 @@ const AuthScreen: React.FC = () => {
           {activeTab === 'wallet' && (
             <div className="auth-wallet-tab">
               <p className="auth-desc">
-                Solana cuzdaninizi baglayarak giris yapin.
+                Solana cüzdanınızı bağlayarak giriş yapın.
                 Phantom, Backpack veya Seeker desteklenir.
               </p>
+
+              {availableWallets.length > 0 && (
+                <div className="detected-wallets">
+                  <p className="detected-wallets-label">Kullanılabilir seçenekler:</p>
+                  {availableWallets.map((wallet, index) => (
+                    <span key={index} className="detected-wallet-badge">{wallet}</span>
+                  ))}
+                </div>
+              )}
+
               <button
                 className="btn-primary w-full"
                 onClick={handleWalletConnect}
                 disabled={connecting}
               >
-                {connecting ? 'Baglaniyor...' : 'Cuzdan Bagla'}
+                {connecting ? 'Bağlanıyor...' : connected ? 'Bağlı ✓' : 'Giriş Yap'}
               </button>
+
               <p className="auth-hint">
-                Cuzdaniniz yoksa test modunda otomatik olusturulur.
+                {!connected && 'Mobilde test modu, masaüstünde cüzdan bağlantısı'}
+                {connected && 'Bağlantı başarılı! Yönlendiriliyorsunuz...'}
+              </p>
+
+              <p className="auth-hint" style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.8, color: '#fbbf24' }}>
+                💡 Mobilde daha kolay giriş için "Email ile Giriş" kullanın
               </p>
             </div>
           )}

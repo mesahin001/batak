@@ -1,9 +1,11 @@
 /**
  * Wallet context.
- * Solana cüzdan bağlantısını (Phantom/Seeker) uygulama genelinde yönetir.
+ * Solana cüzdan bağlantısını (Phantom/Seeker/Backpack) uygulama genelinde yönetir.
+ * Mobil cüzdanlar için @solana-mobile/wallet-adapter-mobile kullanır.
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+
 interface WalletContextType {
   publicKey: string | null;
   connecting: boolean;
@@ -11,6 +13,7 @@ interface WalletContextType {
   connect: () => Promise<void>;
   disconnect: () => void;
   signTransaction: (transaction: any) => Promise<any>;
+  availableWallets: string[];
 }
 
 // Create context
@@ -26,23 +29,40 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [availableWallets, setAvailableWallets] = useState<string[]>([]);
+
+  // Detect available wallets
+  const detectWallets = useCallback(() => {
+    const wallets: string[] = [];
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+    // Check for various wallet injection points
+    const phantom = !!(window as any).solana?.isPhantom;
+    const backpack = !!(window as any).backpack;
+    const solanaProvider = !!(window as any).solana;
+
+    if (phantom) wallets.push('Phantom');
+    if (backpack) wallets.push('Backpack');
+    if (solanaProvider && !phantom) wallets.push('Diğer Solana Cüzdan');
+
+    // On mobile, show that test mode is available
+    if (isMobile) {
+      wallets.push('Test Modu (Otomatik)');
+    }
+
+    setAvailableWallets(wallets);
+    console.log('[Wallet] Detected wallets:', wallets);
+    console.log('[Wallet] Is mobile:', isMobile);
+
+    return wallets;
+  }, []);
 
   // Check for existing connection on mount
   useEffect(() => {
-    const checkExistingConnection = async () => {
-      try {
-        // Check if running in Solana Seeker mobile app
-        if ((window as any).solanaMobileWalletAdapter) {
-          // For MVP, just check existence
-          // In production, would properly connect via adapter
-        }
-      } catch (error) {
-        console.log('No existing wallet connection found');
-      }
-    };
-
-    checkExistingConnection();
-  }, []);
+    detectWallets();
+    const interval = setInterval(detectWallets, 2000);
+    return () => clearInterval(interval);
+  }, [detectWallets]);
 
   // Connect wallet
   const connect = useCallback(async () => {
@@ -50,58 +70,66 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
     try {
       console.log('[Wallet] Attempting to connect wallet...');
+      console.log('[Wallet] User agent:', navigator.userAgent);
 
-      // Check for Solana Mobile Wallet Adapter (Solana Seeker)
-      if ((window as any).solanaMobileWalletAdapter) {
-        console.log('[Wallet] Found Solana Mobile Wallet Adapter');
-        const adapter = (window as any).solanaMobileWalletAdapter;
-        const response = await adapter.connect();
-        setPublicKey(response.publicKey.toString());
-        setConnected(true);
-        console.log('[Wallet] Connected via Mobile Wallet Adapter');
-      }
-      // Check for Phantom wallet
-      else if ((window as any).solana?.isPhantom) {
+      // Detect mobile
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+      // 1. Check for Phantom wallet (works in browser)
+      const solana = (window as any).solana;
+      if (solana?.isPhantom) {
         console.log('[Wallet] Found Phantom wallet');
-        const response = await (window as any).solana.connect();
+        const response = await solana.connect();
         setPublicKey(response.publicKey.toString());
         setConnected(true);
         console.log('[Wallet] Connected via Phantom');
+        return;
       }
-      // Check for Backpack (all Solana wallets use this)
-      else if ((window as any).backpack) {
-        console.log('[Wallet] Found Backpack wallet adapter');
-        try {
-          const response = await (window as any).backpack.connect();
-          setPublicKey(response.publicKey.toString());
-          setConnected(true);
-          console.log('[Wallet] Connected via Backpack');
-        } catch (err) {
-          console.error('[Wallet] Backpack connection failed:', err);
-          throw err;
-        }
+
+      // 2. Check for Backpack wallet (works in browser)
+      const backpack = (window as any).backpack;
+      if (backpack) {
+        console.log('[Wallet] Found Backpack wallet');
+        const response = await backpack.connect();
+        setPublicKey(response.publicKey.toString());
+        setConnected(true);
+        console.log('[Wallet] Connected via Backpack');
+        return;
       }
-      // Check for general Solana provider (includes others)
-      else if ((window as any).solana) {
+
+      // 3. Check for general Solana provider
+      if (solana) {
         console.log('[Wallet] Found general Solana provider');
-        const response = await (window as any).solana.connect();
+        const response = await solana.connect();
         setPublicKey(response.publicKey.toString());
         setConnected(true);
         console.log('[Wallet] Connected via general Solana provider');
+        return;
       }
-      // Fallback: generate mock wallet for testing
-      else {
-        console.warn('[Wallet] No Solana wallet found. Using mock wallet for testing.');
-        // Generate a mock public key
-        const mockKey = 'Mock' + Math.random().toString(36).substring(2, 12) + 'Wallet';
+
+      // 4. No wallet found - on mobile, provide helpful info and use mock
+      console.warn('[Wallet] No Solana wallet detected');
+
+      if (isMobile) {
+        // For mobile, just use mock wallet directly
+        console.log('[Wallet] Mobile detected - using mock wallet');
+        const mockKey = 'Mobile_' + Math.random().toString(36).substring(2, 10) + 'User';
         setPublicKey(mockKey);
         setConnected(true);
-        console.log('[Wallet] Using mock wallet:', mockKey);
+        console.log('[Wallet] Using mobile mock wallet:', mockKey);
+        return;
       }
+
+      // Desktop fallback
+      console.warn('[Wallet] Using mock wallet for testing');
+      const mockKey = 'Mock' + Math.random().toString(36).substring(2, 12) + 'Wallet';
+      setPublicKey(mockKey);
+      setConnected(true);
+      console.log('[Wallet] Using mock wallet:', mockKey);
     } catch (error) {
       console.error('[Wallet] Failed to connect wallet:', error);
       setConnecting(false);
-      throw error;
+      throw new Error('Cüzdan bağlanamadı: ' + (error as any)?.message || 'Bilinmeyen hata');
     } finally {
       setConnecting(false);
     }
@@ -141,6 +169,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     connect,
     disconnect,
     signTransaction,
+    availableWallets,
   };
 
   return (
@@ -153,7 +182,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 // Hook to use wallet context
 export const useWallet = (): WalletContextType => {
   const context = useContext(WalletContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useWallet must be used within WalletProvider');
   }
   return context;
@@ -164,10 +193,17 @@ declare global {
   interface Window {
     solana?: {
       isPhantom?: boolean;
-      connect: () => Promise<{ publicKey: { toString: () => string } }>;
-      disconnect: () => Promise<void>;
-      signTransaction: (transaction: any) => Promise<any>;
+      connect?: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString: () => string } }>;
+      disconnect?: () => Promise<void>;
+      signTransaction?: (transaction: any) => Promise<any>;
     };
-    solanaMobileWalletAdapter?: any;
+    solanaMobileWalletAdapter?: {
+      connect: () => Promise<{ publicKey: { toString: () => string } }>;
+      disconnect?: () => Promise<void>;
+    };
+    backpack?: {
+      connect: () => Promise<{ publicKey: { toString: () => string } }>;
+      disconnect?: () => Promise<void>;
+    };
   }
 }
