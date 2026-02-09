@@ -59,10 +59,10 @@ export async function setupRedisAdapter(
     const subClient = pubClient.duplicate();
 
     // Handle connection errors
-    pubClient.on('error', (err) => {
+    pubClient.on('error', (err: Error) => {
       console.error('[Redis] Pub client error:', err);
     });
-    subClient.on('error', (err) => {
+    subClient.on('error', (err: Error) => {
       console.error('[Redis] Sub client error:', err);
     });
 
