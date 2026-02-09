@@ -385,13 +385,28 @@ export const GameRoomScreen = () => {
   // --- Render helpers ---
 
   const renderOpponentSlot = (player: any, position: 'left' | 'top' | 'right') => {
-    if (!player) return <View style={[styles.opponentSlot, styles[`opponent${position.charAt(0).toUpperCase() + position.slice(1)}`]]} />;
+    const getOpponentPositionStyle = () => {
+      switch (position) {
+        case 'left':
+          return styles.opponentLeft;
+        case 'top':
+          return styles.opponentTop;
+        case 'right':
+          return styles.opponentRight;
+        default:
+          return {};
+      }
+    };
+
+    if (!player) {
+      return <View style={[styles.opponentSlot, getOpponentPositionStyle()]} />;
+    }
 
     const playerIndex = currentGameState.players?.findIndex(p => p.id === player.id) ?? -1;
     const isActive = currentGameState.currentPlayerIndex === playerIndex;
 
     return (
-      <View style={[styles.opponentSlot, styles[`opponent${position.charAt(0).toUpperCase() + position.slice(1)}`], isActive && styles.opponentActive]}>
+      <View style={[styles.opponentSlot, getOpponentPositionStyle(), isActive && styles.opponentActive]}>
         <Text style={styles.oppIcon}>{player.type === 'bot' ? '🤖' : '👤'}</Text>
         <Text style={styles.oppName} numberOfLines={1}>{player.name}</Text>
         <Text style={styles.oppTricks}>{player.tricksWon} el</Text>
@@ -404,8 +419,21 @@ export const GameRoomScreen = () => {
 
   const renderTrickCard = (play: TrickCard, index: number) => {
     const slot = getTrickSlotForPlayer(play.playerId);
+    const getTrickSlotStyle = () => {
+      switch (slot) {
+        case 'left':
+          return styles.trickCardLeft;
+        case 'top':
+          return styles.trickCardTop;
+        case 'right':
+          return styles.trickCardRight;
+        default:
+          return styles.trickCardBottom;
+      }
+    };
+
     return (
-      <View key={index} style={[styles.trickCard, styles[`trickCard${slot.charAt(0).toUpperCase() + slot.slice(1)}`]]}>
+      <View key={index} style={[styles.trickCard, getTrickSlotStyle()]}>
         <View style={styles.trickCardInner}>
           <Text style={[styles.trickRank, { color: '#fff' }]}>{getRankSymbol(play.card.rank)}</Text>
           <Text style={[styles.trickSuit, { color: getSuitColor(play.card.suit) }]}>
