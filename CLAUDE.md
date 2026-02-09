@@ -7,12 +7,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Batak Tournament Game** — A multiplayer Turkish trick-taking card game with cNFT rewards on Solana. Server-authoritative architecture: all game logic runs server-side, with real-time WebSocket communication to React clients.
 
 **Tech Stack:**
-- Client: React 18 + Vite + Socket.IO Client + TypeScript
+- Client: React 18 + Vite + Socket.IO Client + TypeScript (WORKING)
+- Mobile: React Native + Expo + Socket.IO Client (BROKEN - see below)
 - Server: Node.js + Express + Socket.IO + TypeScript
 - Auth: JWT + bcryptjs (wallet and email+password login)
 - Database: SQLite (better-sqlite3) for player stats, game history, auth
 - Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
-- Target: PWA → APK via Bubblewrap for Solana Seeker
+
+**⚠️ CRITICAL STATUS (Feb 2025):**
+- **Web Client:** FULLY FUNCTIONAL at `/client/`
+- **Mobile App:** BROKEN at `/mobile/` - navigation, buttons, authentication non-functional
+- DO NOT work on mobile app without explicit user approval
+- See `/mobile/README_STATUS.md` for detailed mobile app issues
 
 ## Development Commands
 
