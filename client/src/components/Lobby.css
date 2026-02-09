@@ -41,6 +41,7 @@
   min-height: 0;
   overflow: hidden;
   overflow-x: hidden;
+  align-items: start;
 }
 
 /* Mobile responsive - single column on small screens */
@@ -83,8 +84,10 @@
   gap: 0.5rem;
   overflow: hidden;
   overflow-x: hidden;
+  overflow-y: auto;
   min-height: 0;
   max-height: 100%;
+  align-self: stretch;
 }
 
 .lobby-card {
@@ -165,12 +168,19 @@
   padding: 0.5rem;
   background-color: var(--color-bg);
   border-radius: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .info-box p {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--color-text);
+  line-height: 1.2;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .queue-status {
@@ -424,4 +434,46 @@
   font-style: italic;
   margin-bottom: 0.5rem;
   font-size: 0.85rem;
+}
+
+/* Mobile responsive - single column on small screens */
+@media (max-width: 500px) {
+  .lobby-content {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.25rem;
+  }
+
+  .lobby-card {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .lobby-card h2 {
+    font-size: 0.9rem;
+  }
+
+  .setting-group label {
+    font-size: 0.7rem;
+  }
+
+  .bot-btn,
+  .difficulty-btn,
+  .gamemode-btn {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.2rem;
+  }
+
+  .btn-primary {
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .info-box {
+    padding: 0.4rem;
+  }
+
+  .info-box p {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
 }
