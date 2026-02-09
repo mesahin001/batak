@@ -11,13 +11,12 @@
  * - Better reliability for production
  *
  * Usage:
- *   1. Set REDIS_URL in .env
- *   2. SocketServer will automatically detect and use Redis adapter
+ *   1. Install Redis packages: npm install redis @socket.io/redis-adapter
+ *   2. Set REDIS_URL in .env
+ *   3. SocketServer will automatically detect and use Redis adapter
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import { createClient, RedisClientType } from 'redis';
-import { createAdapter } from '@socket.io/redis-adapter';
 
 export interface RedisAdapterConfig {
   enabled: boolean;
@@ -41,6 +40,19 @@ export async function setupRedisAdapter(
   }
 
   try {
+    // Dynamic import to avoid build errors when packages are not installed
+    const redisModule = await import('redis').catch(() => null);
+    const adapterModule = await import('@socket.io/redis-adapter').catch(() => null);
+
+    if (!redisModule || !adapterModule) {
+      console.warn('[SocketServer] Redis packages not installed, falling back to memory adapter');
+      console.warn('[SocketServer] Install with: npm install redis @socket.io/redis-adapter');
+      return;
+    }
+
+    const { createClient } = redisModule;
+    const { createAdapter } = adapterModule;
+
     // Build Redis URL
     let redisUrl = config.url;
     if (!redisUrl && config.host && config.port) {
@@ -128,6 +140,12 @@ export async function checkRedisHealth(config: RedisAdapterConfig): Promise<{
       return { healthy: true, error: 'Redis enabled but not configured' };
     }
 
+    const redisModule = await import('redis').catch(() => null);
+    if (!redisModule) {
+      return { healthy: true, error: 'Redis package not installed' };
+    }
+
+    const { createClient } = redisModule;
     const client = createClient({ url: redisUrl });
 
     const start = Date.now();
