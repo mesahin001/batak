@@ -522,26 +522,26 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
             <span className="info-value score">{myPlayer?.totalScore ?? 0}</span>
           </div>
         </div>
-      </div>
 
-      {/* ===== My Hand Strip (horizontal scroll, overlapping cards) ===== */}
-      {!isScoring && (
-        <div className={`my-hand-strip ${isMyTurn && !isBidding ? 'my-turn' : ''}`}>
-          {myHand.map((card, cardIndex) => (
-            <div
-              key={card.id}
-              className={`hand-card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
-              onClick={() => handleCardClick(card.id)}
-              style={{ '--card-i': cardIndex } as React.CSSProperties}
-            >
-              <span className="hc-rank">{getRankSymbol(card.rank)}</span>
-              <span className="hc-suit" style={{ color: getSuitColor(card.suit) }}>
-                {getSuitSymbol(card.suit)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* ===== My Hand Strip (horizontal scroll, overlapping cards) ===== */}
+        {!isScoring && (
+          <div className={`my-hand-strip ${isMyTurn && !isBidding ? 'my-turn' : ''}`}>
+            {myHand.map((card, cardIndex) => (
+              <div
+                key={card.id}
+                className={`hand-card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
+                onClick={() => handleCardClick(card.id)}
+                style={{ '--card-i': cardIndex } as React.CSSProperties}
+              >
+                <span className="hc-rank">{getRankSymbol(card.rank)}</span>
+                <span className="hc-suit" style={{ color: getSuitColor(card.suit) }}>
+                  {getSuitSymbol(card.suit)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ===== Scoreboard Overlay (hamburger toggle) ===== */}
       {showScoreboard && (
