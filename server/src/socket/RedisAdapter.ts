@@ -40,18 +40,20 @@ export async function setupRedisAdapter(
   }
 
   try {
-    // Dynamic import to avoid build errors when packages are not installed
-    const redisModule = await import('redis').catch(() => null);
-    const adapterModule = await import('@socket.io/redis-adapter').catch(() => null);
+    // Dynamic import with require to avoid TypeScript errors
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const redis = typeof require !== 'undefined' ? require('redis') : null;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const adapter = typeof require !== 'undefined' ? require('@socket.io/redis-adapter') : null;
 
-    if (!redisModule || !adapterModule) {
+    if (!redis || !adapter) {
       console.warn('[SocketServer] Redis packages not installed, falling back to memory adapter');
       console.warn('[SocketServer] Install with: npm install redis @socket.io/redis-adapter');
       return;
     }
 
-    const { createClient } = redisModule;
-    const { createAdapter } = adapterModule;
+    const { createClient } = redis;
+    const { createAdapter } = adapter;
 
     // Build Redis URL
     let redisUrl = config.url;
@@ -140,12 +142,13 @@ export async function checkRedisHealth(config: RedisAdapterConfig): Promise<{
       return { healthy: true, error: 'Redis enabled but not configured' };
     }
 
-    const redisModule = await import('redis').catch(() => null);
-    if (!redisModule) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const redis = typeof require !== 'undefined' ? require('redis') : null;
+    if (!redis) {
       return { healthy: true, error: 'Redis package not installed' };
     }
 
-    const { createClient } = redisModule;
+    const { createClient } = redis;
     const client = createClient({ url: redisUrl });
 
     const start = Date.now();
