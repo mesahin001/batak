@@ -64,13 +64,17 @@ export const LobbyScreen = () => {
       setInQueue(false);
       setQueueStatus(null);
 
-      // Navigate to game room using nested navigation
-      // From Main (tabs) -> Game (stack)
-      // @ts-ignore - Nested navigation to Game stack
-      navigation.navigate('Game', {
-        screen: 'GameRoom',
-        params: { roomId: data.roomId },
-      });
+      // Navigate to game room via parent RootNavigator
+      const rootNavigation = navigation.getParent();
+      if (rootNavigation) {
+        rootNavigation.navigate('Game', {
+          screen: 'GameRoom',
+          params: { roomId: data.roomId },
+        });
+      } else {
+        console.error('[Lobby] Could not access root navigator');
+        Alert.alert('Navigation Error', 'Unable to start game. Please try again.');
+      }
     };
 
     const handleError = (data: any) => {
@@ -196,6 +200,8 @@ export const LobbyScreen = () => {
             ]}
             onPress={() => setGameMode(GameMode.KOZ_MACA)}
             disabled={inQueue}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <View style={styles.modeEmojiContainer}>
               <Text style={styles.modeEmoji}>♠️</Text>
@@ -220,6 +226,8 @@ export const LobbyScreen = () => {
             ]}
             onPress={() => setGameMode(GameMode.IHALELI_BATAK)}
             disabled={inQueue}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <View style={styles.modeEmojiContainer}>
               <Text style={styles.modeEmoji}>🃏</Text>
@@ -261,6 +269,8 @@ export const LobbyScreen = () => {
                   ]}
                   onPress={() => setBotDifficulty(difficulty)}
                   disabled={inQueue}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Text
                     style={[
@@ -291,6 +301,8 @@ export const LobbyScreen = () => {
                   ]}
                   onPress={() => setBotCount(count)}
                   disabled={inQueue}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Text
                     style={[
@@ -338,6 +350,8 @@ export const LobbyScreen = () => {
             style={[styles.playButton, !isConnected && styles.buttonDisabled]}
             onPress={handleJoinQueue}
             disabled={!isConnected}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.playButtonEmoji}>🎮</Text>
             <Text style={styles.playButtonText}>Find Match</Text>
@@ -346,6 +360,8 @@ export const LobbyScreen = () => {
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={handleLeaveQueue}
+            activeOpacity={0.6}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.cancelButtonText}>Cancel Search</Text>
           </TouchableOpacity>

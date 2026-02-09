@@ -462,6 +462,7 @@ export const GameRoomScreen = () => {
         onPress={() => handleCardClick(card.id)}
         disabled={isDisabled}
         activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Text style={[styles.cardRank, { color: getSuitColor(card.suit) }]}>{getRankSymbol(card.rank)}</Text>
         <Text style={[styles.cardSuit, { color: getSuitColor(card.suit) }]}>{getSuitSymbol(card.suit)}</Text>
@@ -486,7 +487,12 @@ export const GameRoomScreen = () => {
           <Text style={styles.headerTrickCount}>{currentGameState.tricks ?? 0}.el</Text>
           <Text style={styles.headerState}>{currentGameState.state}</Text>
         </View>
-        <TouchableOpacity style={styles.hamburgerButton} onPress={() => setShowScoreboard(true)}>
+        <TouchableOpacity
+          style={styles.hamburgerButton}
+          onPress={() => setShowScoreboard(true)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Text style={styles.hamburgerText}>☰</Text>
         </TouchableOpacity>
       </View>
@@ -527,6 +533,8 @@ export const GameRoomScreen = () => {
                       style={[styles.suitButton, !isMyTurn && styles.buttonDisabled]}
                       onPress={() => handleSuitSelect(suit)}
                       disabled={!isMyTurn}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
                       <Text style={[styles.suitSymbol, { color: getSuitColor(suit) }]}>
                         {getSuitSymbol(suit)}
@@ -549,6 +557,8 @@ export const GameRoomScreen = () => {
                         ]}
                         onPress={() => handleBid(selectedSuit || 'spades', amount)}
                         disabled={!isMyTurn || !isValidBid(amount)}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                       >
                         <Text style={styles.bidNumText}>{amount}</Text>
                       </TouchableOpacity>
@@ -559,6 +569,8 @@ export const GameRoomScreen = () => {
                       style={[styles.passButton, !isMyTurn && styles.buttonDisabled]}
                       onPress={() => handleBid(selectedSuit || 'spades', 0)}
                       disabled={!isMyTurn}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Text style={styles.passButtonText}>Pas Geç</Text>
                     </TouchableOpacity>
@@ -567,6 +579,8 @@ export const GameRoomScreen = () => {
                         style={[styles.changeSuitButton, !isMyTurn && styles.buttonDisabled]}
                         onPress={() => setSelectedSuit(null)}
                         disabled={!isMyTurn}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
                         <Text style={styles.changeSuitButtonText}>Rengi Değiştir</Text>
                       </TouchableOpacity>
@@ -663,7 +677,12 @@ export const GameRoomScreen = () => {
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity style={styles.leaveButton} onPress={handleLeaveGame}>
+            <TouchableOpacity
+              style={styles.leaveButton}
+              onPress={handleLeaveGame}
+              activeOpacity={0.6}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={styles.leaveButtonText}>Oyundan Çık</Text>
             </TouchableOpacity>
           </View>
@@ -697,7 +716,12 @@ export const GameRoomScreen = () => {
             </View>
 
             {currentRound < totalRounds ? (
-              <TouchableOpacity style={styles.nextRoundButton} onPress={handleRequestNextRound}>
+              <TouchableOpacity
+                style={styles.nextRoundButton}
+                onPress={handleRequestNextRound}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Text style={styles.nextRoundButtonText}>Round {currentRound + 1} Başlat</Text>
               </TouchableOpacity>
             ) : (

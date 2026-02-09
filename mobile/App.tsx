@@ -8,7 +8,8 @@ import { initI18n } from './src/services/i18n/I18nService';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 // Socket server URL - configure based on environment
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'ws://localhost:3001';
+// For development on mobile, use the actual IP of the development machine
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'ws://192.168.178.114:3001';
 
 export default function App() {
   const [isI18nReady, setIsI18nReady] = useState(false);

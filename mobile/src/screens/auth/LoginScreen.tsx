@@ -35,6 +35,7 @@ export const LoginScreen = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [activeMode, setActiveMode] = useState<'email' | 'wallet'>('email');
 
   /**
    * Validate email format
@@ -147,100 +148,146 @@ export const LoginScreen = () => {
           </View>
         ) : null}
 
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={[styles.input, emailError ? styles.inputError : null]}
-            placeholder="your@email.com"
-            placeholderTextColor="#666"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-              setLoginError('');
-            }}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            editable={!isLoading}
-          />
-          {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+        {/* Auth Mode Toggle */}
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity
+            style={[styles.modeToggle, activeMode === 'email' && styles.modeToggleActive]}
+            onPress={() => setActiveMode('email')}
+            disabled={isLoading}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.modeToggleText, activeMode === 'email' && styles.modeToggleTextActive]}>
+              📧 Email
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.modeToggle, activeMode === 'wallet' && styles.modeToggleActive]}
+            onPress={() => setActiveMode('wallet')}
+            disabled={isLoading}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.modeToggleText, activeMode === 'wallet' && styles.modeToggleTextActive]}>
+              👛 Wallet
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={[styles.input, styles.passwordInput, passwordError ? styles.inputError : null]}
-              placeholder="••••••••"
-              placeholderTextColor="#666"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError('');
-                setLoginError('');
-              }}
-              secureTextEntry={!showPassword}
-              autoComplete="password"
-              textContentType="password"
-              editable={!isLoading}
-            />
+        {activeMode === 'email' && (
+          <>
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={[styles.input, emailError ? styles.inputError : null]}
+                placeholder="your@email.com"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setEmailError('');
+                  setLoginError('');
+                }}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                editable={!isLoading}
+              />
+              {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput, passwordError ? styles.inputError : null]}
+                  placeholder="••••••••"
+                  placeholderTextColor="#666"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setPasswordError('');
+                    setLoginError('');
+                  }}
+                  secureTextEntry={!showPassword}
+                  autoComplete="password"
+                  textContentType="password"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                </TouchableOpacity>
+              </View>
+              {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
+            </View>
+
+            {/* Login Button */}
             <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
+              style={[styles.button, styles.primaryButton, isLoading ? styles.buttonDisabled : null]}
+              onPress={handleLogin}
               disabled={isLoading}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
             </TouchableOpacity>
-          </View>
-          {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
-        </View>
+          </>
+        )}
 
-        {/* Login Button */}
-        <TouchableOpacity
-          style={[styles.button, styles.primaryButton, isLoading ? styles.buttonDisabled : null]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Wallet Connect Button */}
-        <TouchableOpacity
-          style={[styles.button, styles.walletButton, walletConnecting ? styles.buttonDisabled : null]}
-          onPress={handleWalletConnect}
-          disabled={walletConnecting}
-        >
-          {walletConnecting ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Text style={styles.walletIcon}>👛</Text>
-              <Text style={styles.buttonText}>
-                {walletConnected ? 'Wallet Connected' : 'Connect with Seeker'}
+        {activeMode === 'wallet' && (
+          <>
+            {/* Wallet Info Card */}
+            <View style={styles.walletInfoCard}>
+              <Text style={styles.walletInfoText}>
+                Connect your Seeker wallet to play on Solana
               </Text>
-            </>
-          )}
-        </TouchableOpacity>
+            </View>
+
+            {/* Wallet Connect Button */}
+            <TouchableOpacity
+              style={[styles.button, styles.walletButton, walletConnecting ? styles.buttonDisabled : null]}
+              onPress={handleWalletConnect}
+              disabled={walletConnecting}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {walletConnecting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.walletIcon}>👛</Text>
+                  <Text style={styles.buttonText}>
+                    {walletConnected ? 'Wallet Connected' : 'Connect with Seeker'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
 
         {/* Register Link */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+          <TouchableOpacity
+            onPress={navigateToRegister}
+            disabled={isLoading}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.registerLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
@@ -410,5 +457,45 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: '#666',
+  },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#2a2a4e',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+    gap: 4,
+  },
+  modeToggle: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  modeToggleActive: {
+    backgroundColor: '#6C63FF',
+  },
+  modeToggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#888',
+  },
+  modeToggleTextActive: {
+    color: '#fff',
+  },
+  walletInfoCard: {
+    backgroundColor: 'rgba(20, 241, 149, 0.1)',
+    borderWidth: 1,
+    borderColor: '#14F195',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  walletInfoText: {
+    fontSize: 14,
+    color: '#14F195',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

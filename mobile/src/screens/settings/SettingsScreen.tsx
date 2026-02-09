@@ -105,19 +105,34 @@ export const SettingsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
 
-          <TouchableOpacity style={styles.settingItem} disabled>
+          <TouchableOpacity
+            style={styles.settingItem}
+            disabled
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.settingIcon}>🌐</Text>
             <Text style={styles.settingText}>Language</Text>
             <Text style={styles.settingValue}>English</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem} disabled>
+          <TouchableOpacity
+            style={styles.settingItem}
+            disabled
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.settingIcon}>🔔</Text>
             <Text style={styles.settingText}>Notifications</Text>
             <Text style={styles.settingValue}>On</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem} disabled>
+          <TouchableOpacity
+            style={styles.settingItem}
+            disabled
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.settingIcon}>🔊</Text>
             <Text style={styles.settingText}>Sound</Text>
             <Text style={styles.settingValue}>On</Text>
@@ -145,6 +160,8 @@ export const SettingsScreen = () => {
             style={[styles.logoutButton, isLoggingOut && styles.buttonDisabled]}
             onPress={handleLogout}
             disabled={isLoggingOut}
+            activeOpacity={0.6}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             {isLoggingOut ? (
               <ActivityIndicator color="#ef4444" size="small" />

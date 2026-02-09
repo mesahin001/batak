@@ -8,17 +8,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Tech Stack:**
 - Client: React 18 + Vite + Socket.IO Client + TypeScript (WORKING)
-- Mobile: React Native + Expo + Socket.IO Client (BROKEN - see below)
+- Mobile: React Native + Expo + Socket.IO Client (FUNCTIONAL - fixed Feb 9, 2025)
 - Server: Node.js + Express + Socket.IO + TypeScript
 - Auth: JWT + bcryptjs (wallet and email+password login)
 - Database: SQLite (better-sqlite3) for player stats, game history, auth
 - Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
 
-**⚠️ CRITICAL STATUS (Feb 2025):**
+**⚠️ STATUS UPDATE (Feb 2025):**
 - **Web Client:** FULLY FUNCTIONAL at `/client/`
-- **Mobile App:** BROKEN at `/mobile/` - navigation, buttons, authentication non-functional
-- DO NOT work on mobile app without explicit user approval
-- See `/mobile/README_STATUS.md` for detailed mobile app issues
+- **Mobile App:** FUNCTIONAL at `/mobile/` - All critical issues fixed (Feb 9, 2025)
+  - ✅ Navigation: Lobby → GameRoom (fixed with getParent())
+  - ✅ Button responsiveness: 30+ buttons now have activeOpacity + hitSlop
+  - ✅ Auth UX: Mode toggle (Email/Wallet tabs) with clean interface
+- See `/mobile/README_STATUS.md` for detailed mobile app status
 
 ## Development Commands
 
