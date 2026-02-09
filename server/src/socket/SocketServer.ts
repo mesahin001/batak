@@ -10,6 +10,7 @@ import { ClientEvent, ServerEvent, JoinQueuePayload, PlayCardPayload, BidTrumpPa
 import { DatabaseManager } from '../database/DatabaseManager.js';
 import { CNFTMinter } from '../solana/CNFTMinter.js';
 import { AuthService } from '../auth/AuthService.js';
+import { setupRedisAdapter, getRedisConfig } from './RedisAdapter.js';
 
 export class SocketServer {
   private io: SocketIOServer;
@@ -31,7 +32,12 @@ export class SocketServer {
     this.db = db || null;
     this.cnftMinter = cnftMinter || null;
     this.authService = authService || null;
-    this.setupEventHandlers();
+
+    // Setup Redis adapter if configured
+    const redisConfig = getRedisConfig();
+    setupRedisAdapter(this.io, redisConfig).then(() => {
+      this.setupEventHandlers();
+    });
   }
 
   /**
