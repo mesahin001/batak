@@ -16,10 +16,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **⚠️ STATUS UPDATE (Feb 2025):**
 - **Web Client:** FULLY FUNCTIONAL at `/client/`
-- **Mobile App:** FUNCTIONAL at `/mobile/` - All critical issues fixed (Feb 9, 2025)
+- **Mobile App:** FULLY FUNCTIONAL at `/mobile/` - All issues resolved (Feb 10, 2025)
   - ✅ Navigation: Lobby → GameRoom (fixed with getParent())
   - ✅ Button responsiveness: 30+ buttons now have activeOpacity + hitSlop
   - ✅ Auth UX: Mode toggle (Email/Wallet tabs) with clean interface
+  - ✅ Room cleanup: Players can rejoin after disconnect (publicKey-based removal)
+  - ✅ Server stability: Bot timer crashes fixed with room existence checks
+  - ✅ Bidding UI: Fully visible with proper z-index layering
+  - ✅ Card visibility: Cards visible during bidding phase
+  - ✅ İhaleli Batak: Suit selection working correctly
+  - ✅ **Connection fixed (Feb 10 evening):** Removed malformed Solana plugin, app connects successfully
+  - ✅ **Fullscreen mode (Feb 10 evening):** Status bar hidden in GameRoom for immersive gameplay
 - See `/mobile/README_STATUS.md` for detailed mobile app status
 
 ## Development Commands
@@ -31,8 +38,18 @@ cd server && npm run dev
 # Client (port 5173)
 cd client && npm run dev
 
-# Type-check client
+# Mobile (Expo)
+cd mobile && npm start
+# Then: Press 'a' for Android, 'i' for iOS
+
+# Mobile Development Setup (Required for physical device testing)
+adb reverse tcp:8081 tcp:8081  # Metro Bundler
+adb reverse tcp:3001 tcp:3001  # Game Server
+# Note: Run these commands whenever you reconnect your Android device
+
+# Type-check
 cd client && npx tsc --noEmit
+cd server && npx tsc --noEmit
 
 # Run server tests (expect 86 pass / 8 fail — ihaleli_batak scoring tests are known failures)
 cd server && npm test
@@ -40,9 +57,16 @@ cd server && npm test
 # Build
 cd server && npm run build
 cd client && npm run build
+cd mobile/android && ./gradlew assembleDebug  # Android APK
+
+# Install mobile APK
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
 # Docker production stack
 docker-compose up -d
+
+# Kill process on port 3001 (if needed)
+lsof -ti:3001 | xargs kill -9
 ```
 
 ## Architecture
@@ -91,6 +115,41 @@ const myPlayerIndex = gameState.players?.findIndex((p) => p.type === 'human');
 
 Server-side: `room.players` Map uses playerId as key. `broadcastGameState()` uses `player.id` to find each player's socket.
 
+**CRITICAL: Room Player Removal Pattern (Fixed Feb 10, 2025)**
+
+When removing a player from a room, you MUST remove them from BOTH locations:
+
+1. **Socket Map:** `room.players.delete(publicKey)`
+2. **Game State:** `room.gameMachine.removePlayer(publicKey)`
+
+```typescript
+// CORRECT — removes from both locations
+removePlayerFromRoomByPublicKey(roomId: string, publicKey: string): void {
+  const room = this.rooms.get(roomId);
+  if (!room) return;
+
+  room.players.delete(publicKey);              // ← Remove from socket map
+  room.gameMachine.removePlayer(publicKey);    // ← Remove from game state
+
+  if (this.getHumanPlayerCount(room) === 0) {
+    this.closeRoom(roomId);
+  }
+}
+
+// WRONG — only removes from socket map, player remains in game state
+removePlayerFromRoomByPublicKey(roomId: string, publicKey: string): void {
+  const room = this.rooms.get(roomId);
+  room.players.delete(publicKey);  // ← Missing gameMachine.removePlayer()!
+}
+```
+
+**Why publicKey instead of socketId?**
+- `socketId` changes on every reconnect/disconnect
+- `publicKey` (wallet address or `"E_"+UUID`) is stable across sessions
+- Always use `removePlayerFromRoomByPublicKey()` instead of `removePlayerFromRoom()`
+
+See `server/src/matchmaker/Matchmaker.ts:540-568` for implementation.
+
 ### Socket.IO Events
 
 **Client → Server:** `JOIN_QUEUE`, `LEAVE_QUEUE`, `PLAY_CARD {cardId}`, `BID_TRUMP {suit, amount}`, `REQUEST_NEXT_ROUND`, `AUTH_REGISTER`, `AUTH_LOGIN`, `AUTH_VALIDATE`, `AUTH_WALLET`
@@ -109,15 +168,99 @@ Key files: `server/src/auth/AuthService.ts`, `client/src/auth/AuthContext.tsx` (
 
 Strategy pattern: `EasyStrategy` (random), `NormalStrategy` (hand analysis), `HardStrategy` (card counting). `HandAnalyzer.ts` evaluates hand strength. Bot turns have 1.5s delay, trick display has 3s delay.
 
+**CRITICAL: Bot Timer Safety Pattern (Fixed Feb 10, 2025)**
+
+All bot actions with `setTimeout` MUST check room existence before executing:
+
+```typescript
+// CORRECT — checks room exists before bot action
+setTimeout(() => {
+  const currentRoom = this.rooms.get(roomId);
+  if (!currentRoom) {
+    console.log('[Bot] Room no longer exists, skipping action');
+    return;
+  }
+  // ... execute bot action
+}, 3000);
+
+// WRONG — crashes if room closed during delay
+setTimeout(() => {
+  const room = this.rooms.get(roomId);
+  room.gameMachine.playCard(botId, cardId);  // ← Crashes if room deleted!
+}, 3000);
+```
+
+**Why is this needed?**
+- Player can disconnect/leave during bot's delay period
+- Room gets closed immediately for bot-only games
+- Timer fires after room deletion → server crash
+
+**Locations requiring this pattern:**
+- `Matchmaker.ts:296` — Bot turn timer
+- `SocketServer.ts:859` — Bot bidding timer
+- Any future bot delayed actions
+
+See commit history (Feb 10, 2025) for full implementation.
+
 ### Client UI — Mobile-First Layout
 
-`GameRoom.tsx` uses a mobile-first design (target ~390px portrait):
+**Web Client (`client/src/components/GameRoom.tsx`):**
 - **Mini header** (32px): round/trump/trick count + hamburger menu
 - **CSS Grid game table** (3x3): opponent-top / opponent-left / trick-area / opponent-right / my-info-bar
 - **Hand strip**: horizontal scroll with overlapping cards (48x72px, -20px margin)
 - **Bidding sheet**: in-flow bottom panel (not fixed), max-height 34vh
 - **Scoreboard**: hidden by default, slide-in overlay from right (hamburger toggle)
 - **Navbar hidden** during gameplay (App.tsx doesn't render Navbar when `appState === 'playing'`)
+
+**Mobile App (`mobile/src/screens/game/GameRoomScreen.tsx`):**
+- Target: ~390px portrait, React Native (no CSS Grid)
+- **Game table**: Absolute positioning for opponent slots (top/left/right)
+- **Trick area**: Center of screen with absolute positioning
+- **My hand**: Bottom strip with horizontal ScrollView
+- **Bidding overlay**: `position: 'absolute'`, z-index layering (see below)
+- **Stats**: Horizontal layout `2el • ♠7` (tricksWon + bid symbol)
+
+**CRITICAL: React Native Z-Index Layering (Fixed Feb 10, 2025)**
+
+React Native overlays require careful z-index management:
+
+```typescript
+// Layer hierarchy (highest to lowest):
+biddingOverlay: {
+  position: 'absolute',
+  top: 40,
+  left: 8,
+  right: 8,
+  bottom: 140,          // ← Leave space for cards to be visible
+  zIndex: 9999,         // ← Highest
+  elevation: 9999,      // ← Android shadow/elevation
+  backgroundColor: 'rgba(15, 15, 30, 0.98)',
+}
+
+myHandStrip: {
+  position: 'absolute',
+  bottom: 8,
+  zIndex: 9998,         // ← Below overlay, above background
+  elevation: 9998,
+}
+
+trickCard: {
+  // No explicit zIndex (defaults to 1 or auto)
+}
+```
+
+**Common pitfalls:**
+1. ❌ Overlay inside `gameTable` → can't go above sibling elements
+2. ✅ Overlay as sibling to `gameTable` → full z-index control
+3. ❌ Fullscreen overlay (`bottom: 0`) → hides cards during bidding
+4. ✅ Partial overlay (`bottom: 140`) → cards visible for decision-making
+5. ❌ Using `ScrollView` for bid numbers → rendering issues
+6. ✅ Using `View` with flexWrap → reliable rendering
+
+**İhaleli Batak Bidding Flow:**
+1. Show suit selection (♠ ♥ ♦ ♣) → user picks suit
+2. Show bid numbers (1-13) → user picks amount
+3. Or Pass button (0) → skip bidding
 
 Trick cards are positioned by relative player direction (top/left/right/bottom) using `getTrickSlotForPlayer()`.
 
@@ -133,11 +276,18 @@ Trick cards are positioned by relative player direction (top/left/right/bottom) 
 - `server/src/socket/SocketServer.ts` — all Socket.IO event handlers
 - `server/src/matchmaker/Matchmaker.ts` — room creation, bot turn management
 
-**Client:**
+**Client (Web):**
 - `client/src/components/GameRoom.tsx` + `GameRoom.css` — main game UI
 - `client/src/auth/AuthContext.tsx` — `useAuth()` hook (all components use this, not `useWallet()`)
 - `client/src/socket/SocketContext.tsx` — socket connection
 - `client/src/types/game.ts` — client-side type definitions
+
+**Client (Mobile):**
+- `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI (React Native)
+- `mobile/src/screens/auth/AuthScreen.tsx` — login/register (Email + Wallet tabs)
+- `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking queue
+- `mobile/src/contexts/AuthContext.tsx` — mobile auth context
+- `mobile/src/contexts/SocketContext.tsx` — mobile socket connection
 
 **Database & Auth:**
 - `server/src/database/DatabaseManager.ts` — SQLite (players, games, nft_rewards, auth tables)
@@ -165,6 +315,37 @@ Trick cards are positioned by relative player direction (top/left/right/bottom) 
 - Pre-existing TS unused import warnings across bot files, Solana files.
 - `better-sqlite3` not found by tsc (works at runtime with tsx).
 - Solana SDK modules (@metaplex-foundation/*) not found by tsc.
+
+## Common Debugging Patterns (Learned Feb 10, 2025)
+
+### Server Crashes After Player Disconnect
+**Symptom:** "Cannot read properties of undefined (reading 'id')" in bot timers
+**Root Cause:** Bot timer executes after room deletion
+**Solution:** Always check room existence in `setTimeout` callbacks (see Bot AI section)
+
+### Players Can't Rejoin After Leaving
+**Symptom:** Server tries to rejoin old game instead of creating new match
+**Root Cause:** Player not removed from `room.gameMachine` internal state
+**Solution:** Use `removePlayerFromRoomByPublicKey()` to remove from BOTH socket map and game state
+
+### Mobile UI Elements Not Visible
+**Symptom:** Buttons/overlays render but not visible on screen
+**Root Cause:** Z-index scope issue or fullscreen overlay
+**Solution:**
+1. Move overlay outside parent container to gain z-index control
+2. Use partial overlay (`bottom: 140`) not fullscreen (`bottom: 0`)
+3. Set explicit z-index hierarchy (overlay > cards > background)
+4. Add `elevation` for Android shadow rendering
+
+### ScrollView vs View in React Native
+**Symptom:** Elements in ScrollView not rendering
+**Root Cause:** ScrollView has complex rendering lifecycle
+**Solution:** Use `View` with `flexWrap: 'wrap'` for simple layouts like bid number grids
+
+### Trick Cards Unreadable
+**Symptom:** White text on white background or transparent background
+**Root Cause:** Missing background color or wrong text color
+**Solution:** Add `backgroundColor: '#fff'` to card, use `getSuitColor()` for text (red for ♥♦, black for ♠♣)
 
 ## Environment Variables
 
