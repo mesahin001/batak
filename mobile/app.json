@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "BatakMobile",
+    "name": "Batak Tournament",
     "slug": "BatakMobile",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "description": "Turkish trick-taking card game with Solana blockchain rewards. Play Koz Maça and İhaleli Batak modes, compete in tournaments, and earn cNFT rewards.",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -13,19 +14,36 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bataktournament.mobile"
+      "bundleIdentifier": "com.bataktournament.mobile",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.bataktournament.mobile",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
-      "permissions": [],
-      "screenOrientation": "unspecified"
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "screenOrientation": "unspecified",
+      "softwareKeyboardLayoutMode": "pan",
+      "statusBar": {
+        "barStyle": "light-content",
+        "backgroundColor": "#1a1a2e",
+        "hidden": false
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "batak-tournament"
+      }
+    },
+    "plugins": []
   }
 }

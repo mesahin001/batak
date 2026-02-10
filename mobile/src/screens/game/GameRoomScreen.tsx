@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -184,6 +185,11 @@ export const GameRoomScreen = () => {
     socket.on('game_error', handleError);
 
     return () => {
+      // Notify server that player is leaving when component unmounts
+      if (playerId) {
+        socket.emit('leave_game', { publicKey: playerId });
+      }
+
       socket.off('game_state_update', handleGameStateUpdate);
       socket.off('card_played', handleCardPlayed);
       socket.off('trick_complete', handleTrickComplete);
@@ -195,7 +201,7 @@ export const GameRoomScreen = () => {
         clearTimeout(fallbackTimeoutRef.current);
       }
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, playerId]);
 
   // --- Handlers ---
 
@@ -245,6 +251,10 @@ export const GameRoomScreen = () => {
           text: 'Ayrıl',
           style: 'destructive',
           onPress: () => {
+            // Notify server that player is leaving
+            if (socket && playerId) {
+              socket.emit('leave_game', { publicKey: playerId });
+            }
             navigation.goBack();
           },
         },
@@ -360,6 +370,7 @@ export const GameRoomScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
+        <StatusBar hidden={true} />
         <ActivityIndicator size="large" color="#4ade80" />
         <Text style={styles.loadingText}>Oyun yükleniyor...</Text>
       </View>
@@ -369,6 +380,7 @@ export const GameRoomScreen = () => {
   if (connectionError) {
     return (
       <View style={styles.loadingContainer}>
+        <StatusBar hidden={true} />
         <Text style={styles.errorText}>{connectionError}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => navigation.goBack()}>
           <Text style={styles.retryButtonText}>Geri Dön</Text>
@@ -380,6 +392,7 @@ export const GameRoomScreen = () => {
   if (!currentGameState) {
     return (
       <View style={styles.loadingContainer}>
+        <StatusBar hidden={true} />
         <Text style={styles.loadingText}>Oyun durumu yükleniyor...</Text>
       </View>
     );
@@ -390,6 +403,7 @@ export const GameRoomScreen = () => {
   const isMyTurn = currentGameState.currentPlayerIndex === myPlayerIndex;
   const isBidding = currentGameState.state === 'bidding';
   const isScoring = currentGameState.state === 'scoring' || currentGameState.state === 'finished';
+
   const currentRound = currentGameState.currentRound ?? 1;
   const totalRounds = currentGameState.totalRounds ?? 5;
   const myHand = myPlayer?.hand ? sortCards(myPlayer.hand) : [];
@@ -419,14 +433,21 @@ export const GameRoomScreen = () => {
     const playerIndex = currentGameState.players?.findIndex(p => p.id === player.id) ?? -1;
     const isActive = currentGameState.currentPlayerIndex === playerIndex;
 
+    const bidText = formatPlayerBid(player.id);
+
     return (
       <View style={[styles.opponentSlot, getOpponentPositionStyle(), isActive && styles.opponentActive]}>
         <Text style={styles.oppIcon}>{player.type === 'bot' ? '🤖' : '👤'}</Text>
         <Text style={styles.oppName} numberOfLines={1}>{player.name}</Text>
-        <Text style={styles.oppTricks}>{player.tricksWon} el</Text>
-        {formatPlayerBid(player.id) && (
-          <Text style={styles.oppBid}>{formatPlayerBid(player.id)}</Text>
-        )}
+        <View style={styles.oppStats}>
+          <Text style={styles.oppTricks}>{player.tricksWon ?? 0}el</Text>
+          {bidText && (
+            <>
+              <Text style={styles.oppStatsSeparator}> • </Text>
+              <Text style={styles.oppBid}>{bidText}</Text>
+            </>
+          )}
+        </View>
       </View>
     );
   };
@@ -449,7 +470,7 @@ export const GameRoomScreen = () => {
     return (
       <View key={index} style={[styles.trickCard, getTrickSlotStyle()]}>
         <View style={styles.trickCardInner}>
-          <Text style={[styles.trickRank, { color: '#fff' }]}>{getRankSymbol(play.card.rank)}</Text>
+          <Text style={[styles.trickRank, { color: getSuitColor(play.card.suit) }]}>{getRankSymbol(play.card.rank)}</Text>
           <Text style={[styles.trickSuit, { color: getSuitColor(play.card.suit) }]}>
             {getSuitSymbol(play.card.suit)}
           </Text>
@@ -486,6 +507,7 @@ export const GameRoomScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar hidden={true} />
       {/* ===== Mini Header ===== */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -519,7 +541,7 @@ export const GameRoomScreen = () => {
         {/* Left opponent */}
         {renderOpponentSlot(opponents.left, 'left')}
 
-        {/* Center: Trick area / Bidding overlay */}
+        {/* Center: Trick area */}
         <View style={styles.trickArea}>
           {isScoring ? (
             <View style={styles.scoringOverlay}>
@@ -527,91 +549,8 @@ export const GameRoomScreen = () => {
               <Text style={styles.scoringText}>Skor hesaplanıyor...</Text>
             </View>
           ) : isBidding ? (
-            <View style={styles.biddingOverlay}>
-              <Text style={styles.bidHeader}>İhale - Kaç El?</Text>
-              <Text style={styles.bidInfo}>
-                {currentGameState.gameMode === 'koz_maca'
-                  ? 'Koz Maça: ♠ koz, sadece el sayısı'
-                  : selectedSuit
-                    ? `${getSuitSymbol(selectedSuit)} koz — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
-                    : 'Önce koz rengi seç'
-                }
-              </Text>
-
-              {/* Suit selection (İhaleli Batak only) */}
-              {currentGameState.gameMode === 'ihaleli_batak' && !selectedSuit && (
-                <View style={styles.suitSelection}>
-                  {['spades', 'hearts', 'diamonds', 'clubs'].map((suit) => (
-                    <TouchableOpacity
-                      key={suit}
-                      style={[styles.suitButton, !isMyTurn && styles.buttonDisabled]}
-                      onPress={() => handleSuitSelect(suit)}
-                      disabled={!isMyTurn}
-                      activeOpacity={0.7}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    >
-                      <Text style={[styles.suitSymbol, { color: getSuitColor(suit) }]}>
-                        {getSuitSymbol(suit)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Bid numbers */}
-              {(currentGameState.gameMode === 'koz_maca' || selectedSuit) && (
-                <>
-                  <ScrollView
-                    horizontal
-                    style={styles.bidNumbers}
-                    contentContainerStyle={styles.bidNumbersContent}
-                    showsHorizontalScrollIndicator={false}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((amount) => (
-                      <TouchableOpacity
-                        key={amount}
-                        style={[
-                          styles.bidNumButton,
-                          (!isMyTurn || !isValidBid(amount)) && styles.buttonDisabled,
-                        ]}
-                        onPress={() => handleBid(selectedSuit || 'spades', amount)}
-                        disabled={!isMyTurn || !isValidBid(amount)}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      >
-                        <Text style={styles.bidNumText}>{amount}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                  <View style={styles.bidActionsRow}>
-                    <TouchableOpacity
-                      style={[styles.passButton, !isMyTurn && styles.buttonDisabled]}
-                      onPress={() => handleBid(selectedSuit || 'spades', 0)}
-                      disabled={!isMyTurn}
-                      activeOpacity={0.6}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={styles.passButtonText}>Pas Geç</Text>
-                    </TouchableOpacity>
-                    {currentGameState.gameMode === 'ihaleli_batak' && selectedSuit && (
-                      <TouchableOpacity
-                        style={[styles.changeSuitButton, !isMyTurn && styles.buttonDisabled]}
-                        onPress={() => setSelectedSuit(null)}
-                        disabled={!isMyTurn}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Text style={styles.changeSuitButtonText}>Rengi Değiştir</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
-                    <Text style={styles.highestBidText}>
-                      En Yüksek: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
-                    </Text>
-                  )}
-                </>
-              )}
+            <View style={[styles.trickStatus, isMyTurn && styles.myTurn]}>
+              <Text style={styles.trickStatusText}>İhale yapılıyor...</Text>
             </View>
           ) : trickCards.length > 0 ? (
             <View style={[styles.trickSlots, isCollectingTrick && styles.trickCollecting]}>
@@ -664,6 +603,82 @@ export const GameRoomScreen = () => {
           </ScrollView>
         )}
       </View>
+
+      {/* ===== Bidding Overlay (Above all) ===== */}
+      {isBidding && (
+        <View style={styles.biddingOverlay}>
+          <Text style={styles.bidHeader}>İhale - Kaç El?</Text>
+          <Text style={styles.bidInfo}>
+            {currentGameState.gameMode === 'koz_maca'
+              ? 'Koz Maça: ♠ koz, sadece el sayısı'
+              : selectedSuit
+                ? `${getSuitSymbol(selectedSuit)} koz — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
+                : 'Önce koz rengi seç'
+            }
+          </Text>
+
+          {/* Suit selection (İhaleli Batak only) */}
+          {currentGameState.gameMode === 'ihaleli_batak' && !selectedSuit && (
+            <View style={styles.suitSelection}>
+              {['spades', 'hearts', 'diamonds', 'clubs'].map((suit) => (
+                <TouchableOpacity
+                  key={suit}
+                  style={[styles.suitButton, !isMyTurn && styles.buttonDisabled]}
+                  onPress={() => handleSuitSelect(suit)}
+                  disabled={!isMyTurn}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={[styles.suitSymbol, { color: getSuitColor(suit) }]}>
+                    {getSuitSymbol(suit)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Bid numbers */}
+          {(currentGameState.gameMode === 'koz_maca' || selectedSuit) && (
+            <>
+              <View style={styles.bidNumbers}>
+                <View style={styles.bidNumbersContent}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((amount) => (
+                    <TouchableOpacity
+                      key={amount}
+                      style={[
+                        styles.bidNumButton,
+                        (!isMyTurn || !isValidBid(amount)) && styles.buttonDisabled,
+                      ]}
+                      onPress={() => handleBid(selectedSuit || 'spades', amount)}
+                      disabled={!isMyTurn || !isValidBid(amount)}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Text style={styles.bidNumText}>{amount}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.bidActionsRow}>
+                <TouchableOpacity
+                  style={[styles.passButton, !isMyTurn && styles.buttonDisabled]}
+                  onPress={() => handleBid(selectedSuit || 'spades', 0)}
+                  disabled={!isMyTurn}
+                  activeOpacity={0.6}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.passButtonText}>Pas Geç</Text>
+                </TouchableOpacity>
+              </View>
+              {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
+                <Text style={styles.highestBidText}>
+                  En Yüksek: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      )}
 
       {/* ===== Scoreboard Modal ===== */}
       <Modal
@@ -846,6 +861,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#1a1a2e',
+    minHeight: 80,
   },
   opponentActive: {
     borderColor: '#4ade80',
@@ -876,16 +892,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
+  oppStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   oppTricks: {
-    color: '#888',
-    fontSize: 10,
-    marginTop: 2,
+    color: '#4ade80',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  oppStatsSeparator: {
+    color: '#666',
+    fontSize: 12,
+    marginHorizontal: 2,
   },
   oppBid: {
     color: '#fbbf24',
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   // Trick area
@@ -914,6 +939,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 50,
     height: 70,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#333',
     backgroundColor: '#fff',
     borderRadius: 6,
     justifyContent: 'center',
@@ -968,15 +997,17 @@ const styles = StyleSheet.create({
   // Bidding overlay
   biddingOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(15, 15, 30, 0.95)',
+    top: 40,
+    left: 8,
+    right: 8,
+    bottom: 140,
+    backgroundColor: 'rgba(15, 15, 30, 0.98)',
     borderRadius: 8,
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   bidHeader: {
     color: '#fff',
@@ -1010,19 +1041,26 @@ const styles = StyleSheet.create({
   },
   bidNumbers: {
     marginBottom: 12,
-    maxHeight: 50,
+    height: 60,
+    padding: 4,
+    width: '100%',
   },
   bidNumbersContent: {
     flexDirection: 'row',
-    paddingHorizontal: 4,
+    flexWrap: 'nowrap',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
   },
   bidNumButton: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#1a1a2e',
+    width: 32,
+    height: 44,
+    backgroundColor: '#3b82f6',
     borderRadius: 6,
     justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#60a5fa',
+    marginHorizontal: 2,
     alignItems: 'center',
     marginRight: 6,
     borderWidth: 1,
@@ -1030,8 +1068,8 @@ const styles = StyleSheet.create({
   },
   bidNumText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   bidActionsRow: {
     flexDirection: 'row',
@@ -1120,6 +1158,8 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     flexDirection: 'row',
+    zIndex: 9998,
+    elevation: 9998,
     paddingHorizontal: 20,
     paddingVertical: 8,
     backgroundColor: '#1a1a2e',
