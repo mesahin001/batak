@@ -471,7 +471,7 @@ export const GameRoomScreen = () => {
           isSelected && styles.handCardSelected,
           isDisabled && styles.handCardDisabled,
           isViewing && styles.handCardViewing,
-          { marginLeft: index === 0 ? 0 : -20 },
+          { marginLeft: index === 0 ? 0 : -10 },
         ]}
         onPress={() => handleCardClick(card.id)}
         disabled={isDisabled}
@@ -561,7 +561,12 @@ export const GameRoomScreen = () => {
               {/* Bid numbers */}
               {(currentGameState.gameMode === 'koz_maca' || selectedSuit) && (
                 <>
-                  <ScrollView horizontal style={styles.bidNumbers} showsHorizontalScrollIndicator={false}>
+                  <ScrollView
+                    horizontal
+                    style={styles.bidNumbers}
+                    contentContainerStyle={styles.bidNumbersContent}
+                    showsHorizontalScrollIndicator={false}
+                  >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((amount) => (
                       <TouchableOpacity
                         key={amount}
@@ -1004,9 +1009,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   bidNumbers: {
-    flexDirection: 'row',
     marginBottom: 12,
+    maxHeight: 50,
+  },
+  bidNumbersContent: {
+    flexDirection: 'row',
     paddingHorizontal: 4,
+    alignItems: 'center',
   },
   bidNumButton: {
     width: 36,
