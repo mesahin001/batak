@@ -1,5 +1,8 @@
 /* Batak Tournament - Global Styles */
 
+/* Import Design Tokens (Phase 1) */
+@import './styles/tokens.css';
+
 :root {
   --color-bg: #1a1a2e;
   --color-bg-secondary: #16213e;

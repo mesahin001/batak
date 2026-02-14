@@ -13,7 +13,8 @@
   flex-direction: column;
   overflow: hidden;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #1a472a 0%, #0d2818 100%);
+  background: var(--gradient-felt), var(--texture-noise);
+  background-blend-mode: overlay;
   position: relative;
   user-select: none;
   -webkit-user-select: none;
@@ -226,6 +227,7 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
+  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
 }
 
 .trick-slots {
@@ -250,14 +252,14 @@
 .trick-card {
   width: 32px;
   height: 44px;
-  background: linear-gradient(145deg, #ffffff, #f0f0f0);
-  border-radius: 4px;
+  background: var(--gradient-card);
+  border-radius: var(--radius-card);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  border: 1.5px solid #ddd;
+  box-shadow: var(--shadow-md);
+  border: 1.5px solid var(--card-border);
   animation: cardAppear 0.3s ease-out;
 }
 
@@ -269,8 +271,10 @@
 .trick-card .tc-rank {
   font-size: 10px;
   font-weight: 800;
+  font-family: var(--font-serif);
   color: #000;
   line-height: 1;
+  text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1);
 }
 
 .trick-card .tc-suit {
@@ -397,16 +401,16 @@
   flex-shrink: 0;
   width: 42px;
   height: 58px;
-  background: linear-gradient(145deg, #ffffff, #f0f0f0);
-  border-radius: 5px;
+  background: var(--gradient-card);
+  border-radius: var(--radius-card);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  border: 2px solid #ddd;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--card-border);
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   animation: dealCard 0.4s ease-out;
@@ -427,15 +431,15 @@
 
 .hand-card:active:not(.disabled) {
   transform: translateY(-10px) scale(1.05);
-  box-shadow: 0 8px 16px rgba(233, 69, 96, 0.4);
-  border-color: #e94560;
+  box-shadow: var(--shadow-glow);
+  border-color: var(--gold-primary);
 }
 
 .hand-card.selected {
   transform: translateY(-10px);
-  border-color: #e94560;
-  box-shadow: 0 8px 14px rgba(233, 69, 96, 0.4);
-  background: linear-gradient(145deg, #fff5f5, #ffe8e8);
+  border-color: var(--gold-primary);
+  box-shadow: var(--shadow-glow);
+  background: var(--gradient-card);
 }
 
 .hand-card.disabled {
@@ -451,8 +455,10 @@
 .hand-card .hc-rank {
   font-size: 12px;
   font-weight: 800;
+  font-family: var(--font-serif);
   color: #000;
   line-height: 1;
+  text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1);
 }
 
 .hand-card .hc-suit {
@@ -474,6 +480,11 @@
   gap: 4px;
   max-width: 340px;
   width: 100%;
+  background: linear-gradient(180deg, rgba(13, 40, 24, 0.95) 0%, rgba(13, 17, 30, 0.95) 100%);
+  border-radius: var(--radius-lg);
+  border-top: 2px solid var(--gold-primary);
+  padding: 12px;
+  box-shadow: var(--shadow-lg);
 }
 
 .bidding-overlay .bid-header {
@@ -514,8 +525,9 @@
 }
 
 .bidding-overlay .suit-btn:active:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(212, 175, 55, 0.2);
+  border-color: var(--gold-primary);
+  box-shadow: var(--shadow-glow-sm);
   transform: scale(1.1);
 }
 
@@ -539,20 +551,22 @@
 
 .bid-num-btn {
   padding: 5px 0;
-  background: rgba(233, 69, 96, 0.15);
-  border: 1.5px solid rgba(233, 69, 96, 0.4);
-  border-radius: 5px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: var(--radius-sm);
   color: white;
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 700;
-  transition: background 0.15s, border-color 0.15s;
+  transition: all 0.15s ease;
   text-align: center;
 }
 
 .bid-num-btn:active:not(:disabled) {
-  background: #e94560;
-  border-color: #e94560;
+  background: var(--gradient-gold);
+  border-color: var(--gold-primary);
+  box-shadow: var(--shadow-glow-sm);
+  transform: scale(1.05);
 }
 
 .bid-num-btn:disabled {

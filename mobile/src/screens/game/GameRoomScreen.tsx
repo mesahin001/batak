@@ -16,12 +16,15 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { GameClientState, RoundCompleteData, GameState } from '../../types/game';
+import { COLORS, SHADOWS, RADIUS } from '../../styles/tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -51,10 +54,16 @@ export const GameRoomScreen = () => {
   const [isCollectingTrick, setIsCollectingTrick] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [showTrickWinner, setShowTrickWinner] = useState(false);
 
   const isPlayingCardRef = useRef(false);
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevScoresRef = useRef<Record<string, number>>({});
+
+  // Animation refs (visual only, doesn't affect gameplay)
+  const turnGlowAnim = useRef(new Animated.Value(8)).current;
+  const winnerTextOpacity = useRef(new Animated.Value(0)).current;
+  const winnerTextY = useRef(new Animated.Value(0)).current;
 
   // Lock orientation to landscape on mount
   useEffect(() => {
@@ -152,6 +161,27 @@ export const GameRoomScreen = () => {
 
     const handleTrickComplete = () => {
       clearPlayingState();
+
+      // Show +1 animation (visual only, doesn't affect gameplay)
+      setShowTrickWinner(true);
+      winnerTextOpacity.setValue(1);
+      winnerTextY.setValue(0);
+
+      Animated.parallel([
+        Animated.timing(winnerTextOpacity, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(winnerTextY, {
+          toValue: -40,
+          duration: 1500,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowTrickWinner(false);
+      });
     };
 
     const handleRoundComplete = (data: RoundCompleteData) => {
@@ -202,6 +232,32 @@ export const GameRoomScreen = () => {
       }
     };
   }, [socket, roomId, playerId]);
+
+  // Turn glow animation (visual only - doesn't affect gameplay)
+  useEffect(() => {
+    if (isMyTurn && !isBidding) {
+      // Pulse the glow between 8 and 12 shadowRadius
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(turnGlowAnim, {
+            toValue: 12,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false, // shadowRadius doesn't support native driver
+          }),
+          Animated.timing(turnGlowAnim, {
+            toValue: 8,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+    } else {
+      // Reset when not my turn
+      turnGlowAnim.setValue(8);
+    }
+  }, [isMyTurn, isBidding, turnGlowAnim]);
 
   // --- Handlers ---
 
@@ -563,6 +619,22 @@ export const GameRoomScreen = () => {
               </Text>
             </View>
           )}
+
+          {/* Trick winner +1 animation (visual only) */}
+          {showTrickWinner && (
+            <Animated.View
+              style={[
+                styles.winnerTextContainer,
+                {
+                  opacity: winnerTextOpacity,
+                  transform: [{ translateY: winnerTextY }],
+                },
+              ]}
+              pointerEvents="none"
+            >
+              <Text style={styles.winnerText}>+1</Text>
+            </Animated.View>
+          )}
         </View>
 
         {/* Right opponent */}
@@ -591,16 +663,27 @@ export const GameRoomScreen = () => {
 
         {/* My Hand Strip */}
         {!isScoring && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.myHandStrip,
-              isMyTurn && !isBidding && styles.myHandTurn,
+          <Animated.View
+            style={[
+              styles.myHandStripWrapper,
+              isMyTurn && !isBidding && {
+                shadowColor: '#FFD700',
+                shadowRadius: turnGlowAnim,
+                shadowOpacity: 0.6,
+                shadowOffset: { width: 0, height: 0 },
+              },
             ]}
           >
-            {myHand.map((card, index) => renderHandCard(card, index))}
-          </ScrollView>
+            <View style={[styles.myHandContainer, isMyTurn && !isBidding && styles.myHandTurn]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.myHandStrip}
+              >
+                {myHand.map((card, index) => renderHandCard(card, index))}
+              </ScrollView>
+            </View>
+          </Animated.View>
         )}
       </View>
 
@@ -773,13 +856,13 @@ export const GameRoomScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f1e',
+    backgroundColor: COLORS.feltDark,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f1e',
+    backgroundColor: COLORS.feltDark,
   },
   loadingText: {
     color: '#fff',
@@ -810,9 +893,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: COLORS.feltDark,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a4e',
+    borderBottomColor: COLORS.goldPrimary,
     height: 40,
   },
   headerLeft: {
@@ -855,16 +938,18 @@ const styles = StyleSheet.create({
   // Opponent slots
   opponentSlot: {
     position: 'absolute',
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    backgroundColor: COLORS.feltLight,
+    borderRadius: RADIUS.md,
     padding: 8,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1a1a2e',
+    borderColor: COLORS.feltLight,
     minHeight: 80,
+    ...SHADOWS.sm,
   },
   opponentActive: {
-    borderColor: '#4ade80',
+    borderColor: COLORS.goldPrimary,
+    ...SHADOWS.glowSm,
   },
   opponentTop: {
     top: 8,
@@ -918,7 +1003,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -100 }, { translateY: -80 }],
+    transform: [{ translateX: -100 }, { translateY: -100 }],
     width: 200,
     height: 160,
     justifyContent: 'center',
@@ -939,19 +1024,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 50,
     height: 70,
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#333',
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: RADIUS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.md,
   },
   trickCardBottom: {
     bottom: 10,
@@ -993,6 +1072,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  winnerTextContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -30 }, { translateY: -20 }],
+  },
+  winnerText: {
+    color: '#4ade80',
+    fontSize: 48,
+    fontWeight: '900',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
 
   // Bidding overlay
   biddingOverlay: {
@@ -1001,13 +1094,16 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     bottom: 140,
-    backgroundColor: 'rgba(15, 15, 30, 0.98)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(13, 40, 24, 0.98)',
+    borderRadius: RADIUS.lg,
+    borderTopWidth: 2,
+    borderTopColor: COLORS.goldPrimary,
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
     elevation: 9999,
+    ...SHADOWS.lg,
   },
   bidHeader: {
     color: '#fff',
@@ -1029,12 +1125,12 @@ const styles = StyleSheet.create({
   suitButton: {
     width: 50,
     height: 50,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    backgroundColor: COLORS.feltBase,
+    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#2a2a4e',
+    borderColor: COLORS.feltLight,
   },
   suitSymbol: {
     fontSize: 24,
@@ -1054,17 +1150,15 @@ const styles = StyleSheet.create({
   bidNumButton: {
     width: 32,
     height: 44,
-    backgroundColor: '#3b82f6',
-    borderRadius: 6,
+    backgroundColor: COLORS.goldPrimary,
+    borderRadius: RADIUS.sm,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#60a5fa',
+    borderColor: COLORS.goldLight,
     marginHorizontal: 2,
-    alignItems: 'center',
     marginRight: 6,
-    borderWidth: 1,
-    borderColor: '#2a2a4e',
+    ...SHADOWS.sm,
   },
   bidNumText: {
     color: '#fff',
@@ -1121,14 +1215,19 @@ const styles = StyleSheet.create({
   // My info bar
   myInfoBar: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 100,
     left: 8,
     right: 8,
     flexDirection: 'row',
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    backgroundColor: COLORS.feltDark,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.goldPrimary,
     padding: 8,
     justifyContent: 'space-around',
+    zIndex: 9999,
+    elevation: 9999,
+    ...SHADOWS.md,
   },
   infoItem: {
     flexDirection: 'row',
@@ -1151,42 +1250,56 @@ const styles = StyleSheet.create({
     maxWidth: 80,
   },
 
-  // My hand strip
-  myHandStrip: {
+  // My hand strip wrapper (for glow animation)
+  myHandStripWrapper: {
     position: 'absolute',
     bottom: 8,
     left: 8,
     right: 8,
-    flexDirection: 'row',
     zIndex: 9998,
     elevation: 9998,
-    paddingHorizontal: 20,
+  },
+  // My hand container (background and border)
+  myHandContainer: {
+    backgroundColor: COLORS.feltDark,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.feltLight,
     paddingVertical: 8,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    paddingHorizontal: 8,
     minHeight: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.md,
+  },
+  // My hand strip (scroll content)
+  myHandStrip: {
+    flexGrow: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   myHandTurn: {
     borderWidth: 2,
-    borderColor: '#4ade80',
+    borderColor: COLORS.goldPrimary,
+    ...SHADOWS.glowSm,
   },
   handCard: {
     width: 60,
     height: 84,
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: RADIUS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    ...SHADOWS.md,
   },
   handCardSelected: {
     transform: [{ translateY: -10 }],
     borderWidth: 2,
-    borderColor: '#4ade80',
+    borderColor: COLORS.goldPrimary,
+    ...SHADOWS.glow,
   },
   handCardDisabled: {
     opacity: 0.5,
@@ -1213,11 +1326,14 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   scoreboardPanel: {
-    backgroundColor: '#1a1a2e',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: COLORS.feltDark,
+    borderTopLeftRadius: RADIUS.lg,
+    borderTopRightRadius: RADIUS.lg,
+    borderTopWidth: 2,
+    borderTopColor: COLORS.goldPrimary,
     padding: 20,
     maxHeight: '70%',
+    ...SHADOWS.lg,
   },
   scoreboardTitle: {
     color: '#fff',
@@ -1282,11 +1398,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roundCompleteContent: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 16,
+    backgroundColor: COLORS.feltDark,
+    borderRadius: RADIUS.lg,
+    borderWidth: 2,
+    borderColor: COLORS.goldPrimary,
     padding: 24,
     width: '90%',
     maxWidth: 400,
+    ...SHADOWS.lg,
   },
   roundCompleteTitle: {
     color: '#4ade80',
