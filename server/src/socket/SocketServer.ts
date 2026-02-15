@@ -77,6 +77,11 @@ export class SocketServer {
         this.handleRequestNextRound(socket);
       });
 
+      // Handle leave game (player wants to abandon current game)
+      socket.on('leave_game', (payload: { publicKey: string }) => {
+        this.handleLeaveGame(socket, payload);
+      });
+
       // Handle disconnect
       socket.on(ClientEvent.DISCONNECT, () => {
         this.handleDisconnect(socket);
@@ -296,6 +301,7 @@ export class SocketServer {
     // Check if player is already in an active game (reconnection scenario)
     if (payload.publicKey) {
       const existingRoom = this.matchmaker.getRoomByPlayerId(payload.publicKey);
+      console.log(`[Debug] Player ${payload.publicKey.slice(0, 8)} check - existing room:`, existingRoom ? existingRoom.roomId : 'NONE');
       if (existingRoom) {
         const roomData = existingRoom.room.gameMachine.getRoom();
         if (roomData.state !== 'finished') {
@@ -343,6 +349,30 @@ export class SocketServer {
     // Try to find publicKey from queue first, fallback to socketId only
     const queueEntry = this.matchmaker.getQueueEntryBySocketId(socket.id);
     this.matchmaker.leaveQueue(socket.id, queueEntry?.publicKey);
+  }
+
+  /**
+   * Handle leave game request (player abandoning current game)
+   */
+  private handleLeaveGame(socket: Socket, payload: { publicKey: string }): void {
+    console.log(`[LeaveGame] Player ${payload.publicKey.slice(0, 8)} leaving game`);
+
+    // Find the room the player is in
+    const roomInfo = this.matchmaker.getRoomByPlayerId(payload.publicKey);
+    if (!roomInfo) {
+      console.log(`[LeaveGame] Player not in any room`);
+      return;
+    }
+
+    const { roomId } = roomInfo;
+
+    // Remove player from room
+    this.matchmaker.removePlayerFromRoomByPublicKey(roomId, payload.publicKey);
+
+    // Leave the socket.io room
+    socket.leave(roomId);
+
+    console.log(`[LeaveGame] Player ${payload.publicKey.slice(0, 8)} removed from room ${roomId}`);
   }
 
   /**
@@ -637,7 +667,14 @@ export class SocketServer {
     const roomData = room.gameMachine.getRoom();
     const isGameActive = roomData.state !== 'finished' && roomData.state !== 'lobby';
 
-    if (isGameActive && publicKey) {
+    // Check if this is a bot game (all other players are bots)
+    const players = roomData.players || [];
+    const humanPlayers = players.filter((p: any) => p.type === 'human');
+    const isBotGame = humanPlayers.length === 1;
+
+    // For bot games, remove player immediately (no grace period)
+    // For PvP games, use grace period
+    if (isGameActive && publicKey && !isBotGame) {
       // Game in progress: wait 30 seconds, then replace with bot
       console.log(`[Reconnect] Player ${publicKey.slice(0, 8)} disconnected during active game. Grace period: 30s`);
 
@@ -651,15 +688,18 @@ export class SocketServer {
           if (currentRoomData.state !== 'finished') {
             this.replaceDisconnectedPlayerWithBot(roomId, publicKey, currentRoom);
           } else {
-            this.matchmaker.removePlayerFromRoom(roomId, socket.id);
+            this.matchmaker.removePlayerFromRoomByPublicKey(roomId, publicKey);
           }
         }
       }, 30000);
 
       this.disconnectTimers.set(publicKey, timer);
     } else {
-      // No active game: remove immediately
-      this.matchmaker.removePlayerFromRoom(roomId, socket.id);
+      // No active game OR bot game: remove immediately
+      if (isBotGame) {
+        console.log(`[Disconnect] Bot game, removing player ${publicKey.slice(0, 8)} immediately`);
+      }
+      this.matchmaker.removePlayerFromRoomByPublicKey(roomId, publicKey);
     }
   }
 
@@ -808,6 +848,20 @@ export class SocketServer {
 
     if (currentPlayer.type === 'bot') {
       setTimeout(() => {
+        // Check if room still exists (player might have left)
+        const currentRoom = this.matchmaker.getRoom(roomId);
+        if (!currentRoom) {
+          console.log('[BotBidding] Room', roomId, 'no longer exists, skipping bot bid');
+          return;
+        }
+
+        // Check if players array is valid
+        const currentRoomData = currentRoom.gameMachine.getRoom();
+        if (!currentRoomData.players || currentRoomData.players.length === 0) {
+          console.log('[BotBidding] Room', roomId, 'has no players, skipping bot bid');
+          return;
+        }
+
         const bot = room.botManager.getBot(currentPlayer.id);
         if (bot) {
           const bid = bot.makeBid(currentPlayer, this.getCurrentHighestBid(roomData), [

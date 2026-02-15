@@ -125,11 +125,15 @@ export class Matchmaker {
     }
 
     // No immediate match, set timeout for bot fallback
-    if (entry.botCount > 0) {
-      setTimeout(() => {
-        this.checkBotFallback(queueEntry);
-      }, this.MATCH_TIMEOUT_MS);
-    }
+    // PvP (botCount=0) gets longer timeout (60s) before adding bots
+    // Mixed modes (botCount 1-2) get standard timeout (30s)
+    const timeoutDuration = entry.botCount === 0
+      ? 60000  // 60 seconds for PvP - wait longer for real players
+      : this.MATCH_TIMEOUT_MS; // 30 seconds for mixed modes
+
+    setTimeout(() => {
+      this.checkBotFallback(queueEntry);
+    }, timeoutDuration);
 
     return null;
   }
@@ -294,6 +298,13 @@ export class Matchmaker {
       console.log('[Matchmaker] Current player is bot, triggering bot turn:', currentPlayer.name);
 
       setTimeout(() => {
+        // Check if room still exists (player might have disconnected)
+        const currentRoom = this.rooms.get(roomId);
+        if (!currentRoom) {
+          console.log('[Matchmaker] Room', roomId, 'no longer exists, skipping bot turn');
+          return;
+        }
+
         const bot = room.botManager.getBot(currentPlayer.id);
         if (bot) {
           if (roomData.state === 'bidding') {
@@ -527,12 +538,47 @@ export class Matchmaker {
 
       if (playerIdToRemove) {
         room.players.delete(playerIdToRemove);
+        // Also remove from GameStateMachine internal state
+        room.gameMachine.removePlayer(playerIdToRemove);
       }
 
       // If no human players left, close room
       if (this.getHumanPlayerCount(room) === 0) {
         this.closeRoom(roomId);
       }
+    }
+  }
+
+  /**
+   * Remove player from room by publicKey (stable identifier)
+   * Use this instead of removePlayerFromRoom when you have publicKey
+   */
+  removePlayerFromRoomByPublicKey(roomId: string, publicKey: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      console.log(`[Matchmaker] Room ${roomId} not found for player removal`);
+      return;
+    }
+
+    console.log(`[Debug] Room ${roomId} has players:`, Array.from(room.players.keys()).map(k => k.slice(0, 8)));
+    console.log(`[Debug] Attempting to remove:`, publicKey.slice(0, 8));
+
+    const hadPlayer = room.players.has(publicKey);
+    if (hadPlayer) {
+      room.players.delete(publicKey);
+      // Also remove from GameStateMachine internal state
+      room.gameMachine.removePlayer(publicKey);
+      console.log(`[Debug] Result: REMOVED (from both room.players and GameStateMachine)`);
+      console.log(`[Matchmaker] Removed player ${publicKey.slice(0, 8)} from room ${roomId}`);
+    } else {
+      console.log(`[Debug] Result: NOT FOUND`);
+      console.log(`[Matchmaker] Player ${publicKey.slice(0, 8)} not found in room ${roomId}`);
+    }
+
+    // If no human players left, close room
+    if (this.getHumanPlayerCount(room) === 0) {
+      console.log(`[Matchmaker] No human players left in ${roomId}, closing room`);
+      this.closeRoom(roomId);
     }
   }
 

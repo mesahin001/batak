@@ -27,6 +27,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ İhaleli Batak: Suit selection working correctly
   - ✅ **Connection fixed (Feb 10 evening):** Removed malformed Solana plugin, app connects successfully
   - ✅ **Fullscreen mode (Feb 10 evening):** Status bar hidden in GameRoom for immersive gameplay
+- **PvP Multiplayer:** IMPLEMENTED (Feb 10, 2025) - Real player-vs-player mode ready for testing
+  - ✅ **60-second PvP timeout:** Queue waits 60s for 4 real players, then adds bots as fallback
+  - ✅ **Default to PvP:** App now defaults to 0 bots (encourages real multiplayer)
+  - ✅ **Enhanced queue UI:** Shows mode indicator, player count, and countdown timer
+  - ✅ **Cross-platform:** Mobile + web players can match together
+  - 📋 **Testing:** See `PVP_TESTING_GUIDE.md`, `PVP_QUICK_REFERENCE.md`, or run `./test-pvp.sh`
+- **UI Redesign (Phase 1 Complete - Feb 15, 2026):**
+  - ✅ **Design tokens system:** Centralized color palette (rich green felt + gold theme)
+  - ✅ **Enhanced visuals:** Card shadows, gradients, radial background with texture
+  - ✅ **Cross-platform consistency:** Shared design language between web and mobile
+  - 📋 **Testing:** See `PHASE1_TESTING_CHECKLIST.md` and `PHASE1_VISUAL_SUMMARY.md`
 - See `/mobile/README_STATUS.md` for detailed mobile app status
 
 ## Development Commands
@@ -264,6 +275,25 @@ trickCard: {
 
 Trick cards are positioned by relative player direction (top/left/right/bottom) using `getTrickSlotForPlayer()`.
 
+### Design System & Styling (Phase 1 - Feb 2026)
+
+**Design Tokens (Single Source of Truth):**
+- **Web:** `/client/src/styles/tokens.css` (imported in `index.css`)
+  - CSS custom properties: colors, shadows, gradients, typography
+  - Usage: `var(--gold-primary)`, `var(--shadow-md)`, `var(--gradient-felt)`
+
+- **Mobile:** `/mobile/src/styles/tokens.ts` (TypeScript constants)
+  - Imported as: `import { COLORS, SHADOWS, RADIUS } from '../../styles/tokens'`
+  - Usage: `backgroundColor: COLORS.feltDark`, `...SHADOWS.md`
+
+**Color Palette:**
+- **Theme:** Rich green felt (casino aesthetic) + gold accents
+- **Primary:** `#d4af37` (gold) — buttons, borders, highlights
+- **Background:** Radial gradient (`#0d2818` → `#1a472a` → `#2d5a3d`) + SVG noise texture
+- **Cards:** White with subtle gradient, serif fonts (Georgia) for ranks
+
+**Key Principle:** Never hardcode colors/shadows — always use tokens for consistency across web/mobile.
+
 ## Important File Locations
 
 **Core Game Logic (Server):**
@@ -278,12 +308,14 @@ Trick cards are positioned by relative player direction (top/left/right/bottom) 
 
 **Client (Web):**
 - `client/src/components/GameRoom.tsx` + `GameRoom.css` — main game UI
+- `client/src/styles/tokens.css` — design tokens (colors, shadows, gradients)
 - `client/src/auth/AuthContext.tsx` — `useAuth()` hook (all components use this, not `useWallet()`)
 - `client/src/socket/SocketContext.tsx` — socket connection
 - `client/src/types/game.ts` — client-side type definitions
 
 **Client (Mobile):**
 - `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI (React Native)
+- `mobile/src/styles/tokens.ts` — design tokens (COLORS, SHADOWS, RADIUS)
 - `mobile/src/screens/auth/AuthScreen.tsx` — login/register (Email + Wallet tabs)
 - `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking queue
 - `mobile/src/contexts/AuthContext.tsx` — mobile auth context
@@ -346,6 +378,32 @@ Trick cards are positioned by relative player direction (top/left/right/bottom) 
 **Symptom:** White text on white background or transparent background
 **Root Cause:** Missing background color or wrong text color
 **Solution:** Add `backgroundColor: '#fff'` to card, use `getSuitColor()` for text (red for ♥♦, black for ♠♣)
+
+### Mobile APK Build & Installation Issues
+**Symptom:** `adb install` fails with "No such file or directory" or APK not found
+**Root Cause:** APK path is relative, not absolute
+**Solution:**
+```bash
+# Use absolute path for installation
+adb install -r /Users/mesahin/batak/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+# Or find the APK first
+find mobile/android/app/build/outputs -name "*.apk"
+```
+
+**Symptom:** "Unable to load script" error after installing APK
+**Root Cause:** Metro bundler not running or port forwarding not set up
+**Solution:**
+```bash
+# 1. Start Metro bundler (from mobile directory)
+cd mobile && npm start
+
+# 2. Setup port forwarding
+adb reverse tcp:8081 tcp:8081  # Metro
+adb reverse tcp:3001 tcp:3001  # Game server
+
+# 3. Reload app: shake device → Developer Menu → Reload
+```
 
 ## Environment Variables
 

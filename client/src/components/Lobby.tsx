@@ -33,7 +33,9 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
   const { playerId } = useAuth();
   const [inQueue, setInQueue] = useState(false);
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
-  const [botCount, setBotCount] = useState(3);
+  const [queueStartTime, setQueueStartTime] = useState<number | null>(null);
+  const [selectedBotCount, setSelectedBotCount] = useState<number>(0); // Track selected bot count
+  const [botCount, setBotCount] = useState(parseInt(import.meta.env.VITE_DEFAULT_BOT_COUNT || '0'));
   const [botDifficulty, setBotDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.KOZ_MACA);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +107,8 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
 
     setError(null);
     setInQueue(true);
+    setQueueStartTime(Date.now());
+    setSelectedBotCount(botCount);
 
     socket.emit('join_queue', {
       publicKey: playerId,
@@ -120,6 +124,7 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
     socket.emit('leave_queue');
     setInQueue(false);
     setQueueStatus(null);
+    setQueueStartTime(null);
   };
 
   const handleCreatePrivateRoom = () => {
@@ -353,8 +358,20 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                       </>
                     ) : (
                       <>
-                        <p>Oyuncu Bekleniyor...</p>
-                        <p className="queue-subtext">{queueStatus.message}</p>
+                        <p>
+                          {selectedBotCount === 0 ? '🎮 PvP Modu' : '🤖 Karisik Mod'}
+                          {' - '}
+                          Oyuncu Bekleniyor...
+                        </p>
+                        <p className="queue-subtext">
+                          {queueStatus.playersInQueue}/{queueStatus.playersNeeded} oyuncu
+                          {selectedBotCount === 0 && queueStartTime && (
+                            <> • Botlar {Math.max(0, 60 - Math.floor((Date.now() - queueStartTime) / 1000))}s sonra eklenecek</>
+                          )}
+                          {selectedBotCount > 0 && selectedBotCount < 3 && queueStartTime && (
+                            <> • {Math.max(0, 30 - Math.floor((Date.now() - queueStartTime) / 1000))}s kalan</>
+                          )}
+                        </p>
                       </>
                     )}
                   </div>
