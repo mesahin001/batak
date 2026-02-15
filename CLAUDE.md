@@ -38,6 +38,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ✅ **Enhanced visuals:** Card shadows, gradients, radial background with texture
   - ✅ **Cross-platform consistency:** Shared design language between web and mobile
   - 📋 **Testing:** See `PHASE1_TESTING_CHECKLIST.md` and `PHASE1_VISUAL_SUMMARY.md`
+- **Animations (Phase 2 & 3 Complete - Feb 15, 2026):**
+  - ✅ **Phase 2:** Core animations (turn glow, card stagger, score popups, hover effects)
+  - ✅ **Phase 3:** Advanced effects (particle burst, state transitions, enhanced card dealing)
+  - ✅ **Library:** Framer Motion for web (354 KB bundle, +127 KB from Phase 1)
+  - ✅ **Mobile:** React Native Animated API (no additional dependencies)
+  - ✅ **Performance:** 60 FPS maintained on both platforms
+  - 📋 **Commits:** `7de3487` (Phase 2), `f65bfec` `2c22ae3` `a44e701` (Phase 3)
 - See `/mobile/README_STATUS.md` for detailed mobile app status
 
 ## Development Commands
@@ -293,6 +300,90 @@ Trick cards are positioned by relative player direction (top/left/right/bottom) 
 - **Cards:** White with subtle gradient, serif fonts (Georgia) for ranks
 
 **Key Principle:** Never hardcode colors/shadows — always use tokens for consistency across web/mobile.
+
+### Animation System (Phase 2 & 3 - Feb 2026)
+
+**Web Animations (Framer Motion):**
+- **Library:** `framer-motion` (imported in `GameRoom.tsx`)
+- **Components:** `motion.div`, `motion.button`, `AnimatePresence`
+- **Bundle Impact:** +127 KB (227 KB → 354 KB total)
+
+**Animation Types:**
+1. **Turn Indicator Glow** — Pulsing gold shadow when player's turn (infinite loop, 2s cycle)
+2. **Card Dealing** — Cards fly from deck position (top-center) with random rotation/variance
+3. **Card Hover** — Lift 15px + scale 1.05 (spring physics, only on player's turn)
+4. **Score Popups** — Animated +/- indicators float up and fade (1.5s duration)
+5. **Particle Effects** — 12 gold particles burst from center when trick collected
+6. **Modal Transitions** — Round complete/scoreboard slide in with spring physics
+7. **Stagger Animations** — Sequential reveals (0.05-0.1s delays)
+
+**Animation Patterns:**
+```typescript
+// Card dealing (enhanced realism)
+initial={{ y: -200, rotate: (Math.random() - 0.5) * 30, opacity: 0 }}
+animate={{ y: 0, rotate: 0, opacity: 1 }}
+transition={{ type: "spring", stiffness: 200, damping: 20, delay: cardIndex * 0.08 }}
+
+// Particle burst (trick collection)
+<AnimatePresence>
+  {showParticles && (
+    {[...Array(12)].map((_, i) => (
+      <motion.div
+        initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
+        animate={{
+          opacity: 0,
+          x: (Math.random() - 0.5) * 300,
+          y: -Math.random() * 200 - 50,
+          rotate: Math.random() * 360
+        }}
+        transition={{ duration: 1.5, delay: i * 0.05 }}
+      />
+    ))}
+  )}
+</AnimatePresence>
+
+// Modal entrance
+<motion.div
+  initial={{ scale: 0.8, y: 50, opacity: 0 }}
+  animate={{ scale: 1, y: 0, opacity: 1 }}
+  exit={{ scale: 0.8, y: 50, opacity: 0 }}
+  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+/>
+```
+
+**Mobile Animations (React Native Animated):**
+- **Already Implemented:** Turn glow, winner +1 popup
+- **Location:** `mobile/src/screens/game/GameRoomScreen.tsx` (lines 64-66, 237-260)
+- **No Additional Libraries:** Uses built-in `Animated` API
+
+```typescript
+// Turn glow (mobile)
+const turnGlowAnim = useRef(new Animated.Value(8)).current;
+
+useEffect(() => {
+  if (isMyTurn && !isBidding) {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(turnGlowAnim, { toValue: 12, duration: 1000 }),
+        Animated.timing(turnGlowAnim, { toValue: 8, duration: 1000 })
+      ])
+    ).start();
+  }
+}, [isMyTurn, isBidding]);
+
+// Apply to component
+<Animated.View style={{ shadowRadius: turnGlowAnim }} />
+```
+
+**Performance Guidelines:**
+- All animations use GPU-accelerated properties (`transform`, `opacity`)
+- Spring physics: `stiffness: 200-400`, `damping: 15-30`
+- Stagger delays: `0.03-0.1s` for smooth sequential reveals
+- Duration: `0.3-2s` max (avoid overly long animations)
+- Always wrap exit animations with `AnimatePresence`
+- Target: 60 FPS maintained (verified on both platforms)
+
+**Key Principle:** Animations must be non-blocking and never affect gameplay logic. All triggers are purely visual reactions to state changes.
 
 ## Important File Locations
 
