@@ -1107,3 +1107,26 @@
     height: 40px;
   }
 }
+
+/* ============================
+   Phase 2: Animations
+   ============================ */
+
+/* Score popups - floating score change indicators */
+.score-popup {
+  position: fixed;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gold-primary);
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+}
+
+/* Turn indicator glow - enhanced with Framer Motion */
+.my-hand-strip.my-turn {
+  border-radius: var(--radius-md);
+}

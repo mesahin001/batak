@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../socket/SocketContext';
 import { useAuth } from '../auth/AuthContext';
 import { GameClientState, RoundCompleteData, GameCompleteData } from '../types/game';
@@ -525,23 +526,89 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
         {/* ===== My Hand Strip (horizontal scroll, overlapping cards) ===== */}
         {!isScoring && (
-          <div className={`my-hand-strip ${isMyTurn && !isBidding ? 'my-turn' : ''}`}>
+          <motion.div
+            className={`my-hand-strip ${isMyTurn && !isBidding ? 'my-turn' : ''}`}
+            initial={false}
+            animate={isMyTurn && !isBidding ? {
+              boxShadow: [
+                '0 0 10px rgba(212, 175, 55, 0.3)',
+                '0 0 20px rgba(212, 175, 55, 0.5)',
+                '0 0 10px rgba(212, 175, 55, 0.3)'
+              ]
+            } : {}}
+            transition={{
+              boxShadow: {
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
+            }}
+          >
             {myHand.map((card, cardIndex) => (
-              <div
+              <motion.div
                 key={card.id}
                 className={`hand-card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
                 onClick={() => handleCardClick(card.id)}
                 style={{ '--card-i': cardIndex } as React.CSSProperties}
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  delay: cardIndex * 0.03
+                }}
+                whileHover={isMyTurn && !isBidding && !isPlayingCard ? {
+                  y: -15,
+                  scale: 1.05,
+                  transition: { type: "spring", stiffness: 400, damping: 15 }
+                } : {}}
+                whileTap={isMyTurn && !isBidding && !isPlayingCard ? { scale: 0.95 } : {}}
               >
                 <span className="hc-rank">{getRankSymbol(card.rank)}</span>
                 <span className="hc-suit" style={{ color: getSuitColor(card.suit) }}>
                   {getSuitSymbol(card.suit)}
                 </span>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
+
+      {/* ===== Score Popups (animated) ===== */}
+      <AnimatePresence>
+        {Object.entries(scorePopups).map(([playerId, scoreDelta]) => {
+          const player = currentGameState.players?.find(p => p.id === playerId);
+          if (!player) return null;
+
+          const playerIndex = currentGameState.players?.findIndex(p => p.id === playerId) ?? -1;
+          const myIdx = getMyPlayerIndex();
+          const relative = (playerIndex - myIdx + 4) % 4;
+
+          // Position popups based on player position
+          const positions: Record<number, React.CSSProperties> = {
+            0: { bottom: '180px', left: '50%', transform: 'translateX(-50%)' }, // My position
+            1: { top: '50%', left: '10%', transform: 'translateY(-50%)' },      // Left
+            2: { top: '80px', left: '50%', transform: 'translateX(-50%)' },     // Top
+            3: { top: '50%', right: '10%', transform: 'translateY(-50%)' }      // Right
+          };
+
+          return (
+            <motion.div
+              key={playerId}
+              className="score-popup"
+              style={positions[relative]}
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ opacity: 1, y: -30, scale: 1 }}
+              exit={{ opacity: 0, y: -60, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              {scoreDelta > 0 ? `+${scoreDelta}` : scoreDelta}
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
 
       {/* ===== Scoreboard Overlay (hamburger toggle) ===== */}
       {showScoreboard && (
