@@ -553,14 +553,30 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                 className={`hand-card ${selectedCard === card.id ? 'selected' : ''} ${(!isMyTurn && !isBidding) || isPlayingCard ? 'disabled' : isBidding ? 'viewing' : ''}`}
                 onClick={() => handleCardClick(card.id)}
                 style={{ '--card-i': cardIndex } as React.CSSProperties}
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                initial={{
+                  opacity: 0,
+                  y: -200, // Come from top (deck position)
+                  x: (Math.random() - 0.5) * 100, // Slight horizontal variance
+                  scale: 0.5,
+                  rotate: (Math.random() - 0.5) * 30, // Random rotation during flight
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  x: 0,
+                  scale: 1,
+                  rotate: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: -50,
+                }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 25,
-                  delay: cardIndex * 0.03
+                  stiffness: 200, // Slightly softer for more realistic card dealing
+                  damping: 20,
+                  delay: cardIndex * 0.08, // Longer delay for visible dealing sequence
                 }}
                 whileHover={isMyTurn && !isBidding && !isPlayingCard ? {
                   y: -15,
