@@ -647,59 +647,122 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       </AnimatePresence>
 
       {/* ===== Scoreboard Overlay (hamburger toggle) ===== */}
-      {showScoreboard && (
-        <>
-          <div className="scoreboard-backdrop" onClick={() => setShowScoreboard(false)} />
-          <div className="scoreboard-panel">
-            <h3>Skorlar</h3>
-            {currentGameState.players?.map((player) => (
-              <div key={player.id} className="sb-player">
-                <span className={`sb-name ${player.id === playerId ? 'me' : ''}`}>{player.name}</span>
-                <div className="sb-scores">
-                  <span className="sb-round">Round: {player.score ?? 0}</span>
-                  {player.totalScore !== undefined && (
-                    <span className="sb-total">Total: {player.totalScore}</span>
-                  )}
-                </div>
-                <span className="sb-tricks">{player.tricksWon} el kazandı</span>
-              </div>
-            ))}
-            <button className="btn-leave" onClick={handleLeaveGame}>
-              Oyundan Çık
-            </button>
-          </div>
-        </>
-      )}
+      <AnimatePresence>
+        {showScoreboard && (
+          <>
+            <motion.div
+              className="scoreboard-backdrop"
+              onClick={() => setShowScoreboard(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <motion.div
+              className="scoreboard-panel"
+              initial={{ x: 300 }}
+              animate={{ x: 0 }}
+              exit={{ x: 300 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <h3>Skorlar</h3>
+              {currentGameState.players?.map((player, index) => (
+                <motion.div
+                  key={player.id}
+                  className="sb-player"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                >
+                  <span className={`sb-name ${player.id === playerId ? 'me' : ''}`}>{player.name}</span>
+                  <div className="sb-scores">
+                    <span className="sb-round">Round: {player.score ?? 0}</span>
+                    {player.totalScore !== undefined && (
+                      <span className="sb-total">Total: {player.totalScore}</span>
+                    )}
+                  </div>
+                  <span className="sb-tricks">{player.tricksWon} el kazandı</span>
+                </motion.div>
+              ))}
+              <motion.button
+                className="btn-leave"
+                onClick={handleLeaveGame}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                whileHover={{ scale: 1.05, backgroundColor: '#c53358' }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Oyundan Çık
+              </motion.button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ===== Round Complete Modal (compact) ===== */}
-      {roundCompleteData && (
-        <div className="round-complete-modal">
-          <div className="round-complete-content">
-            <h2>Round {roundCompleteData.roundNumber} Bitti!</h2>
-            <p className="round-sub">Round {roundCompleteData.roundNumber} / {roundCompleteData.totalRounds}</p>
+      <AnimatePresence>
+        {roundCompleteData && (
+          <motion.div
+            className="round-complete-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="round-complete-content"
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 50 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <motion.h2
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                Round {roundCompleteData.roundNumber} Bitti!
+              </motion.h2>
+              <p className="round-sub">Round {roundCompleteData.roundNumber} / {roundCompleteData.totalRounds}</p>
 
-            <div className="round-scores">
-              <h3>Skorlar</h3>
-              {roundCompleteData.players.map((player) => (
-                <div key={player.id} className="round-score-item">
-                  <span className="rs-name">{player.name}</span>
-                  <span className="rs-score">+{player.score} (T: {player.totalScore})</span>
-                </div>
-              ))}
-            </div>
-
-            {currentRound < totalRounds ? (
-              <button className="btn-primary" onClick={handleRequestNextRound}>
-                Round {currentRound + 1} Başlat
-              </button>
-            ) : (
-              <div className="round-final-message">
-                <p>Oyun bitti — Skorlar hesaplanıyor...</p>
+              <div className="round-scores">
+                <h3>Skorlar</h3>
+                {roundCompleteData.players.map((player, index) => (
+                  <motion.div
+                    key={player.id}
+                    className="round-score-item"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                  >
+                    <span className="rs-name">{player.name}</span>
+                    <span className="rs-score">+{player.score} (T: {player.totalScore})</span>
+                  </motion.div>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
-      )}
+
+              {currentRound < totalRounds ? (
+                <motion.button
+                  className="btn-primary"
+                  onClick={handleRequestNextRound}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Round {currentRound + 1} Başlat
+                </motion.button>
+              ) : (
+                <div className="round-final-message">
+                  <p>Oyun bitti — Skorlar hesaplanıyor...</p>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
