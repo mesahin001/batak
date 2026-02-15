@@ -25,6 +25,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { GameClientState, RoundCompleteData, GameState } from '../../types/game';
 import { COLORS, SHADOWS, RADIUS } from '../../styles/tokens';
+import { soundManager } from '../../utils/SoundManager';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,6 +56,7 @@ export const GameRoomScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showTrickWinner, setShowTrickWinner] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
 
   const isPlayingCardRef = useRef(false);
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,6 +66,16 @@ export const GameRoomScreen = () => {
   const turnGlowAnim = useRef(new Animated.Value(8)).current;
   const winnerTextOpacity = useRef(new Animated.Value(0)).current;
   const winnerTextY = useRef(new Animated.Value(0)).current;
+
+  // Particle animations (12 particles)
+  const particleAnims = useRef(
+    Array.from({ length: 12 }, () => ({
+      opacity: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+      rotate: new Animated.Value(0),
+    }))
+  ).current;
 
   // Lock orientation to landscape on mount
   useEffect(() => {
@@ -133,10 +145,24 @@ export const GameRoomScreen = () => {
 
     const handleGameStateUpdate = (state: GameClientState) => {
       setCurrentGameState(prev => {
+        // Trick complete → play trick-win sound (haptic feedback) + particle burst
         if (prev && prev.currentTrick?.cards?.length === 4 && state.currentTrick?.cards?.length === 0) {
           setIsCollectingTrick(true);
+          setShowParticles(true);
+          soundManager.play('trick-win');
+
+          // Start particle animation
+          triggerParticleBurst();
+
           setTimeout(() => setIsCollectingTrick(false), 800);
+          setTimeout(() => setShowParticles(false), 2000);
         }
+
+        // New round started → play card-shuffle sound (haptic feedback)
+        if (prev && prev.state !== 'bidding' && state.state === 'bidding') {
+          soundManager.play('card-shuffle');
+        }
+
         return state;
       });
 
@@ -186,6 +212,7 @@ export const GameRoomScreen = () => {
 
     const handleRoundComplete = (data: RoundCompleteData) => {
       setRoundCompleteData(data);
+      soundManager.play('round-complete'); // Sound effect (haptic feedback)
       clearPlayingState();
     };
 
@@ -196,6 +223,7 @@ export const GameRoomScreen = () => {
 
     const handleGameComplete = (data: any) => {
       clearPlayingState();
+      soundManager.play('game-complete'); // Sound effect (haptic feedback)
       // Navigate to result screen
       navigation.navigate('GameResult' as never, { roomId } as never);
     };
@@ -286,11 +314,13 @@ export const GameRoomScreen = () => {
     }, 2000);
 
     socket.emit('play_card', { cardId });
+    soundManager.play('card-play'); // Sound effect (haptic feedback)
   };
 
   const handleBid = (suit: string, amount: number) => {
     if (!socket) return;
     socket.emit('bid_trump', { suit, amount });
+    soundManager.play('bid-placed'); // Sound effect (haptic feedback)
   };
 
   const handleSuitSelect = (suit: string) => {
@@ -343,6 +373,54 @@ export const GameRoomScreen = () => {
       top: players[(myIdx + 2) % 4] || null,
       right: players[(myIdx + 3) % 4] || null,
     };
+  };
+
+  /**
+   * Trigger particle burst animation (visual only)
+   */
+  const triggerParticleBurst = () => {
+    // Reset all particles to initial state
+    particleAnims.forEach(anim => {
+      anim.opacity.setValue(1);
+      anim.translateX.setValue(0);
+      anim.translateY.setValue(0);
+      anim.rotate.setValue(0);
+    });
+
+    // Animate all particles simultaneously
+    const animations = particleAnims.map((anim, i) => {
+      const angle = (Math.PI * 2 * i) / 12; // Evenly distribute around circle
+      const distance = 100 + Math.random() * 100; // Random distance 100-200
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance;
+
+      return Animated.parallel([
+        Animated.timing(anim.opacity, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.translateX, {
+          toValue: targetX,
+          duration: 1500,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.translateY, {
+          toValue: targetY,
+          duration: 1500,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.rotate, {
+          toValue: Math.random() * 360,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    Animated.parallel(animations).start();
   };
 
   const getTrickSlotForPlayer = (trickPlayerId: string): string => {
@@ -599,6 +677,33 @@ export const GameRoomScreen = () => {
 
         {/* Center: Trick area */}
         <View style={styles.trickArea}>
+          {/* ===== Particle Effects (trick collection) ===== */}
+          {showParticles && (
+            <View style={styles.particlesContainer} pointerEvents="none">
+              {particleAnims.map((anim, i) => (
+                <Animated.View
+                  key={i}
+                  style={[
+                    styles.particle,
+                    {
+                      opacity: anim.opacity,
+                      transform: [
+                        { translateX: anim.translateX },
+                        { translateY: anim.translateY },
+                        {
+                          rotate: anim.rotate.interpolate({
+                            inputRange: [0, 360],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
           {isScoring ? (
             <View style={styles.scoringOverlay}>
               <ActivityIndicator size="large" color="#4ade80" />
@@ -1008,6 +1113,26 @@ const styles = StyleSheet.create({
     height: 160,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Particle effects
+  particlesContainer: {
+    position: 'absolute',
+    top: 80, // Center of trick area
+    left: 100,
+    width: 0,
+    height: 0,
+    zIndex: 9999,
+  },
+  particle: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.goldPrimary,
+    shadowColor: COLORS.goldPrimary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 4,
+    shadowOpacity: 0.8,
   },
   trickSlots: {
     flexDirection: 'row',

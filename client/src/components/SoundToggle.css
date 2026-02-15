@@ -1,0 +1,40 @@
+/* Sound Toggle Button */
+.sound-toggle {
+  position: fixed;
+  top: 10px;
+  right: 60px; /* Next to hamburger menu */
+  width: 40px;
+  height: 40px;
+  background: var(--felt-dark);
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  color: var(--gold-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.sound-toggle:hover {
+  background: var(--gold-dark);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.sound-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .sound-toggle {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    right: 50px;
+  }
+}

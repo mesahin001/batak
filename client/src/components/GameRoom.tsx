@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../socket/SocketContext';
 import { useAuth } from '../auth/AuthContext';
 import { GameClientState, RoundCompleteData, GameCompleteData } from '../types/game';
+import { soundManager } from '../utils/SoundManager';
+import { SoundToggle } from './SoundToggle';
 import './GameRoom.css';
 
 interface GameRoomProps {
@@ -86,12 +88,20 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
     const handleGameStateUpdate = (state: GameClientState) => {
       setCurrentGameState(prev => {
+        // Trick complete → play trick-win sound
         if (prev && prev.currentTrick?.cards?.length === 4 && state.currentTrick?.cards?.length === 0) {
           setIsCollectingTrick(true);
           setShowParticles(true);
+          soundManager.play('trick-win'); // Sound effect!
           setTimeout(() => setIsCollectingTrick(false), 800);
           setTimeout(() => setShowParticles(false), 2000);
         }
+
+        // New round started → play card-shuffle sound
+        if (prev && prev.state !== 'bidding' && state.state === 'bidding') {
+          soundManager.play('card-shuffle'); // Sound effect!
+        }
+
         return state;
       });
 
@@ -131,6 +141,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
 
     const handleRoundComplete = (data: RoundCompleteData) => {
       setRoundCompleteData(data);
+      soundManager.play('round-complete'); // Sound effect!
       onRoundEnd(data);
     };
 
@@ -140,6 +151,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     };
 
     const handleGameComplete = (data: GameCompleteData) => {
+      soundManager.play('game-complete'); // Sound effect!
       onGameEnd(data);
     };
 
@@ -212,11 +224,13 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
     }, 2000);
 
     socket.emit('play_card', { cardId });
+    soundManager.play('card-play'); // Sound effect!
   };
 
   const handleBid = (suit: string, amount: number) => {
     if (!socket) return;
     socket.emit('bid_trump', { suit, amount });
+    soundManager.play('bid-placed'); // Sound effect!
   };
 
   const handleSuitSelect = (suit: string) => {
@@ -385,6 +399,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
           <span className="header-trick-count">{currentGameState.tricks ?? 0}.el</span>
           <span className="header-state">{currentGameState.state}</span>
         </div>
+        <SoundToggle />
         <button className="btn-hamburger" onClick={() => setShowScoreboard(true)}>☰</button>
       </div>
 
