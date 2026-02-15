@@ -28,6 +28,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   const [isPlayingCard, setIsPlayingCard] = useState(false);
   const [isCollectingTrick, setIsCollectingTrick] = useState(false);
   const [scorePopups, setScorePopups] = useState<Record<string, number>>({});
+  const [showParticles, setShowParticles] = useState(false);
 
   const isPlayingCardRef = useRef(false);
   const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,7 +88,9 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       setCurrentGameState(prev => {
         if (prev && prev.currentTrick?.cards?.length === 4 && state.currentTrick?.cards?.length === 0) {
           setIsCollectingTrick(true);
+          setShowParticles(true);
           setTimeout(() => setIsCollectingTrick(false), 800);
+          setTimeout(() => setShowParticles(false), 2000);
         }
         return state;
       });
@@ -608,6 +611,39 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
             </motion.div>
           );
         })}
+      </AnimatePresence>
+
+      {/* ===== Particle Effects (trick collection) ===== */}
+      <AnimatePresence>
+        {showParticles && (
+          <div className="particles-container">
+            {[...Array(12)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="particle"
+                initial={{
+                  opacity: 1,
+                  scale: 0,
+                  x: 0,
+                  y: 0,
+                }}
+                animate={{
+                  opacity: 0,
+                  scale: 1,
+                  x: (Math.random() - 0.5) * 300,
+                  y: -Math.random() * 200 - 50,
+                  rotate: Math.random() * 360,
+                }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: 1.5,
+                  ease: "easeOut",
+                  delay: i * 0.05,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </AnimatePresence>
 
       {/* ===== Scoreboard Overlay (hamburger toggle) ===== */}

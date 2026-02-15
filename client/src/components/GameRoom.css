@@ -1130,3 +1130,41 @@
 .my-hand-strip.my-turn {
   border-radius: var(--radius-md);
 }
+
+/* Particle effects container */
+.particles-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Individual particle */
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--gold-primary);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px var(--gold-primary),
+    0 0 20px var(--gold-light);
+}
+
+/* Alternate particle colors for variety */
+.particle:nth-child(2n) {
+  background: var(--gold-light);
+}
+
+.particle:nth-child(3n) {
+  width: 6px;
+  height: 6px;
+  background: #fbbf24;
+}
+
+.particle:nth-child(4n) {
+  width: 10px;
+  height: 10px;
+}
