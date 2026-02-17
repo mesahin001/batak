@@ -12,6 +12,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useSocket } from '../../contexts/SocketContext';
@@ -39,11 +40,21 @@ export const LobbyScreen = () => {
   // Game settings
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.KOZ_MACA);
   const [botDifficulty, setBotDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
-  const [botCount, setBotCount] = useState(3);
+  const [botCount, setBotCount] = useState(
+    parseInt(process.env.EXPO_PUBLIC_DEFAULT_BOT_COUNT || '0')
+  );
 
   // Queue state
   const [inQueue, setInQueue] = useState(false);
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+
+  // Private room state
+  const [showPrivateRoom, setShowPrivateRoom] = useState(false);
+  const [privateRoomCode, setPrivateRoomCode] = useState<string | null>(null);
+  const [privateRoomPlayers, setPrivateRoomPlayers] = useState<any[]>([]);
+  const [isHost, setIsHost] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [showJoinInput, setShowJoinInput] = useState(false);
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -87,14 +98,33 @@ export const LobbyScreen = () => {
       setQueueStatus(null);
     };
 
+    const handlePrivateRoomUpdate = (data: any) => {
+      console.log('[Lobby] Private room update:', data);
+      setPrivateRoomPlayers(data.players);
+      if (data.code) setPrivateRoomCode(data.code);
+    };
+
+    const handlePrivateRoomClosed = () => {
+      console.log('[Lobby] Private room closed');
+      setShowPrivateRoom(false);
+      setPrivateRoomCode(null);
+      setPrivateRoomPlayers([]);
+      setIsHost(false);
+      Alert.alert('Room Closed', 'The room has been closed by the host');
+    };
+
     socket.on('queue_status', handleQueueStatus);
     socket.on('match_found', handleMatchFound);
     socket.on('error', handleError);
+    socket.on('private_room_update', handlePrivateRoomUpdate);
+    socket.on('private_room_closed', handlePrivateRoomClosed);
 
     return () => {
       socket.off('queue_status', handleQueueStatus);
       socket.off('match_found', handleMatchFound);
       socket.off('error', handleError);
+      socket.off('private_room_update', handlePrivateRoomUpdate);
+      socket.off('private_room_closed', handlePrivateRoomClosed);
     };
   }, [socket, playerId, navigation]);
 
@@ -136,6 +166,99 @@ export const LobbyScreen = () => {
   };
 
   /**
+   * Create a private room
+   */
+  const handleCreatePrivateRoom = () => {
+    if (!socket || !playerId) {
+      Alert.alert('Error', 'Please log in again');
+      return;
+    }
+
+    setError(null);
+    socket.emit('create_private_room', {
+      publicKey: playerId,
+      username,
+      botDifficulty,
+      gameMode,
+    }, (response: any) => {
+      if (response.error) {
+        Alert.alert('Error', response.error);
+        return;
+      }
+      setPrivateRoomCode(response.code);
+      setPrivateRoomPlayers(response.players);
+      setIsHost(true);
+      setShowPrivateRoom(true);
+    });
+  };
+
+  /**
+   * Join a private room
+   */
+  const handleJoinPrivateRoom = () => {
+    if (!socket || !playerId || !joinCodeInput) {
+      Alert.alert('Error', 'Please enter a room code');
+      return;
+    }
+
+    setError(null);
+    socket.emit('join_private_room', {
+      code: joinCodeInput.toUpperCase(),
+      publicKey: playerId,
+      username,
+    }, (response: any) => {
+      if (response.error) {
+        Alert.alert('Error', response.error);
+        return;
+      }
+      setPrivateRoomCode(response.code);
+      setPrivateRoomPlayers(response.players);
+      setIsHost(response.hostPk === playerId);
+      setShowPrivateRoom(true);
+      setShowJoinInput(false);
+      setJoinCodeInput('');
+    });
+  };
+
+  /**
+   * Start the private room game
+   */
+  const handleStartPrivateRoom = () => {
+    if (!socket || !playerId || !privateRoomCode) return;
+
+    socket.emit('start_private_room', {
+      code: privateRoomCode,
+      publicKey: playerId,
+    });
+  };
+
+  /**
+   * Leave the private room
+   */
+  const handleLeavePrivateRoom = () => {
+    if (!socket || !playerId || !privateRoomCode) return;
+
+    socket.emit('leave_private_room', {
+      code: privateRoomCode,
+      publicKey: playerId,
+    });
+
+    setShowPrivateRoom(false);
+    setPrivateRoomCode(null);
+    setPrivateRoomPlayers([]);
+    setIsHost(false);
+  };
+
+  /**
+   * Copy room code to clipboard
+   */
+  const copyRoomCode = () => {
+    if (privateRoomCode) {
+      Alert.alert('Room Code', privateRoomCode);
+    }
+  };
+
+  /**
    * Get game mode display info
    */
   const getGameModeInfo = (mode: GameMode) => {
@@ -174,6 +297,87 @@ export const LobbyScreen = () => {
   };
 
   const currentGameMode = getGameModeInfo(gameMode);
+
+  // Private room lobby view
+  if (showPrivateRoom && privateRoomCode) {
+    return (
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.privateRoomContainer}>
+            <Text style={styles.headerTitle}>Private Room</Text>
+            <Text style={styles.headerSubtitle}>Invite your friends!</Text>
+
+            {/* Room Code Display */}
+            <View style={styles.roomCodeCard}>
+              <Text style={styles.roomCodeLabel}>Room Code</Text>
+              <View style={styles.roomCodeDisplay}>
+                <Text style={styles.roomCodeText}>{privateRoomCode}</Text>
+                <TouchableOpacity style={styles.copyButton} onPress={copyRoomCode}>
+                  <Text style={styles.copyButtonText}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Player List */}
+            <View style={styles.playersCard}>
+              <Text style={styles.playersLabel}>
+                Players ({privateRoomPlayers.length}/4)
+              </Text>
+              {privateRoomPlayers.map((player, index) => (
+                <View key={player.publicKey} style={styles.playerItem}>
+                  <Text style={styles.playerIcon}>👤</Text>
+                  <Text style={styles.playerName}>
+                    {player.username || player.publicKey.slice(0, 12)}
+                  </Text>
+                  {index === 0 && (
+                    <View style={styles.hostBadge}>
+                      <Text style={styles.hostBadgeText}>Host</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+              {/* Empty slots (bots) */}
+              {Array.from({ length: 4 - privateRoomPlayers.length }).map((_, i) => (
+                <View key={`empty-${i}`} style={styles.playerItem}>
+                  <Text style={styles.playerIcon}>🤖</Text>
+                  <Text style={[styles.playerName, styles.botSlotText]}>
+                    Bot (empty slot)
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Host: Start Button */}
+            {isHost && (
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={handleStartPrivateRoom}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.startButtonText}>Start Game</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Non-host: Waiting message */}
+            {!isHost && (
+              <Text style={styles.waitingText}>
+                Waiting for host to start the game...
+              </Text>
+            )}
+
+            {/* Leave Room Button */}
+            <TouchableOpacity
+              style={styles.leaveRoomButton}
+              onPress={handleLeavePrivateRoom}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.leaveRoomButtonText}>Leave Room</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -295,7 +499,7 @@ export const LobbyScreen = () => {
               <Text style={styles.settingDescription}>Number of AI opponents</Text>
             </View>
             <View style={styles.countSelector}>
-              {[1, 2, 3].map((count) => (
+              {[0, 1, 2, 3].map((count) => (
                 <TouchableOpacity
                   key={count}
                   style={[
@@ -313,7 +517,7 @@ export const LobbyScreen = () => {
                       botCount === count && styles.countButtonTextActive,
                     ]}
                   >
-                    {count}
+                    {count === 0 ? 'PvP' : count}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -370,11 +574,74 @@ export const LobbyScreen = () => {
           </TouchableOpacity>
         )}
 
+        {/* Private Room Actions */}
+        {!inQueue && (
+          <View style={styles.privateRoomActions}>
+            <TouchableOpacity
+              style={styles.privateRoomButton}
+              onPress={handleCreatePrivateRoom}
+              disabled={!isConnected}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.privateRoomButtonText}>Create Room</Text>
+            </TouchableOpacity>
+
+            {!showJoinInput ? (
+              <TouchableOpacity
+                style={styles.privateRoomButton}
+                onPress={() => setShowJoinInput(true)}
+                disabled={!isConnected}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.privateRoomButtonText}>Join Room</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.joinRoomInput}>
+                <TextInput
+                  style={styles.roomCodeInput}
+                  value={joinCodeInput}
+                  onChangeText={(text) => setJoinCodeInput(text.toUpperCase())}
+                  placeholder="Room code..."
+                  placeholderTextColor="#888"
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.joinButton,
+                    joinCodeInput.length !== 6 && styles.buttonDisabled,
+                  ]}
+                  onPress={handleJoinPrivateRoom}
+                  disabled={joinCodeInput.length !== 6}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.joinButtonText}>Join</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelJoinButton}
+                  onPress={() => {
+                    setShowJoinInput(false);
+                    setJoinCodeInput('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelJoinButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Quick Info */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>💡</Text>
           <Text style={styles.infoText}>
-            You'll play against {botCount} bot{botCount > 1 ? 's' : ''} on {currentGameMode.title} mode.
+            {botCount === 0
+              ? `You'll play with 4 real players on ${currentGameMode.title} mode.`
+              : `You'll play against ${botCount} bot${botCount > 1 ? 's' : ''} on ${currentGameMode.title} mode.`}
           </Text>
         </View>
       </ScrollView>
@@ -663,5 +930,201 @@ const styles = StyleSheet.create({
     color: '#aaa',
     flex: 1,
     lineHeight: 18,
+  },
+  // Private Room Styles
+  privateRoomContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 6,
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    color: '#888',
+  },
+  privateRoomActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 16,
+    width: '100%',
+  },
+  privateRoomButton: {
+    flex: 1,
+    backgroundColor: '#2d5a3d',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d4af37',
+    alignItems: 'center',
+  },
+  privateRoomButtonText: {
+    color: '#d4af37',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  roomCodeCard: {
+    backgroundColor: '#1a472a',
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#2d5a3d',
+  },
+  roomCodeLabel: {
+    color: '#d4af37',
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  roomCodeDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roomCodeText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: 'bold',
+    letterSpacing: 4,
+  },
+  copyButton: {
+    backgroundColor: '#d4af37',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  copyButtonText: {
+    color: '#0d2818',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  playersCard: {
+    backgroundColor: '#1a472a',
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#2d5a3d',
+  },
+  playersLabel: {
+    color: '#d4af37',
+    fontSize: 14,
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  playerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2d5a3d',
+  },
+  playerIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  playerName: {
+    color: '#fff',
+    fontSize: 15,
+    flex: 1,
+  },
+  botSlotText: {
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  hostBadge: {
+    backgroundColor: '#d4af37',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  hostBadgeText: {
+    color: '#0d2818',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  startButton: {
+    backgroundColor: '#d4af37',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  startButtonText: {
+    color: '#0d2818',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  waitingText: {
+    color: '#888',
+    fontSize: 14,
+    marginTop: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  leaveRoomButton: {
+    backgroundColor: '#8b0000',
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    marginTop: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  leaveRoomButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  joinRoomInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  roomCodeInput: {
+    flex: 1,
+    backgroundColor: '#1a472a',
+    color: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2d5a3d',
+    fontSize: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  joinButton: {
+    backgroundColor: '#d4af37',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  joinButtonText: {
+    color: '#0d2818',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cancelJoinButton: {
+    backgroundColor: '#8b0000',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelJoinButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
