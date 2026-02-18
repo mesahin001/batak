@@ -7,84 +7,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Batak Tournament Game** — A multiplayer Turkish trick-taking card game with cNFT rewards on Solana. Server-authoritative architecture: all game logic runs server-side, with real-time WebSocket communication to React clients.
 
 **Tech Stack:**
-- Client: React 18 + Vite + Socket.IO Client + TypeScript (WORKING)
-- Mobile: React Native + Expo + Socket.IO Client (FUNCTIONAL - fixed Feb 9, 2025)
-- Server: Node.js + Express + Socket.IO + TypeScript
-- Auth: JWT + bcryptjs (wallet and email+password login)
-- Database: SQLite (better-sqlite3) for player stats, game history, auth
+- Server: Node.js + Express + Socket.IO + TypeScript (port 3001)
+- Web Client: React 18 + Vite + Socket.IO Client + TypeScript (port 5173)
+- Mobile: React Native + Expo + Socket.IO Client
+- Auth: JWT + bcryptjs — dual auth (Solana wallet or email+password)
+- Database: SQLite via better-sqlite3 (player stats, game history, auth)
 - Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
-
-**⚠️ STATUS UPDATE (Feb 2025):**
-- **Web Client:** FULLY FUNCTIONAL at `/client/`
-- **Mobile App:** FULLY FUNCTIONAL at `/mobile/` - All issues resolved (Feb 10, 2025)
-  - ✅ Navigation: Lobby → GameRoom (fixed with getParent())
-  - ✅ Button responsiveness: 30+ buttons now have activeOpacity + hitSlop
-  - ✅ Auth UX: Mode toggle (Email/Wallet tabs) with clean interface
-  - ✅ Room cleanup: Players can rejoin after disconnect (publicKey-based removal)
-  - ✅ Server stability: Bot timer crashes fixed with room existence checks
-  - ✅ Bidding UI: Fully visible with proper z-index layering
-  - ✅ Card visibility: Cards visible during bidding phase
-  - ✅ İhaleli Batak: Suit selection working correctly
-  - ✅ **Connection fixed (Feb 10 evening):** Removed malformed Solana plugin, app connects successfully
-  - ✅ **Fullscreen mode (Feb 10 evening):** Status bar hidden in GameRoom for immersive gameplay
-- **PvP Multiplayer:** IMPLEMENTED (Feb 10, 2025) - Real player-vs-player mode ready for testing
-  - ✅ **60-second PvP timeout:** Queue waits 60s for 4 real players, then adds bots as fallback
-  - ✅ **Default to PvP:** App now defaults to 0 bots (encourages real multiplayer)
-  - ✅ **Enhanced queue UI:** Shows mode indicator, player count, and countdown timer
-  - ✅ **Cross-platform:** Mobile + web players can match together
-  - 📋 **Testing:** See `PVP_TESTING_GUIDE.md`, `PVP_QUICK_REFERENCE.md`, or run `./test-pvp.sh`
-- **UI Redesign (Phase 1 Complete - Feb 15, 2026):**
-  - ✅ **Design tokens system:** Centralized color palette (rich green felt + gold theme)
-  - ✅ **Enhanced visuals:** Card shadows, gradients, radial background with texture
-  - ✅ **Cross-platform consistency:** Shared design language between web and mobile
-  - 📋 **Testing:** See `PHASE1_TESTING_CHECKLIST.md` and `PHASE1_VISUAL_SUMMARY.md`
-- **Animations (Phase 2 & 3 Complete - Feb 15, 2026):**
-  - ✅ **Phase 2:** Core animations (turn glow, card stagger, score popups, hover effects)
-  - ✅ **Phase 3:** Advanced effects (particle burst, state transitions, enhanced card dealing)
-  - ✅ **Library:** Framer Motion for web (354 KB bundle, +127 KB from Phase 1)
-  - ✅ **Mobile:** React Native Animated API (no additional dependencies)
-  - ✅ **Performance:** 60 FPS maintained on both platforms
-  - 📋 **Commits:** `7de3487` (Phase 2), `f65bfec` `2c22ae3` `a44e701` (Phase 3)
-- See `/mobile/README_STATUS.md` for detailed mobile app status
 
 ## Development Commands
 
 ```bash
-# Server (port 3001)
+# Server
 cd server && npm run dev
 
-# Client (port 5173)
+# Web client
 cd client && npm run dev
 
 # Mobile (Expo)
-cd mobile && npm start
-# Then: Press 'a' for Android, 'i' for iOS
+cd mobile && npm start   # then 'a' for Android, 'i' for iOS
 
-# Mobile Development Setup (Required for physical device testing)
-adb reverse tcp:8081 tcp:8081  # Metro Bundler
-adb reverse tcp:3001 tcp:3001  # Game Server
-# Note: Run these commands whenever you reconnect your Android device
+# Physical Android device (run after each reconnect)
+adb reverse tcp:8081 tcp:8081   # Metro Bundler
+adb reverse tcp:3001 tcp:3001   # Game Server
 
 # Type-check
-cd client && npx tsc --noEmit
 cd server && npx tsc --noEmit
+cd client && npx tsc --noEmit
 
-# Run server tests (expect 86 pass / 8 fail — ihaleli_batak scoring tests are known failures)
+# Tests (expect 86 pass / 8 fail — ihaleli_batak scoring is a known failure)
 cd server && npm test
 
 # Build
 cd server && npm run build
 cd client && npm run build
-cd mobile/android && ./gradlew assembleDebug  # Android APK
+cd mobile/android && ./gradlew assembleDebug
 
-# Install mobile APK
-adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
+# Install Android APK (use absolute path)
+adb install -r /path/to/batak/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+# Kill server port
+lsof -ti:3001 | xargs kill -9
 
 # Docker production stack
 docker-compose up -d
-
-# Kill process on port 3001 (if needed)
-lsof -ti:3001 | xargs kill -9
 ```
 
 ## Architecture
@@ -99,7 +64,7 @@ Client action (play_card, bid_trump)
   → Client renders
 ```
 
-Never trust client input. Always validate server-side.
+Never trust client input. Always validate server-side. After any state change, always call `broadcastGameState(roomId, room)`.
 
 ### Game State Machine (`server/src/game/GameStateMachine.ts`)
 
@@ -111,407 +76,153 @@ LOBBY → BIDDING → PLAYING → SCORING → FINISHED
 
 Key methods: `startGame()`, `submitBid()`, `passBid()`, `playCard()`, `completeTrick()`, `clearTrick()`, `completeRound()`, `startNextRound()`, `getStateForClient(playerId)`
 
-### Multi-Round Structure
-- 5/7/9/11 rounds per game, 13 tricks per round, 52-card deck
-- Koz Maca: Spades always trump, highest cumulative score wins
-- Ihaleli Batak: Players bid suit+amount, lowest cumulative score wins
+**Multi-Round Structure:** 5/7/9/11 rounds per game, 13 tricks per round, 52-card deck.
 
-### Player Identification (Critical!)
+### Player Identification (Critical)
 
-Human players are identified by **playerId** (wallet publicKey or `"E_"+UUID`), NOT socketId.
+Human players identified by **playerId** (wallet publicKey or `"E_"+UUID`), NOT socketId. socketId changes on every reconnect; publicKey is stable.
 
 ```typescript
-// CORRECT — match by playerId from useAuth()
-const { playerId } = useAuth();
+// CORRECT
 const myPlayerIndex = playerId
   ? gameState.players?.findIndex((p) => p.id === playerId)
   : gameState.players?.findIndex((p) => p.type === 'human'); // bot-only fallback
 
-// WRONG — returns index 0 for all humans in 4-player PvP
+// WRONG — always returns index 0 in 4-player PvP
 const myPlayerIndex = gameState.players?.findIndex((p) => p.type === 'human');
 ```
 
-Server-side: `room.players` Map uses playerId as key. `broadcastGameState()` uses `player.id` to find each player's socket.
+When removing a player from a room, remove from **both** the socket Map and game state:
+```typescript
+room.players.delete(publicKey);           // socket map
+room.gameMachine.removePlayer(publicKey); // game state
+```
+Always use `removePlayerFromRoomByPublicKey()` — never `removePlayerFromRoom()`. See `server/src/matchmaker/Matchmaker.ts:540-568`.
 
-**CRITICAL: Room Player Removal Pattern (Fixed Feb 10, 2025)**
+### Bot Timer Safety Pattern
 
-When removing a player from a room, you MUST remove them from BOTH locations:
-
-1. **Socket Map:** `room.players.delete(publicKey)`
-2. **Game State:** `room.gameMachine.removePlayer(publicKey)`
+All bot `setTimeout` callbacks **must** check room existence first — the room may close during the delay:
 
 ```typescript
-// CORRECT — removes from both locations
-removePlayerFromRoomByPublicKey(roomId: string, publicKey: string): void {
-  const room = this.rooms.get(roomId);
-  if (!room) return;
-
-  room.players.delete(publicKey);              // ← Remove from socket map
-  room.gameMachine.removePlayer(publicKey);    // ← Remove from game state
-
-  if (this.getHumanPlayerCount(room) === 0) {
-    this.closeRoom(roomId);
-  }
-}
-
-// WRONG — only removes from socket map, player remains in game state
-removePlayerFromRoomByPublicKey(roomId: string, publicKey: string): void {
-  const room = this.rooms.get(roomId);
-  room.players.delete(publicKey);  // ← Missing gameMachine.removePlayer()!
-}
+setTimeout(() => {
+  const currentRoom = this.rooms.get(roomId);
+  if (!currentRoom) return;   // ← required guard
+  // ... bot action
+}, 3000);
 ```
 
-**Why publicKey instead of socketId?**
-- `socketId` changes on every reconnect/disconnect
-- `publicKey` (wallet address or `"E_"+UUID`) is stable across sessions
-- Always use `removePlayerFromRoomByPublicKey()` instead of `removePlayerFromRoom()`
-
-See `server/src/matchmaker/Matchmaker.ts:540-568` for implementation.
+Required in: `Matchmaker.ts:296` (bot turns), `SocketServer.ts:859` (bot bidding), any future delayed bot actions.
 
 ### Socket.IO Events
 
-**Client → Server:** `JOIN_QUEUE`, `LEAVE_QUEUE`, `PLAY_CARD {cardId}`, `BID_TRUMP {suit, amount}`, `REQUEST_NEXT_ROUND`, `AUTH_REGISTER`, `AUTH_LOGIN`, `AUTH_VALIDATE`, `AUTH_WALLET`
+**Client → Server:**
+- Matchmaking: `join_queue`, `leave_queue`
+- Gameplay: `play_card {cardId}`, `bid_trump {suit, amount}`, `request_next_round`
+- Auth: `auth_register`, `auth_login`, `auth_validate`, `auth_wallet`
+- Private rooms: `create_private_room`, `join_private_room`, `start_private_room`, `leave_private_room`
 
-**Server → Client:** `MATCH_FOUND`, `GAME_STATE_UPDATE`, `CARD_PLAYED`, `TRICK_COMPLETE`, `ROUND_COMPLETE`, `NEXT_ROUND_STARTING`, `GAME_COMPLETE`, `ERROR`, `GAME_ERROR`
+**Server → Client:**
+- Matchmaking: `match_found`, `queue_status`
+- Gameplay: `game_state_update`, `card_played`, `trick_complete`, `round_complete`, `next_round_starting`, `game_complete`
+- Private rooms: `private_room_update`, `private_room_closed`
+- Errors: `error`, `game_error`
 
-After any state change, always call `broadcastGameState(roomId, room)`.
+**Private Room Flow:** Host calls `create_private_room` → gets 6-char alphanumeric code → shares with friends → they call `join_private_room {code}` → host calls `start_private_room` → server fills empty slots with bots → `match_found` sent to all.
 
 ### Auth System
 
-Dual auth: wallet (Solana) or email+password. JWT stored in localStorage (`batak_auth_token`), 7-day expiry. Player ID format: wallet users = publicKey string, email users = `"E_"+UUIDv4`.
+JWT stored in localStorage (`batak_auth_token`), 7-day expiry. Player ID: wallet users = publicKey string, email users = `"E_"+UUIDv4`.
 
-Key files: `server/src/auth/AuthService.ts`, `client/src/auth/AuthContext.tsx` (`useAuth()` hook).
+Always use `useAuth()` hook from `client/src/auth/AuthContext.tsx` — never `useWallet()` directly.
 
 ### Bot AI (`server/src/bots/`)
 
-Strategy pattern: `EasyStrategy` (random), `NormalStrategy` (hand analysis), `HardStrategy` (card counting). `HandAnalyzer.ts` evaluates hand strength. Bot turns have 1.5s delay, trick display has 3s delay.
+Strategy pattern: `EasyStrategy` (random), `NormalStrategy` (hand analysis), `HardStrategy` (card counting). `HandAnalyzer.ts` evaluates hand strength. Bot turns have 1.5s delay; trick display has 3s delay.
 
-**CRITICAL: Bot Timer Safety Pattern (Fixed Feb 10, 2025)**
+### Client UI Layout
 
-All bot actions with `setTimeout` MUST check room existence before executing:
+**Web (`client/src/components/GameRoom.tsx`):**
+- Mini header (32px) + CSS Grid 3×3 game table
+- Bidding sheet: in-flow bottom panel (not fixed), max-height 34vh
+- Scoreboard: slide-in overlay from right (hamburger toggle)
+- Navbar hidden during gameplay (`appState === 'playing'` in App.tsx)
 
-```typescript
-// CORRECT — checks room exists before bot action
-setTimeout(() => {
-  const currentRoom = this.rooms.get(roomId);
-  if (!currentRoom) {
-    console.log('[Bot] Room no longer exists, skipping action');
-    return;
-  }
-  // ... execute bot action
-}, 3000);
+**Mobile (`mobile/src/screens/game/GameRoomScreen.tsx`):**
+- Absolute positioning for all game elements (~390px portrait target)
+- Bidding overlay must be a **sibling** to `gameTable` (not inside it) for z-index control
+- Use `bottom: 140` on overlay (not `0`) so cards remain visible during bidding
+- Use `View + flexWrap` for bid number grids — `ScrollView` has rendering issues here
+- Always set both `zIndex` and `elevation` for Android compatibility
 
-// WRONG — crashes if room closed during delay
-setTimeout(() => {
-  const room = this.rooms.get(roomId);
-  room.gameMachine.playCard(botId, cardId);  // ← Crashes if room deleted!
-}, 3000);
-```
+Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left/right/bottom).
 
-**Why is this needed?**
-- Player can disconnect/leave during bot's delay period
-- Room gets closed immediately for bot-only games
-- Timer fires after room deletion → server crash
+### Design System
 
-**Locations requiring this pattern:**
-- `Matchmaker.ts:296` — Bot turn timer
-- `SocketServer.ts:859` — Bot bidding timer
-- Any future bot delayed actions
+**Web:** `/client/src/styles/tokens.css` — CSS custom properties (`var(--gold-primary)`, `var(--shadow-md)`, `var(--gradient-felt)`)
 
-See commit history (Feb 10, 2025) for full implementation.
+**Mobile:** `/mobile/src/styles/tokens.ts` — TypeScript constants (`COLORS.feltDark`, `SHADOWS.md`, `RADIUS`)
 
-### Client UI — Mobile-First Layout
+**Palette:** Rich green felt casino aesthetic — `#d4af37` gold (buttons/borders), `#1a472a`/`#0d2818` greens (backgrounds), `#8b0000` dark red (destructive actions). Never hardcode colors; always use tokens.
 
-**Web Client (`client/src/components/GameRoom.tsx`):**
-- **Mini header** (32px): round/trump/trick count + hamburger menu
-- **CSS Grid game table** (3x3): opponent-top / opponent-left / trick-area / opponent-right / my-info-bar
-- **Hand strip**: horizontal scroll with overlapping cards (48x72px, -20px margin)
-- **Bidding sheet**: in-flow bottom panel (not fixed), max-height 34vh
-- **Scoreboard**: hidden by default, slide-in overlay from right (hamburger toggle)
-- **Navbar hidden** during gameplay (App.tsx doesn't render Navbar when `appState === 'playing'`)
+### Animation System
 
-**Mobile App (`mobile/src/screens/game/GameRoomScreen.tsx`):**
-- Target: ~390px portrait, React Native (no CSS Grid)
-- **Game table**: Absolute positioning for opponent slots (top/left/right)
-- **Trick area**: Center of screen with absolute positioning
-- **My hand**: Bottom strip with horizontal ScrollView
-- **Bidding overlay**: `position: 'absolute'`, z-index layering (see below)
-- **Stats**: Horizontal layout `2el • ♠7` (tricksWon + bid symbol)
+**Web:** Framer Motion (`motion.div`, `AnimatePresence`) in `GameRoom.tsx`. Spring physics: stiffness 200–400, damping 15–30. Always wrap exit animations with `AnimatePresence`. Total bundle: ~354 KB.
 
-**CRITICAL: React Native Z-Index Layering (Fixed Feb 10, 2025)**
+**Mobile:** Built-in `Animated` API only (`Animated.loop`, `Animated.sequence`). Turn glow and winner popup already implemented in `GameRoomScreen.tsx`. All animation properties must be GPU-accelerated (`transform`, `opacity`).
 
-React Native overlays require careful z-index management:
+## Key Files
 
-```typescript
-// Layer hierarchy (highest to lowest):
-biddingOverlay: {
-  position: 'absolute',
-  top: 40,
-  left: 8,
-  right: 8,
-  bottom: 140,          // ← Leave space for cards to be visible
-  zIndex: 9999,         // ← Highest
-  elevation: 9999,      // ← Android shadow/elevation
-  backgroundColor: 'rgba(15, 15, 30, 0.98)',
-}
-
-myHandStrip: {
-  position: 'absolute',
-  bottom: 8,
-  zIndex: 9998,         // ← Below overlay, above background
-  elevation: 9998,
-}
-
-trickCard: {
-  // No explicit zIndex (defaults to 1 or auto)
-}
-```
-
-**Common pitfalls:**
-1. ❌ Overlay inside `gameTable` → can't go above sibling elements
-2. ✅ Overlay as sibling to `gameTable` → full z-index control
-3. ❌ Fullscreen overlay (`bottom: 0`) → hides cards during bidding
-4. ✅ Partial overlay (`bottom: 140`) → cards visible for decision-making
-5. ❌ Using `ScrollView` for bid numbers → rendering issues
-6. ✅ Using `View` with flexWrap → reliable rendering
-
-**İhaleli Batak Bidding Flow:**
-1. Show suit selection (♠ ♥ ♦ ♣) → user picks suit
-2. Show bid numbers (1-13) → user picks amount
-3. Or Pass button (0) → skip bidding
-
-Trick cards are positioned by relative player direction (top/left/right/bottom) using `getTrickSlotForPlayer()`.
-
-### Design System & Styling (Phase 1 - Feb 2026)
-
-**Design Tokens (Single Source of Truth):**
-- **Web:** `/client/src/styles/tokens.css` (imported in `index.css`)
-  - CSS custom properties: colors, shadows, gradients, typography
-  - Usage: `var(--gold-primary)`, `var(--shadow-md)`, `var(--gradient-felt)`
-
-- **Mobile:** `/mobile/src/styles/tokens.ts` (TypeScript constants)
-  - Imported as: `import { COLORS, SHADOWS, RADIUS } from '../../styles/tokens'`
-  - Usage: `backgroundColor: COLORS.feltDark`, `...SHADOWS.md`
-
-**Color Palette:**
-- **Theme:** Rich green felt (casino aesthetic) + gold accents
-- **Primary:** `#d4af37` (gold) — buttons, borders, highlights
-- **Background:** Radial gradient (`#0d2818` → `#1a472a` → `#2d5a3d`) + SVG noise texture
-- **Cards:** White with subtle gradient, serif fonts (Georgia) for ranks
-
-**Key Principle:** Never hardcode colors/shadows — always use tokens for consistency across web/mobile.
-
-### Animation System (Phase 2 & 3 - Feb 2026)
-
-**Web Animations (Framer Motion):**
-- **Library:** `framer-motion` (imported in `GameRoom.tsx`)
-- **Components:** `motion.div`, `motion.button`, `AnimatePresence`
-- **Bundle Impact:** +127 KB (227 KB → 354 KB total)
-
-**Animation Types:**
-1. **Turn Indicator Glow** — Pulsing gold shadow when player's turn (infinite loop, 2s cycle)
-2. **Card Dealing** — Cards fly from deck position (top-center) with random rotation/variance
-3. **Card Hover** — Lift 15px + scale 1.05 (spring physics, only on player's turn)
-4. **Score Popups** — Animated +/- indicators float up and fade (1.5s duration)
-5. **Particle Effects** — 12 gold particles burst from center when trick collected
-6. **Modal Transitions** — Round complete/scoreboard slide in with spring physics
-7. **Stagger Animations** — Sequential reveals (0.05-0.1s delays)
-
-**Animation Patterns:**
-```typescript
-// Card dealing (enhanced realism)
-initial={{ y: -200, rotate: (Math.random() - 0.5) * 30, opacity: 0 }}
-animate={{ y: 0, rotate: 0, opacity: 1 }}
-transition={{ type: "spring", stiffness: 200, damping: 20, delay: cardIndex * 0.08 }}
-
-// Particle burst (trick collection)
-<AnimatePresence>
-  {showParticles && (
-    {[...Array(12)].map((_, i) => (
-      <motion.div
-        initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
-        animate={{
-          opacity: 0,
-          x: (Math.random() - 0.5) * 300,
-          y: -Math.random() * 200 - 50,
-          rotate: Math.random() * 360
-        }}
-        transition={{ duration: 1.5, delay: i * 0.05 }}
-      />
-    ))}
-  )}
-</AnimatePresence>
-
-// Modal entrance
-<motion.div
-  initial={{ scale: 0.8, y: 50, opacity: 0 }}
-  animate={{ scale: 1, y: 0, opacity: 1 }}
-  exit={{ scale: 0.8, y: 50, opacity: 0 }}
-  transition={{ type: "spring", stiffness: 300, damping: 25 }}
-/>
-```
-
-**Mobile Animations (React Native Animated):**
-- **Already Implemented:** Turn glow, winner +1 popup
-- **Location:** `mobile/src/screens/game/GameRoomScreen.tsx` (lines 64-66, 237-260)
-- **No Additional Libraries:** Uses built-in `Animated` API
-
-```typescript
-// Turn glow (mobile)
-const turnGlowAnim = useRef(new Animated.Value(8)).current;
-
-useEffect(() => {
-  if (isMyTurn && !isBidding) {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(turnGlowAnim, { toValue: 12, duration: 1000 }),
-        Animated.timing(turnGlowAnim, { toValue: 8, duration: 1000 })
-      ])
-    ).start();
-  }
-}, [isMyTurn, isBidding]);
-
-// Apply to component
-<Animated.View style={{ shadowRadius: turnGlowAnim }} />
-```
-
-**Performance Guidelines:**
-- All animations use GPU-accelerated properties (`transform`, `opacity`)
-- Spring physics: `stiffness: 200-400`, `damping: 15-30`
-- Stagger delays: `0.03-0.1s` for smooth sequential reveals
-- Duration: `0.3-2s` max (avoid overly long animations)
-- Always wrap exit animations with `AnimatePresence`
-- Target: 60 FPS maintained (verified on both platforms)
-
-**Key Principle:** Animations must be non-blocking and never affect gameplay logic. All triggers are purely visual reactions to state changes.
-
-## Important File Locations
-
-**Core Game Logic (Server):**
-- `server/src/game/GameStateMachine.ts` — central state machine
-- `server/src/game/Card.ts` — deck creation, card comparison
+**Server:**
+- `server/src/game/GameStateMachine.ts` — state machine
 - `server/src/game/TurnValidator.ts` — move validation
 - `server/src/game/Scoring.ts` — score calculation
-
-**Socket & Matchmaker:**
 - `server/src/socket/SocketServer.ts` — all Socket.IO event handlers
-- `server/src/matchmaker/Matchmaker.ts` — room creation, bot turn management
-
-**Client (Web):**
-- `client/src/components/GameRoom.tsx` + `GameRoom.css` — main game UI
-- `client/src/styles/tokens.css` — design tokens (colors, shadows, gradients)
-- `client/src/auth/AuthContext.tsx` — `useAuth()` hook (all components use this, not `useWallet()`)
-- `client/src/socket/SocketContext.tsx` — socket connection
-- `client/src/types/game.ts` — client-side type definitions
-
-**Client (Mobile):**
-- `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI (React Native)
-- `mobile/src/styles/tokens.ts` — design tokens (COLORS, SHADOWS, RADIUS)
-- `mobile/src/screens/auth/AuthScreen.tsx` — login/register (Email + Wallet tabs)
-- `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking queue
-- `mobile/src/contexts/AuthContext.tsx` — mobile auth context
-- `mobile/src/contexts/SocketContext.tsx` — mobile socket connection
-
-**Database & Auth:**
-- `server/src/database/DatabaseManager.ts` — SQLite (players, games, nft_rewards, auth tables)
+- `server/src/matchmaker/Matchmaker.ts` — room creation, bot management, private rooms
+- `server/src/database/DatabaseManager.ts` — SQLite schema + queries
 - `server/src/auth/AuthService.ts` — JWT + bcrypt
 
-**Solana:** `server/src/solana/` — TournamentManager, CNFTMinter, MerkleTreeManager
+**Web Client:**
+- `client/src/components/GameRoom.tsx` + `GameRoom.css` — main game UI
+- `client/src/components/Lobby.tsx` — matchmaking + private room UI
+- `client/src/styles/tokens.css` — design tokens
+- `client/src/auth/AuthContext.tsx` — `useAuth()` hook
+- `client/src/types/game.ts` — shared type definitions
 
-## Batak Rules Quick Reference
+**Mobile:**
+- `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI
+- `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking + private room UI
+- `mobile/src/styles/tokens.ts` — design tokens
+- `mobile/src/contexts/AuthContext.tsx` — mobile auth context
+- `mobile/src/contexts/SocketContext.tsx` — socket connection
 
-- **Deck:** 52 cards (2-A, 4 suits), 13 per player
-- **Ranking:** A > K > Q > J > 10 > ... > 2
-- **Must follow suit.** Trump (spades in Koz Maca) beats non-trump.
-- **Scoring:** Made bid → `10×bid + (tricks-bid)`. Failed → `-10×bid`. Non-bidders → `tricks×10`.
-- **Bidding ends** when `bids.length >= 4` AND at least one real bid exists.
+## Game Rules Quick Reference
 
-## Game Modes
-
-**Koz Maca:** Spades always trump, bid trick count only (1-13), highest cumulative score wins.
-
-**Ihaleli Batak:** Bid suit + amount, must exceed current highest for that suit, lowest cumulative score wins (first to ≤1 wins early).
+- **Deck:** 52 cards (2–A, 4 suits), 13 per player. **Ranking:** A > K > Q > J > 10 > … > 2
+- **Must follow suit.** Trump beats non-trump.
+- **Koz Maça:** Spades always trump; bid trick count only (1–13); highest cumulative score wins.
+- **İhaleli Batak:** Bid suit + amount; must exceed current highest for that suit; lowest cumulative score wins (first to ≤1 wins early).
+- **Scoring:** Made bid → `10×bid + (tricks−bid)`. Failed → `−10×bid`. Non-bidders → `tricks×10`.
+- **Bidding ends** when all 4 players have acted AND at least one real bid exists.
 
 ## Known Issues (Do NOT Fix Unless Asked)
 
-- `Scoring.test.ts`: 8 tests fail (ihaleli_batak mode scoring formula mismatch). Expected test output: 86 pass / 8 fail.
-- Pre-existing TS unused import warnings across bot files, Solana files.
-- `better-sqlite3` not found by tsc (works at runtime with tsx).
-- Solana SDK modules (@metaplex-foundation/*) not found by tsc.
-
-## Common Debugging Patterns (Learned Feb 10, 2025)
-
-### Server Crashes After Player Disconnect
-**Symptom:** "Cannot read properties of undefined (reading 'id')" in bot timers
-**Root Cause:** Bot timer executes after room deletion
-**Solution:** Always check room existence in `setTimeout` callbacks (see Bot AI section)
-
-### Players Can't Rejoin After Leaving
-**Symptom:** Server tries to rejoin old game instead of creating new match
-**Root Cause:** Player not removed from `room.gameMachine` internal state
-**Solution:** Use `removePlayerFromRoomByPublicKey()` to remove from BOTH socket map and game state
-
-### Mobile UI Elements Not Visible
-**Symptom:** Buttons/overlays render but not visible on screen
-**Root Cause:** Z-index scope issue or fullscreen overlay
-**Solution:**
-1. Move overlay outside parent container to gain z-index control
-2. Use partial overlay (`bottom: 140`) not fullscreen (`bottom: 0`)
-3. Set explicit z-index hierarchy (overlay > cards > background)
-4. Add `elevation` for Android shadow rendering
-
-### ScrollView vs View in React Native
-**Symptom:** Elements in ScrollView not rendering
-**Root Cause:** ScrollView has complex rendering lifecycle
-**Solution:** Use `View` with `flexWrap: 'wrap'` for simple layouts like bid number grids
-
-### Trick Cards Unreadable
-**Symptom:** White text on white background or transparent background
-**Root Cause:** Missing background color or wrong text color
-**Solution:** Add `backgroundColor: '#fff'` to card, use `getSuitColor()` for text (red for ♥♦, black for ♠♣)
-
-### Mobile APK Build & Installation Issues
-**Symptom:** `adb install` fails with "No such file or directory" or APK not found
-**Root Cause:** APK path is relative, not absolute
-**Solution:**
-```bash
-# Use absolute path for installation
-adb install -r /Users/mesahin/batak/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-
-# Or find the APK first
-find mobile/android/app/build/outputs -name "*.apk"
-```
-
-**Symptom:** "Unable to load script" error after installing APK
-**Root Cause:** Metro bundler not running or port forwarding not set up
-**Solution:**
-```bash
-# 1. Start Metro bundler (from mobile directory)
-cd mobile && npm start
-
-# 2. Setup port forwarding
-adb reverse tcp:8081 tcp:8081  # Metro
-adb reverse tcp:3001 tcp:3001  # Game server
-
-# 3. Reload app: shake device → Developer Menu → Reload
-```
+- `Scoring.test.ts`: 8 tests fail (ihaleli_batak scoring formula mismatch). Expected: 86 pass / 8 fail.
+- Pre-existing TS unused import warnings in bot files and Solana files.
+- `better-sqlite3` not found by `tsc` (works fine at runtime with `tsx`).
+- Solana SDK modules (`@metaplex-foundation/*`) not found by `tsc`.
+- `client/src/phaser/` — legacy, unused, has compilation errors; ignore.
 
 ## Environment Variables
 
-**Server (.env):** `PORT=3001`, `JWT_SECRET`, `SOLANA_RPC_URL`, `SOLANA_PRIVATE_KEY`, `PROGRAM_ID`, `DEFAULT_BOT_DIFFICULTY=normal`
+**Server (`.env`):** `PORT=3001`, `JWT_SECRET`, `SOLANA_RPC_URL`, `SOLANA_PRIVATE_KEY`, `PROGRAM_ID`, `DEFAULT_BOT_DIFFICULTY=normal`
 
-**Client (.env):** `VITE_SERVER_URL=ws://localhost:3001`, `VITE_SOLANA_NETWORK=devnet`, `VITE_PROGRAM_ID`, `VITE_DEFAULT_BOT_DIFFICULTY=normal`, `VITE_DEFAULT_BOT_COUNT=3`
+**Web Client (`.env`):** `VITE_SERVER_URL=ws://localhost:3001`, `VITE_SOLANA_NETWORK=devnet`, `VITE_PROGRAM_ID`, `VITE_DEFAULT_BOT_DIFFICULTY=normal`, `VITE_DEFAULT_BOT_COUNT=0`
 
-## Data Persistence
+**Mobile (`.env`):** `EXPO_PUBLIC_SERVER_URL=http://localhost:3001`, `EXPO_PUBLIC_DEFAULT_BOT_COUNT=0`
 
-- Game state: **in-memory only** (lost on server restart)
-- Player stats, game history, auth records, NFT rewards: **SQLite** (persistent)
-- Production upgrade path: PostgreSQL + Redis for state recovery (see `docs/PRODUCTION-ROADMAP.md`)
+## Data Persistence & Deployment
 
-## Deployment
-
-**Deployed Solana Program ID (Devnet):** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h`
-
-**Docker:** `docker-compose.yml` includes batak-server, postgres, redis, nginx. See `.env.production.example` for config.
-
-**Solana Playground deployment:** Copy `solana-program/playground/lib.rs` to https://beta.solpg.io, build & deploy, update `.env` with new program ID.
+- **Game state:** in-memory only (lost on server restart)
+- **Persistent:** SQLite — player stats, game history, auth records, NFT rewards
+- **Solana Program ID (Devnet):** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h`
+- **Docker:** `docker-compose.yml` — batak-server, postgres, redis, nginx
