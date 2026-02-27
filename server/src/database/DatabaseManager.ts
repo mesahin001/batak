@@ -57,6 +57,7 @@ interface NftReward {
   gameId: string;
   tier: number; // 1=Bronze, 2=Silver, 3=Gold
   metadataUri: string;
+  mintAddress?: string | null; // Compressed NFT asset ID (on-chain address)
   signature?: string;
   onChainMinted: boolean;
 }
@@ -425,14 +426,15 @@ export class DatabaseManager {
     this.db.prepare(`
       INSERT INTO nft_rewards (
         player_pk, tournament_id, game_id, tier, metadata_uri,
-        signature, on_chain_minted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        mint_tx_id, signature, on_chain_minted
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       reward.playerPk,
       reward.tournamentId,
       reward.gameId,
       reward.tier,
       reward.metadataUri,
+      reward.mintAddress || null,
       reward.signature || null,
       reward.onChainMinted ? 1 : 0
     );
@@ -459,11 +461,14 @@ export class DatabaseManager {
     `).all(publicKey) as any[];
 
     return rows.map(row => ({
+      id: row.id,
+      mintedAt: row.minted_at,
       playerPk: row.player_pk,
       tournamentId: row.tournament_id,
       gameId: row.game_id,
       tier: row.tier,
       metadataUri: row.metadata_uri,
+      mintAddress: row.mint_tx_id || null,
       signature: row.signature,
       onChainMinted: row.on_chain_minted === 1,
     }));
@@ -479,7 +484,7 @@ export class DatabaseManager {
   getLeaderboard(limit: number = 100): PlayerStats[] {
     const rows = this.db.prepare(`
       SELECT * FROM players
-      WHERE games_played >= 3
+      WHERE games_played >= 1
       ORDER BY current_season_points DESC
       LIMIT ?
     `).all(limit) as any[];

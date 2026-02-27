@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LeaderboardEntry, GameHistoryEntry, NftRewardEntry } from '../../types/game';
@@ -37,6 +38,7 @@ export const ProfileScreen = () => {
   const navigation = useNavigation();
   const { socket, isConnected } = useSocket();
   const { playerId: currentUser } = useAuth();
+  const { t } = useTranslation();
 
   // Get publicKey from route params (viewing other profile) or use current user
   const params = route.params as RouteParams | undefined;
@@ -55,7 +57,7 @@ export const ProfileScreen = () => {
   useEffect(() => {
     if (!socket || !isConnected || !targetPublicKey) {
       setLoading(false);
-      setError('Server not connected');
+      setError(t('profile.serverNotConnected'));
       return;
     }
 
@@ -114,10 +116,10 @@ export const ProfileScreen = () => {
    * Get rank tier label
    */
   const getRankTierLabel = (tier: number): string => {
-    if (tier >= 100) return 'Elit';
-    if (tier >= 50) return 'Altın';
-    if (tier >= 20) return 'Gümüş';
-    return 'Bronz';
+    if (tier >= 100) return t('profile.elite');
+    if (tier >= 50) return t('profile.gold');
+    if (tier >= 20) return t('profile.silver');
+    return t('profile.bronze');
   };
 
   /**
@@ -148,8 +150,8 @@ export const ProfileScreen = () => {
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
+    if (diffDays === 0) return t('common.today');
+    if (diffDays === 1) return t('common.yesterday');
     if (diffDays < 7) return `${diffDays}d ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
     return date.toLocaleDateString();
@@ -175,7 +177,7 @@ export const ProfileScreen = () => {
         </View>
 
         <View style={styles.gameStats}>
-          <Text style={styles.gameRounds}>{game.totalRounds} rounds</Text>
+          <Text style={styles.gameRounds}>{game.totalRounds} {t('profile.rounds')}</Text>
         </View>
 
         <Text style={styles.gameResultIcon}>{getGameResultIcon(game)}</Text>
@@ -189,7 +191,7 @@ export const ProfileScreen = () => {
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6C63FF" />
-          <Text style={styles.loadingText}>Yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </View>
     );
@@ -201,7 +203,7 @@ export const ProfileScreen = () => {
       <View style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorText}>{error || 'Player not found'}</Text>
+          <Text style={styles.errorText}>{error || t('profile.noHistory')}</Text>
         </View>
       </View>
     );
@@ -215,7 +217,7 @@ export const ProfileScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>
-            {isOwnProfile ? 'Profilim' : 'Oyuncu Profili'}
+            {isOwnProfile ? t('profile.myProfile') : t('profile.playerProfile')}
           </Text>
         </View>
 
@@ -236,35 +238,35 @@ export const ProfileScreen = () => {
           <View style={styles.tierRow}>
             <View style={[styles.tierBadge, { borderColor: rankTierColor }]}>
               <Text style={[styles.tierText, { color: rankTierColor }]}>
-                {getRankTierLabel(player.rankTier)} Tier
+                {getRankTierLabel(player.rankTier)} {t('profile.tier')}
               </Text>
             </View>
           </View>
 
           <View style={styles.scoreRow}>
-            <Text style={styles.scoreLabel}>Sezon Puanı</Text>
+            <Text style={styles.scoreLabel}>{t('profile.seasonPoints')}</Text>
             <Text style={styles.scoreValue}>{player.currentSeasonPoints}</Text>
           </View>
         </View>
 
         {/* Stats Grid */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>İstatistikler</Text>
+          <Text style={styles.sectionTitle}>{t('profile.stats')}</Text>
 
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{player.gamesPlayed}</Text>
-              <Text style={styles.statLabel}>Oyun</Text>
+              <Text style={styles.statLabel}>{t('leaderboard.games')}</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={[styles.statValue, styles.statWin]}>{player.gamesWon}</Text>
-              <Text style={styles.statLabel}>Galibiyet</Text>
+              <Text style={styles.statLabel}>{t('leaderboard.wins')}</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{getWinRate()}</Text>
-              <Text style={styles.statLabel}>Kazanma %</Text>
+              <Text style={styles.statLabel}>{t('leaderboard.winRate')}</Text>
             </View>
 
             <View style={styles.statCard}>
@@ -274,33 +276,33 @@ export const ProfileScreen = () => {
 
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{player.totalTricksWon}</Text>
-              <Text style={styles.statLabel}>Eli</Text>
+              <Text style={styles.statLabel}>{t('profile.tricks')}</Text>
             </View>
 
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{getBidSuccessRate()}</Text>
-              <Text style={styles.statLabel}>İhale %</Text>
+              <Text style={styles.statLabel}>{t('profile.bidSuccess')}</Text>
             </View>
           </View>
         </View>
 
         {/* Score Range Card */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Skor Aralığı</Text>
+          <Text style={styles.sectionTitle}>{t('profile.scoreRange')}</Text>
 
           <View style={styles.scoreRangeCard}>
             <View style={styles.scoreRangeItem}>
-              <Text style={styles.scoreRangeLabel}>En İyi</Text>
+              <Text style={styles.scoreRangeLabel}>{t('profile.best')}</Text>
               <Text style={[styles.scoreRangeValue, styles.scoreBest]}>{player.bestScore}</Text>
             </View>
 
             <View style={styles.scoreRangeItem}>
-              <Text style={styles.scoreRangeLabel}>Toplam</Text>
+              <Text style={styles.scoreRangeLabel}>{t('profile.total')}</Text>
               <Text style={styles.scoreRangeValue}>{player.totalScore}</Text>
             </View>
 
             <View style={styles.scoreRangeItem}>
-              <Text style={styles.scoreRangeLabel}>En Kötü</Text>
+              <Text style={styles.scoreRangeLabel}>{t('profile.worst')}</Text>
               <Text style={[styles.scoreRangeValue, styles.scoreWorst]}>{player.worstScore}</Text>
             </View>
           </View>
@@ -308,11 +310,11 @@ export const ProfileScreen = () => {
 
         {/* Recent Games */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Son Oyunlar</Text>
+          <Text style={styles.sectionTitle}>{t('profile.recentGames')}</Text>
 
           {games.length === 0 ? (
             <View style={styles.emptyGames}>
-              <Text style={styles.emptyText}>Henüz oyun oynanmadı</Text>
+              <Text style={styles.emptyText}>{t('profile.noHistory')}</Text>
             </View>
           ) : (
             <View style={styles.gamesList}>
@@ -324,7 +326,7 @@ export const ProfileScreen = () => {
         {/* NFT Rewards */}
         {nfts.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>NFT Ödülleri</Text>
+            <Text style={styles.sectionTitle}>{t('profile.nfts')}</Text>
 
             <View style={styles.nftsList}>
               {nfts.map((nft, index) => (

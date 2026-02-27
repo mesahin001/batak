@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LeaderboardEntry } from '../../types/game';
@@ -27,6 +28,7 @@ export const LeaderboardScreen = () => {
   const navigation = useNavigation();
   const { socket, isConnected } = useSocket();
   const { playerId } = useAuth();
+  const { t } = useTranslation();
 
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export const LeaderboardScreen = () => {
   useEffect(() => {
     if (!socket || !isConnected) {
       setLoading(false);
-      setError('Server not connected');
+      setError(t('profile.serverNotConnected'));
       return;
     }
 
@@ -136,17 +138,17 @@ export const LeaderboardScreen = () => {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{item.gamesWon}/{item.gamesPlayed}</Text>
-            <Text style={styles.statLabel}>Wins</Text>
+            <Text style={styles.statLabel}>{t('leaderboard.wins')}</Text>
           </View>
 
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{getWinRate(item)}</Text>
-            <Text style={styles.statLabel}>Win%</Text>
+            <Text style={styles.statLabel}>{t('leaderboard.winRate')}</Text>
           </View>
 
           <View style={styles.statItem}>
             <Text style={[styles.statValue, styles.scoreValue]}>{item.totalScore}</Text>
-            <Text style={styles.statLabel}>Pts</Text>
+            <Text style={styles.statLabel}>{t('leaderboard.pts')}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -159,11 +161,11 @@ export const LeaderboardScreen = () => {
   const renderHeader = () => (
     <View style={styles.listHeader}>
       <Text style={styles.headerText}>#</Text>
-      <Text style={styles.headerPlayer}>Player</Text>
+      <Text style={styles.headerPlayer}>{t('leaderboard.player')}</Text>
       <View style={styles.headerStats}>
-        <Text style={styles.headerText}>Wins</Text>
-        <Text style={styles.headerText}>Win%</Text>
-        <Text style={styles.headerText}>Score</Text>
+        <Text style={styles.headerText}>{t('leaderboard.wins')}</Text>
+        <Text style={styles.headerText}>{t('leaderboard.winRate')}</Text>
+        <Text style={styles.headerText}>{t('leaderboard.score')}</Text>
       </View>
     </View>
   );
@@ -173,11 +175,11 @@ export const LeaderboardScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Skor Tablosu</Text>
+          <Text style={styles.title}>{t('leaderboard.title')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6C63FF" />
-          <Text style={styles.loadingText}>Yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('leaderboard.loading')}</Text>
         </View>
       </View>
     );
@@ -188,7 +190,7 @@ export const LeaderboardScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Skor Tablosu</Text>
+          <Text style={styles.title}>{t('leaderboard.title')}</Text>
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
@@ -203,13 +205,13 @@ export const LeaderboardScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Skor Tablosu</Text>
+          <Text style={styles.title}>{t('leaderboard.title')}</Text>
         </View>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🏆</Text>
-          <Text style={styles.emptyTitle}>Henüz Kayıt Yok</Text>
+          <Text style={styles.emptyTitle}>{t('leaderboard.noPlayers')}</Text>
           <Text style={styles.emptyText}>
-            Lider tablosunda oyuncu görünmek için oyun oyna!
+            {t('leaderboard.noPlayersDesc')}
           </Text>
         </View>
       </View>
@@ -220,8 +222,8 @@ export const LeaderboardScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Skor Tablosu</Text>
-        <Text style={styles.subtitle}>En iyi oyuncular</Text>
+        <Text style={styles.title}>{t('leaderboard.title')}</Text>
+        <Text style={styles.subtitle}>{t('leaderboard.topPlayers')}</Text>
       </View>
 
       <ScrollView style={styles.listContainer}>
