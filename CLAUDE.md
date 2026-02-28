@@ -212,12 +212,16 @@ Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left
 - `client/src/types/game.ts` — shared type definitions
 
 **Mobile:**
+- `mobile/src/navigation/RootNavigator.tsx` — top-level navigator (auth stack vs main stack)
+- `mobile/src/screens/auth/LoginScreen.tsx`, `RegisterScreen.tsx`, `WalletAuthScreen.tsx` — auth flows
 - `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI
 - `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking, private rooms, SKR Tournament button
+- `mobile/src/screens/lobby/LeaderboardScreen.tsx` — top players ranking (filter: games_played >= 1)
+- `mobile/src/screens/results/GameResultScreen.tsx`, `TournamentResultScreen.tsx` — post-game/tournament results
 - `mobile/src/screens/settings/SettingsScreen.tsx` — user info, NFT trophy gallery, language/sound, username edit (✏️ modal)
 - `mobile/src/screens/settings/ProfileScreen.tsx` — player stats, game history, NFT list
-- `mobile/src/screens/lobby/LeaderboardScreen.tsx` — top players ranking (filter: games_played >= 1)
 - `mobile/src/services/i18n/translations/` — 11 language files (en, tr, de, es, fr, it, pt, ru, ja, zh, ar); use `useTranslation()` from `react-i18next`, never hardcode UI strings
+- `mobile/src/services/storage/AsyncStorageService.ts` — auth token + settings persistence (used by SocketContext for reconnect)
 - `mobile/src/styles/tokens.ts` — design tokens
 - `mobile/src/contexts/AuthContext.tsx` — mobile auth context
 - `mobile/src/contexts/SocketContext.tsx` — socket connection
@@ -253,7 +257,8 @@ Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left
 
 **Web Client (`.env`):** `VITE_SERVER_URL=ws://localhost:3001`, `VITE_SOLANA_NETWORK=devnet`, `VITE_PROGRAM_ID`, `VITE_DEFAULT_BOT_DIFFICULTY=normal`, `VITE_DEFAULT_BOT_COUNT=0`
 
-**Mobile (`.env`):** `EXPO_PUBLIC_SERVER_URL=http://localhost:3001`, `EXPO_PUBLIC_DEFAULT_BOT_COUNT=0`
+**Mobile (`.env`):** `EXPO_PUBLIC_SOCKET_URL=ws://<your-machine-ip>:3001`, `EXPO_PUBLIC_DEFAULT_BOT_COUNT=0`
+Note: uses `ws://` prefix (not `http://`); if unset, falls back to hardcoded LAN IP in `App.tsx:13`
 
 **Mobile dependencies note:** `@solana/web3.js` is used in `SkrService.ts` and `SeekerWalletService.ts` for balance queries and transaction building. `SkrService` uses **mainnet** RPC; everything else uses devnet.
 
