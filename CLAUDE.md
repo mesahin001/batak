@@ -34,7 +34,7 @@ adb reverse tcp:3001 tcp:3001   # Game Server
 cd server && npx tsc --noEmit
 cd client && npx tsc --noEmit
 
-# Tests (expect 86 pass / 8 fail — ihaleli_batak scoring is a known failure)
+# Tests (expect 94 pass / 0 fail)
 cd server && npm test
 
 # Build
@@ -120,20 +120,43 @@ Required in: `Matchmaker.ts:296` (bot turns), `SocketServer.ts:859` (bot bidding
 - Gameplay: `play_card {cardId}`, `bid_trump {suit, amount}`, `request_next_round`
 - Auth: `auth_register`, `auth_login`, `auth_validate`, `auth_wallet`
 - Private rooms: `create_private_room`, `join_private_room`, `start_private_room`, `leave_private_room`
+- Solana: `claim_reward {tournamentId, publicKey, claimSignature?}`, `create_skr_room {publicKey, skrStake, claimSignature, ...}`
+- Data: `get_player_stats {publicKey}` → `{player, nfts}`, `get_player_games`, `get_leaderboard`
 
 **Server → Client:**
 - Matchmaking: `match_found`, `queue_status`
 - Gameplay: `game_state_update`, `card_played`, `trick_complete`, `round_complete`, `next_round_starting`, `game_complete`
 - Private rooms: `private_room_update`, `private_room_closed`
+- Solana: `reward_minted {tournamentId, mintAddress, signature, tier}`
 - Errors: `error`, `game_error`
 
 **Private Room Flow:** Host calls `create_private_room` → gets 6-char alphanumeric code → shares with friends → they call `join_private_room {code}` → host calls `start_private_room` → server fills empty slots with bots → `match_found` sent to all.
+
+**SKR Tournament Flow:** Host calls `create_skr_room {skrStake, claimSignature}` → `claimSignature` is a MWA-signed devnet memo tx proving wallet approval → server creates private room with `skrStake` property → share code → proceed like normal private room.
 
 ### Auth System
 
 JWT stored in localStorage (`batak_auth_token`), 7-day expiry. Player ID: wallet users = publicKey string, email users = `"E_"+UUIDv4`.
 
 Always use `useAuth()` hook from `client/src/auth/AuthContext.tsx` — never `useWallet()` directly.
+
+### Solana Mobile (Seeker) Integration
+
+**`mobile/src/services/wallet/SeekerWalletService.ts`** — all MWA operations:
+- `authorize()` / `reauthorize()` / `deauthorize()` — wallet session management
+- `claimNftReward(tournamentId)` — builds a Memo tx on devnet, signs via MWA, submits on-chain. Returns the devnet tx signature. This is the pattern for any future MWA transaction: build tx → `transact()` → `wallet.signTransactions()` → `sendRawTransaction()`.
+- `signTransaction(tx)` / `signMessage(msg)` — generic signing helpers
+
+**`mobile/src/services/SkrService.ts`** — SKR token balance:
+- Queries SPL token balance on **mainnet** (SKR doesn't exist on devnet)
+- SKR mint: `SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3`
+- The game server runs on **devnet**; SKR balance is read-only from mainnet. Keep these networks separate.
+
+**cNFT minting** (`server/src/solana/CNFTMinter.ts`):
+- Only activates when `MERKLE_TREE` env var is set
+- `uploadMetadata()`: uses nft.storage HTTP API if `NFT_STORAGE_KEY` is set; otherwise encodes metadata as data URI (works for demos)
+- `mintTournamentReward()` returns `{signature, assetId, metadataUri}` — all three stored in `nft_rewards` table
+- To enable real minting: fund a devnet wallet → set `SOLANA_PRIVATE_KEY` → run `npm run setup-tree` → set `MERKLE_TREE`
 
 ### Bot AI (`server/src/bots/`)
 
@@ -190,10 +213,17 @@ Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left
 
 **Mobile:**
 - `mobile/src/screens/game/GameRoomScreen.tsx` — main game UI
-- `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking + private room UI
+- `mobile/src/screens/lobby/LobbyScreen.tsx` — matchmaking, private rooms, SKR Tournament button
+- `mobile/src/screens/settings/SettingsScreen.tsx` — user info, NFT trophy gallery, language/sound, username edit (✏️ modal)
+- `mobile/src/screens/settings/ProfileScreen.tsx` — player stats, game history, NFT list
+- `mobile/src/screens/lobby/LeaderboardScreen.tsx` — top players ranking (filter: games_played >= 1)
+- `mobile/src/services/i18n/translations/` — 11 language files (en, tr, de, es, fr, it, pt, ru, ja, zh, ar); use `useTranslation()` from `react-i18next`, never hardcode UI strings
 - `mobile/src/styles/tokens.ts` — design tokens
 - `mobile/src/contexts/AuthContext.tsx` — mobile auth context
 - `mobile/src/contexts/SocketContext.tsx` — socket connection
+- `mobile/src/services/wallet/SeekerWalletService.ts` — MWA operations + `claimNftReward()`
+- `mobile/src/services/SkrService.ts` — SKR mainnet balance query
+- `mobile/src/components/ui/SkrStakeModal.tsx` — SKR stake UI (balance, presets, MWA approval)
 
 ## Game Rules Quick Reference
 
@@ -206,19 +236,26 @@ Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left
 
 ## Known Issues (Do NOT Fix Unless Asked)
 
-- `Scoring.test.ts`: 8 tests fail (ihaleli_batak scoring formula mismatch). Expected: 86 pass / 8 fail.
 - Pre-existing TS unused import warnings in bot files and Solana files.
 - `better-sqlite3` not found by `tsc` (works fine at runtime with `tsx`).
 - Solana SDK modules (`@metaplex-foundation/*`) not found by `tsc`.
 - `client/src/phaser/` — legacy, unused, has compilation errors; ignore.
+- `server/src/database/migrate-to-postgres.ts` — `pg` module not found by `tsc`; pre-existing.
+- `mobile/src/screens/game/GameRoomScreen.tsx` — several pre-existing TS errors (variable used before declaration, `currentGameState` null checks, duplicate `elevation`); do not fix unless asked.
 
 ## Environment Variables
 
-**Server (`.env`):** `PORT=3001`, `JWT_SECRET`, `SOLANA_RPC_URL`, `SOLANA_PRIVATE_KEY`, `PROGRAM_ID`, `DEFAULT_BOT_DIFFICULTY=normal`
+**Server (`.env`):**
+- `PORT=3001`, `JWT_SECRET`, `SOLANA_RPC_URL`, `SOLANA_PRIVATE_KEY`, `PROGRAM_ID`, `DEFAULT_BOT_DIFFICULTY=normal`
+- `MERKLE_TREE` — Bubblegum tree address; cNFT minting disabled if unset
+- `NFT_STORAGE_KEY` — free key from nft.storage for real IPFS metadata; falls back to data URI
+- `NFT_IMAGE_URI` — IPFS URI for trophy image; has default placeholder
 
 **Web Client (`.env`):** `VITE_SERVER_URL=ws://localhost:3001`, `VITE_SOLANA_NETWORK=devnet`, `VITE_PROGRAM_ID`, `VITE_DEFAULT_BOT_DIFFICULTY=normal`, `VITE_DEFAULT_BOT_COUNT=0`
 
 **Mobile (`.env`):** `EXPO_PUBLIC_SERVER_URL=http://localhost:3001`, `EXPO_PUBLIC_DEFAULT_BOT_COUNT=0`
+
+**Mobile dependencies note:** `@solana/web3.js` is used in `SkrService.ts` and `SeekerWalletService.ts` for balance queries and transaction building. `SkrService` uses **mainnet** RPC; everything else uses devnet.
 
 ## Data Persistence & Deployment
 
