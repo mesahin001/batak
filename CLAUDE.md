@@ -10,9 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Server: Node.js + Express + Socket.IO + TypeScript (port 3001)
 - Web Client: React 18 + Vite + Socket.IO Client + TypeScript (port 5173)
 - Mobile: React Native + Expo + Socket.IO Client
-- Auth: JWT + bcryptjs — dual auth (Solana wallet or email+password)
+- Auth: JWT + bcryptjs — **wallet-only** (email auth temporarily disabled; `LoginScreen`/`RegisterScreen` exist but not in `AuthNavigator`)
 - Database: SQLite via better-sqlite3 (player stats, game history, auth)
 - Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
+
+**Production:**
+- Server: `https://batakci.xyz` (Hetzner VPS, Docker + Nginx + Cloudflare)
+- Deploy: `git push origin main` → GitHub Actions → SSH → `docker compose build && up -d`
+- VPS user: `batak` (non-root, in docker group); SSH key: `~/.ssh/id_ed25519`
+- GitHub Secrets required: `HETZNER_HOST`, `HETZNER_USER`, `SSH_PRIVATE_KEY`
 
 ## Development Commands
 
@@ -26,9 +32,14 @@ cd client && npm run dev
 # Mobile (Expo)
 cd mobile && npm start   # then 'a' for Android, 'i' for iOS
 
-# Physical Android device (run after each reconnect)
+# Physical Android device against LOCAL server
 adb reverse tcp:8081 tcp:8081   # Metro Bundler
 adb reverse tcp:3001 tcp:3001   # Game Server
+
+# Physical Android device against PRODUCTION server (no local server needed)
+adb reverse tcp:8081 tcp:8081
+EXPO_PUBLIC_SOCKET_URL=https://batakci.xyz npx expo run:android
+# OR: edit mobile/.env EXPO_PUBLIC_SOCKET_URL=https://batakci.xyz then npx expo run:android
 
 # Type-check
 cd server && npx tsc --noEmit
