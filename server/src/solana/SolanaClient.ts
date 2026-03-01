@@ -4,12 +4,13 @@
  */
 
 import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js';
-import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
+import { Program } from '@coral-xyz/anchor';
+import BN from 'bn.js';
 import { config } from '../config.js';
 export class SolanaClient {
   private connection: Connection;
   private payer: Keypair;
-  private program: Program<any>;
+  private program: Program<any> | undefined;
 
   constructor() {
     if (!config.solanaPrivateKey) {
@@ -22,24 +23,10 @@ export class SolanaClient {
     const privateKeyArray = JSON.parse(config.solanaPrivateKey);
     this.payer = Keypair.fromSecretKey(new Uint8Array(privateKeyArray));
 
-    // Setup Anchor provider
-    const dummyKeypair = new web3.Keypair();
-    const provider = new AnchorProvider(
-      this.connection,
-      {
-        publicKey: dummyKeypair.publicKey,
-        signTransaction: async (tx: any) => tx,
-        signAllTransactions: async (txs: any[]) => txs,
-      } as any,
-      { commitment: 'confirmed' }
-    );
-
-    // Load program (IDL loaded at runtime)
-    this.program = new Program(
-      {} as any,
-      new PublicKey(config.programId),
-      provider
-    );
+    // Program initialization deferred - IDL not currently available
+    // CNFTMinter works fine without the Anchor Program
+    // The Anchor Program is only needed for unused on-chain tournament features
+    this.program = undefined;
   }
 
   /**
@@ -57,9 +44,9 @@ export class SolanaClient {
   }
 
   /**
-   * Get program
+   * Get program (may be undefined if IDL not loaded)
    */
-  getProgram(): Program<any> {
+  getProgram(): Program<any> | undefined {
     return this.program;
   }
 

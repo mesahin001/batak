@@ -8,10 +8,15 @@
     "start": "node dist/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "db:init": "tsx src/database/init.ts"
+    "db:init": "tsx src/database/init.ts",
+    "create-wallet": "tsx scripts/create-minter-wallet.ts",
+    "setup-tree": "tsx scripts/setup-merkle-tree.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
+    "@metaplex-foundation/mpl-bubblegum": "^5.0.2",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
+    "@metaplex-foundation/umi-signer-wallet-adapters": "^1.5.1",
     "@solana/web3.js": "^1.87.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^9.6.0",
@@ -24,6 +29,7 @@
     "@jest/globals": "^29.7.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.8",
+    "@types/bn.js": "^5.2.0",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.11",
     "@types/jsonwebtoken": "^9.0.10",

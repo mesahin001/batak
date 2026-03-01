@@ -23,6 +23,9 @@ export class TournamentManager {
     maxPlayers: number = 4
   ): Promise<string> {
     const program = this.client.getProgram();
+    if (!program) {
+      throw new Error('Anchor Program not initialized - IDL not available. On-chain tournament features are disabled.');
+    }
     const [tournamentPda] = this.client.deriveTournamentPDA(tournamentId);
 
     // Convert reward tier to number
@@ -63,6 +66,9 @@ export class TournamentManager {
     playerPublicKey: string
   ): Promise<string> {
     const program = this.client.getProgram();
+    if (!program) {
+      throw new Error('Anchor Program not initialized - IDL not available. On-chain tournament features are disabled.');
+    }
     const [tournamentPda] = this.client.deriveTournamentPDA(tournamentId);
     const playerPubkey = new PublicKey(playerPublicKey);
     const [registrationPda] = this.client.deriveRegistrationPDA(tournamentPda, playerPubkey);
@@ -91,6 +97,9 @@ export class TournamentManager {
    */
   async submitMatchResult(result: TournamentResult): Promise<string> {
     const program = this.client.getProgram();
+    if (!program) {
+      throw new Error('Anchor Program not initialized - IDL not available. On-chain tournament features are disabled.');
+    }
     const [tournamentPda] = this.client.deriveTournamentPDA(parseInt(result.tournamentId));
 
     try {
@@ -119,6 +128,9 @@ export class TournamentManager {
    */
   async getTournament(tournamentId: number): Promise<any> {
     const program = this.client.getProgram();
+    if (!program) {
+      throw new Error('Anchor Program not initialized - IDL not available. On-chain tournament features are disabled.');
+    }
     const [tournamentPda] = this.client.deriveTournamentPDA(tournamentId);
 
     try {
@@ -143,6 +155,9 @@ export class TournamentManager {
    */
   async getAllTournaments(): Promise<any[]> {
     const program = this.client.getProgram();
+    if (!program) {
+      throw new Error('Anchor Program not initialized - IDL not available. On-chain tournament features are disabled.');
+    }
     const authority = this.client.getPayer().publicKey;
 
     try {
