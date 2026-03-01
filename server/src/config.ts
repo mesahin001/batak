@@ -45,11 +45,15 @@ export const config = {
 
     // Production: Strict validation - missing critical values cause errors
     if (this.nodeEnv === 'production') {
+      // SOLANA_PRIVATE_KEY only required when cNFT minting is enabled (MERKLE_TREE set)
+      if (this.merkleTree && !this.solanaPrivateKey) {
+        errors.push('SOLANA_PRIVATE_KEY is required when MERKLE_TREE is set (cNFT minting enabled)');
+      }
       if (!this.solanaPrivateKey) {
-        errors.push('SOLANA_PRIVATE_KEY is required in production');
+        warnings.push('SOLANA_PRIVATE_KEY not set - cNFT minting disabled');
       }
       if (!this.programId || this.programId.includes('111111')) {
-        errors.push('Valid PROGRAM_ID is required in production (current value appears to be placeholder)');
+        warnings.push('Valid PROGRAM_ID not set - tournament on-chain features disabled');
       }
       // MERKLE_TREE is optional for MVP - cNFT minting can be mocked
       if (!this.merkleTree) {
