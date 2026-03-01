@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Inicia sesión con tu billetera Solana",
+    "walletReady": "Listo para conectar",
+    "walletOpening": "Abriendo Seeker...",
+    "walletWaiting": "Esperando autorización...",
+    "walletApprove": "Por favor aprueba en la app Seeker",
+    "walletAuthenticating": "Autenticando con el servidor...",
+    "walletSuccess": "¡Conectado exitosamente!",
+    "walletFailed": "Conexión fallida",
+    "walletConnecting": "Conectando...",
+    "walletWhyTitle": "¿Por qué usar una billetera?",
+    "walletHowTitle": "Cómo funciona",
+    "walletStep1": "Toca \"Conectar Seeker Wallet\"",
+    "walletStep2": "Aprueba en la app Seeker",
+    "walletStep3": "¡Empieza a jugar!",
+    "walletPreferEmail": "¿Prefieres email/contraseña? ",
+    "walletSignIn": "Iniciar Sesión",
+    "featureSecure": "Seguro",
+    "featureSecureDesc": "Tus claves nunca salen de tu dispositivo",
+    "featureFast": "Rápido",
+    "featureFastDesc": "No hay contraseña que recordar",
+    "featureRewards": "Recompensas",
+    "featureRewardsDesc": "Gana NFTs por victorias en torneos",
+    "featurePlay": "Juega y Gana",
+    "featurePlayDesc": "Compite en torneos clasificatorios",
+    "checkSeeker": "La app Seeker está instalada",
+    "checkWallet": "Tienes una billetera en Seeker",
+    "checkInternet": "La conexión a internet es estable"
   },
   "lobby": {
     "title": "Lobby",
@@ -58,7 +85,12 @@
     "hard": "Difícil",
     "bots": "Bots",
     "quickPlay": "Partida rápida",
-    "customGame": "Partida personalizada"
+    "customGame": "Partida personalizada",
+    "ihaleliBatakDesc": "Puja por el triunfo y el número de bazas. ¡El menor puntaje gana!",
+    "pvp": "JcJ",
+    "skrTournament": "Torneo SKR",
+    "skrTournamentSub": "Apuesta SKR · El ganador se lleva el bote",
+    "unknownMode": "Desconocido"
   },
   "game": {
     "round": "Ronda",
@@ -126,7 +158,15 @@
     "recentGames": "Partidas recientes",
     "rounds": "rondas",
     "loading": "Cargando...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "G",
+    "loss": "P",
+    "nft": "NFT",
+    "anonymous": "Anónimo",
+    "minted": "Acuñado",
+    "pending": "Pendiente",
+    "daysAgo": "hace {{count}}d",
+    "weeksAgo": "hace {{count}}s"
   },
   "leaderboard": {
     "title": "Clasificación",
@@ -165,7 +205,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Tipo de Auth",
+    "walletAddress": "Billetera",
+    "emailAddress": "Email",
+    "myTrophies": "Mis Trofeos",
+    "noTrophiesMsg": "Gana un torneo para obtener tu primer NFT trofeo",
+    "mintingPending": "Acuñando en cadena...",
+    "appDescription": "Juega al juego de cartas turco en Solana",
+    "champion": "Campeón"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Clasificación",
+    "profile": "Perfil",
+    "settings": "Ajustes"
+  },
+  "game_result": {
+    "victory": "¡Victoria!",
+    "gameOver": "Fin del Juego",
+    "finalRankings": "Clasificación Final",
+    "showRoundDetails": "Mostrar detalles de ronda",
+    "hideRoundDetails": "Ocultar detalles de ronda",
+    "gameMode": "Modo de Juego",
+    "rounds": "Rondas",
+    "tricks": "Bazas",
+    "backToLobby": "Volver al Lobby",
+    "noRoundsPlayed": "No se jugaron rondas",
+    "loading": "Cargando resultados...",
+    "notAvailable": "Resultados no disponibles",
+    "wonWith": "ganó con",
+    "points": "puntos",
+    "roundScores": "Puntuaciones de Ronda"
   },
   "common": {
     "yes": "Sí",
@@ -230,5 +301,37 @@
     "Q": "Reina",
     "K": "Rey",
     "A": "As"
+  },
+  "help": {
+    "title": "Cómo Jugar",
+    "objective": {
+      "title": "Objetivo",
+      "content": "Predice cuántas bazas ganarás, luego intenta tomar al menos esa cantidad. ¡Cumple tu apuesta para ganar puntos o ve a negativo!"
+    },
+    "cardRanking": {
+      "title": "Jerarquía de Cartas",
+      "content": "As (A) es el más alto, 2 es el más bajo: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Modos de Juego",
+      "kozMaca": "Picas siempre es triunfo. Apuesta solo el número de bazas que crees que puedes ganar (5-13). ¡La puntuación más alta gana!",
+      "ihaleli": "El ganador de la apuesta elige el palo del triunfo. Debe superar la apuesta anterior de ese palo. ¡La puntuación más baja gana!"
+    },
+    "bidding": {
+      "title": "Apuestas",
+      "content": "Cada jugador apuesta cuántas bazas cree que puede ganar. La apuesta mínima es 5. Si todos pasan, se reparten las cartas."
+    },
+    "playing": {
+      "title": "Jugando Cartas",
+      "followSuit": "Debes jugar el mismo palo que la primera carta si la tienes",
+      "trump": "Las cartas de triunfo vencen a las cartas que no son de triunfo"
+    },
+    "scoring": {
+      "title": "Puntuación",
+      "success": "Cumpliste apuesta: 10 × apuesta + (bazas ganadas - apuesta) = +100 por 10 de apuesta con 13 bazas",
+      "fail": "Fallaste apuesta: -10 × apuesta = -100 por apuesta de 10 fallida",
+      "nonBidder": "Sin apuesta: bazas ganadas × 10 = 13 bazas = +130 puntos"
+    },
+    "close": "Cerrar"
   }
 }

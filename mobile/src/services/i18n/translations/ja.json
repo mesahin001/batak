@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Solanaウォレットでサインイン",
+    "walletReady": "接続準備完了",
+    "walletOpening": "Seekerを開いています...",
+    "walletWaiting": "承認待ち...",
+    "walletApprove": "Seekerアプリで承認してください",
+    "walletAuthenticating": "サーバーで認証中...",
+    "walletSuccess": "接続に成功しました！",
+    "walletFailed": "接続に失敗しました",
+    "walletConnecting": "接続中...",
+    "walletWhyTitle": "なぜウォレットを使うの？",
+    "walletHowTitle": "使い方",
+    "walletStep1": "「Seekerウォレット接続」をタップ",
+    "walletStep2": "Seekerアプリで承認",
+    "walletStep3": "プレイ開始！",
+    "walletPreferEmail": "メール/パスワードを希望？ ",
+    "walletSignIn": "サインイン",
+    "featureSecure": "安全",
+    "featureSecureDesc": "鍵はデバイスから離れません",
+    "featureFast": "高速",
+    "featureFastDesc": "パスワード不要",
+    "featureRewards": "報酬",
+    "featureRewardsDesc": "トーナメント優勝でNFT獲得",
+    "featurePlay": "プレイ＆稼ぐ",
+    "featurePlayDesc": "ランクトーナメントで競争",
+    "checkSeeker": "Seekerアプリがインストール済み",
+    "checkWallet": "SeekerにウォレットがあるCheck",
+    "checkInternet": "インターネット接続が安定"
   },
   "lobby": {
     "title": "ロビー",
@@ -58,7 +85,11 @@
     "hard": "難しい",
     "bots": "ボット",
     "quickPlay": "クイックプレイ",
-    "customGame": "カスタムゲーム"
+    "customGame": "カスタムゲーム",
+    "pvp": "PvP",
+    "skrTournament": "SKRトーナメント",
+    "skrTournamentSub": "SKRをステーク · 勝者がポットを総取り",
+    "unknownMode": "不明"
   },
   "game": {
     "round": "ラウンド",
@@ -126,7 +157,15 @@
     "recentGames": "最近のゲーム",
     "rounds": "ラウンド",
     "loading": "読み込み中...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "勝",
+    "loss": "敗",
+    "nft": "NFT",
+    "anonymous": "匿名",
+    "minted": "発行済み",
+    "pending": "保留中",
+    "daysAgo": "{{count}}日前",
+    "weeksAgo": "{{count}}週前"
   },
   "leaderboard": {
     "title": "リーダーボード",
@@ -165,7 +204,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "認証タイプ",
+    "walletAddress": "ウォレット",
+    "emailAddress": "メール",
+    "myTrophies": "マイトロフィー",
+    "noTrophiesMsg": "トーナメントで優勝して最初のNFTトロフィーを獲得しよう",
+    "mintingPending": "チェーンで発行中...",
+    "appDescription": "SolanaでトルコのカードゲームをプレイCheck",
+    "champion": "チャンピオン"
+  },
+  "nav": {
+    "lobby": "ロビー",
+    "leaderboard": "ランキング",
+    "profile": "プロフィール",
+    "settings": "設定"
+  },
+  "game_result": {
+    "victory": "勝利！",
+    "gameOver": "ゲームオーバー",
+    "finalRankings": "最終順位",
+    "showRoundDetails": "ラウンド詳細を表示",
+    "hideRoundDetails": "ラウンド詳細を非表示",
+    "gameMode": "ゲームモード",
+    "rounds": "ラウンド",
+    "tricks": "トリック",
+    "backToLobby": "ロビーに戻る",
+    "noRoundsPlayed": "ラウンドなし",
+    "loading": "結果を読み込み中...",
+    "notAvailable": "ゲーム結果が利用不可",
+    "wonWith": "が獲得",
+    "points": "ポイント",
+    "roundScores": "ラウンドスコア"
   },
   "common": {
     "yes": "はい",
@@ -230,5 +300,37 @@
     "Q": "クイーン",
     "K": "キング",
     "A": "エース"
+  },
+  "help": {
+    "title": "遊び方",
+    "objective": {
+      "title": "目的",
+      "content": "取れるトリック数を予想し、最低その数のトリックを取るようにします。ビッドを成功させてポイントを獲得するか、失敗してマイナスになります！"
+    },
+    "cardRanking": {
+      "title": "カードの強さ",
+      "content": "エース (A) が最強、2が最弱: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "ゲームモード",
+      "kozMaca": "スペードは常にトランプ。取れると思うトリック数のみをビッド (5-13)。最高スコアが勝ち！",
+      "ihaleli": "ビッドの勝者がトランプのスートを選択。そのスートの前のビッドを上回る必要がある。最低スコアが勝ち！"
+    },
+    "bidding": {
+      "title": "ビディング",
+      "content": "各プレイヤーが取れると思うトリック数をビッドします。最低ビッドは5です。全員がパスするとカードが再配布されます。"
+    },
+    "playing": {
+      "title": "カードをプレイ",
+      "followSuit": "持っている場合は最初のカードと同じスートをプレイする必要があります",
+      "trump": "トランプのカードはトランプ以外のカードを beat します"
+    },
+    "scoring": {
+      "title": "スコアリング",
+      "success": "ビッド成功: 10 × ビッド + (勝ったトリック - ビッド) = 13トリックで10ビッドは +100",
+      "fail": "ビッド失敗: -10 × ビッド = 10ビッド失敗で -100",
+      "nonBidder": "ビッドなし: 勝ったトリック × 10 = 13トリック = +130ポイント"
+    },
+    "close": "閉じる"
   }
 }

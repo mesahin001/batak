@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Connectez-vous avec votre portefeuille Solana",
+    "walletReady": "Prêt à se connecter",
+    "walletOpening": "Ouverture de Seeker...",
+    "walletWaiting": "En attente d'autorisation...",
+    "walletApprove": "Veuillez approuver dans l'app Seeker",
+    "walletAuthenticating": "Authentification avec le serveur...",
+    "walletSuccess": "Connecté avec succès!",
+    "walletFailed": "Échec de connexion",
+    "walletConnecting": "Connexion...",
+    "walletWhyTitle": "Pourquoi utiliser un portefeuille?",
+    "walletHowTitle": "Comment ça marche",
+    "walletStep1": "Appuyez sur \"Connecter Seeker Wallet\"",
+    "walletStep2": "Approuver dans l'app Seeker",
+    "walletStep3": "Commencer à jouer!",
+    "walletPreferEmail": "Préférer email/mot de passe? ",
+    "walletSignIn": "Se connecter",
+    "featureSecure": "Sécurisé",
+    "featureSecureDesc": "Vos clés ne quittent jamais votre appareil",
+    "featureFast": "Rapide",
+    "featureFastDesc": "Pas de mot de passe à retenir",
+    "featureRewards": "Récompenses",
+    "featureRewardsDesc": "Gagnez des NFTs pour les victoires en tournoi",
+    "featurePlay": "Jouer & Gagner",
+    "featurePlayDesc": "Participez aux tournois classés",
+    "checkSeeker": "L'app Seeker est installée",
+    "checkWallet": "Vous avez un portefeuille dans Seeker",
+    "checkInternet": "La connexion internet est stable"
   },
   "lobby": {
     "title": "Lobby",
@@ -58,7 +85,12 @@
     "hard": "Difficile",
     "bots": "Bots",
     "quickPlay": "Partie rapide",
-    "customGame": "Partie personnalisée"
+    "customGame": "Partie personnalisée",
+    "ihaleliBatakDesc": "Enchérissez sur l'atout et le nombre de plis. Le score le plus bas gagne!",
+    "pvp": "JcJ",
+    "skrTournament": "Tournoi SKR",
+    "skrTournamentSub": "Misez SKR · Le gagnant remporte la mise",
+    "unknownMode": "Inconnu"
   },
   "game": {
     "round": "Manche",
@@ -126,7 +158,15 @@
     "recentGames": "Parties récentes",
     "rounds": "manches",
     "loading": "Chargement...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "V",
+    "loss": "D",
+    "nft": "NFT",
+    "anonymous": "Anonyme",
+    "minted": "Frappé",
+    "pending": "En attente",
+    "daysAgo": "il y a {{count}}j",
+    "weeksAgo": "il y a {{count}}s"
   },
   "leaderboard": {
     "title": "Classement",
@@ -165,7 +205,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Type d'auth",
+    "walletAddress": "Portefeuille",
+    "emailAddress": "Email",
+    "myTrophies": "Mes Trophées",
+    "noTrophiesMsg": "Gagnez un tournoi pour obtenir votre premier NFT trophée",
+    "mintingPending": "Frappe en cours...",
+    "appDescription": "Jouez au jeu de cartes turc sur Solana",
+    "champion": "Champion"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Classement",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+  "game_result": {
+    "victory": "Victoire!",
+    "gameOver": "Partie Terminée",
+    "finalRankings": "Classement Final",
+    "showRoundDetails": "Afficher les détails de manche",
+    "hideRoundDetails": "Masquer les détails de manche",
+    "gameMode": "Mode de Jeu",
+    "rounds": "Manches",
+    "tricks": "Plis",
+    "backToLobby": "Retour au Lobby",
+    "noRoundsPlayed": "Aucune manche jouée",
+    "loading": "Chargement des résultats...",
+    "notAvailable": "Résultats non disponibles",
+    "wonWith": "a gagné avec",
+    "points": "points",
+    "roundScores": "Scores par Manche"
   },
   "common": {
     "yes": "Oui",
@@ -230,5 +301,37 @@
     "Q": "Dame",
     "K": "Roi",
     "A": "As"
+  },
+  "help": {
+    "title": "Comment Jouer",
+    "objective": {
+      "title": "Objectif",
+      "content": "Prédisez combien de plis vous gagnerez, puis essayez d'en prendre au moins ce nombre. Réussissez votre contrat pour marquer des points ou allez dans le négatif!"
+    },
+    "cardRanking": {
+      "title": "Classement des Cartes",
+      "content": "As (A) est le plus haut, 2 est le plus bas: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Modes de Jeu",
+      "kozMaca": "Pique est toujours l'atout. Enchérissez seulement le nombre de plis que vous pensez pouvoir gagner (5-13). Le score le plus élevé gagne!",
+      "ihaleli": "Le gagnant de l'enchère choisit la couleur de l'atout. Doit dépasser l'enchère précédente pour cette couleur. Le score le plus bas gagne!"
+    },
+    "bidding": {
+      "title": "Enchères",
+      "content": "Chaque joueur enchérit le nombre de plis qu'il pense pouvoir gagner. L'enchère minimale est de 5. Si tout le monde passe, les cartes sont redistribuées."
+    },
+    "playing": {
+      "title": "Jouer les Cartes",
+      "followSuit": "Vous devez jouer la même couleur que la première carte si vous l'avez",
+      "trump": "Les cartes d'atout battent les cartes non-atout"
+    },
+    "scoring": {
+      "title": "Scoring",
+      "success": "Contrat réussi: 10 × enchère + (plis gagnés - enchère) = +100 pour 10 d'enchère avec 13 plis",
+      "fail": "Contrat chuté: -10 × enchère = -100 pour enchère de 10 échouée",
+      "nonBidder": "Pas d'enchère: plis gagnés × 10 = 13 plis = +130 points"
+    },
+    "close": "Fermer"
   }
 }

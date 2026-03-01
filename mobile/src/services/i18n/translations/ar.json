@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "سجّل الدخول بمحفظة Solana",
+    "walletReady": "جاهز للاتصال",
+    "walletOpening": "جاري فتح Seeker...",
+    "walletWaiting": "في انتظار التفويض...",
+    "walletApprove": "يرجى الموافقة في تطبيق Seeker",
+    "walletAuthenticating": "جاري المصادقة مع الخادم...",
+    "walletSuccess": "تم الاتصال بنجاح!",
+    "walletFailed": "فشل الاتصال",
+    "walletConnecting": "جاري الاتصال...",
+    "walletWhyTitle": "لماذا تستخدم محفظة؟",
+    "walletHowTitle": "كيف يعمل",
+    "walletStep1": "اضغط على «اتصل بـ Seeker Wallet»",
+    "walletStep2": "وافق في تطبيق Seeker",
+    "walletStep3": "ابدأ اللعب!",
+    "walletPreferEmail": "تفضّل البريد/كلمة المرور؟ ",
+    "walletSignIn": "تسجيل الدخول",
+    "featureSecure": "آمن",
+    "featureSecureDesc": "مفاتيحك لا تغادر جهازك أبداً",
+    "featureFast": "سريع",
+    "featureFastDesc": "لا حاجة لتذكر كلمة مرور",
+    "featureRewards": "مكافآت",
+    "featureRewardsDesc": "اكسب NFTs عند الفوز في البطولات",
+    "featurePlay": "العب واكسب",
+    "featurePlayDesc": "تنافس في البطولات المصنفة",
+    "checkSeeker": "تطبيق Seeker مثبت",
+    "checkWallet": "لديك محفظة في Seeker",
+    "checkInternet": "اتصال الإنترنت مستقر"
   },
   "lobby": {
     "title": "الردهة",
@@ -58,7 +85,11 @@
     "hard": "صعب",
     "bots": "بوتات",
     "quickPlay": "لعب سريع",
-    "customGame": "لعب مخصص"
+    "customGame": "لعب مخصص",
+    "pvp": "لاعب ضد لاعب",
+    "skrTournament": "بطولة SKR",
+    "skrTournamentSub": "راهن بـ SKR · الفائز يأخذ الجميع",
+    "unknownMode": "غير معروف"
   },
   "game": {
     "round": "جولة",
@@ -126,7 +157,15 @@
     "recentGames": "الألعاب الأخيرة",
     "rounds": "جولات",
     "loading": "جاري التحميل...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "ف",
+    "loss": "خ",
+    "nft": "NFT",
+    "anonymous": "مجهول",
+    "minted": "تم السك",
+    "pending": "معلق",
+    "daysAgo": "{{count}}ي مضت",
+    "weeksAgo": "{{count}}أ مضت"
   },
   "leaderboard": {
     "title": "لوحة الصدارة",
@@ -165,7 +204,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "نوع المصادقة",
+    "walletAddress": "المحفظة",
+    "emailAddress": "البريد الإلكتروني",
+    "myTrophies": "كؤوسي",
+    "noTrophiesMsg": "فز ببطولة لتحصل على أول NFT كأس",
+    "mintingPending": "جاري السك على السلسلة...",
+    "appDescription": "العب لعبة الورق التركية على Solana",
+    "champion": "بطل"
+  },
+  "nav": {
+    "lobby": "الردهة",
+    "leaderboard": "المتصدرون",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات"
+  },
+  "game_result": {
+    "victory": "انتصار!",
+    "gameOver": "انتهت اللعبة",
+    "finalRankings": "التصنيف النهائي",
+    "showRoundDetails": "إظهار تفاصيل الجولة",
+    "hideRoundDetails": "إخفاء تفاصيل الجولة",
+    "gameMode": "وضع اللعبة",
+    "rounds": "جولات",
+    "tricks": "الحيل",
+    "backToLobby": "العودة إلى الردهة",
+    "noRoundsPlayed": "لم تُلعب أي جولة",
+    "loading": "جاري تحميل النتائج...",
+    "notAvailable": "نتائج اللعبة غير متاحة",
+    "wonWith": "فاز بـ",
+    "points": "نقطة",
+    "roundScores": "نقاط الجولات"
   },
   "common": {
     "yes": "نعم",
@@ -230,5 +300,37 @@
     "Q": "ملكة",
     "K": "ملك",
     "A": "أيس"
+  },
+  "help": {
+    "title": "كيفية اللعب",
+    "objective": {
+      "title": "الهدف",
+      "content": "توقع عدد الخذات التي ستفوز بها، ثم حاول الفوز بذلك العدد على الأقل. حقق هدفك لكسب النقاط أو انخفض إلى السالب!"
+    },
+    "cardRanking": {
+      "title": "ترتيب البطاقات",
+      "content": "الأيس (A) هو الأعلى، 2 هو الأدنى: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "أوضاع اللعب",
+      "kozMaca": "السبيد هو دائمًا أوراق. راهن فقط على عدد الخذات التي تعتقد أنك يمكنها الفوز بها (5-13). أعلى نتيجة يفوز!",
+      "ihaleli": "الفائز بالمزايدة يختار لون الأوراق. يجب أن يتجاوز المزايدة السابقة لهذا اللون. أقل نتيجة يفوز!"
+    },
+    "bidding": {
+      "title": "المزايدة",
+      "content": "كل لاعب يراهن بعدد الخذات التي يعتقد أنه يمكنه الفوز بها. الحد الأدنى للمزايدة هو 5. إذا مر الجميع، تُعاد توزيع البطاقات."
+    },
+    "playing": {
+      "title": "لعب البطاقات",
+      "followSuit": "يجب أن تلعب نفس لون البطاقة الأولى إذا كان لديك",
+      "trump": "بطاقات الأوراق تتفوق على البطاقات غير الأوراق"
+    },
+    "scoring": {
+      "title": "النتيجة",
+      "success": "حققت المزايدة: 10 × المزايدة + (الخذات الفائزة - المزايدة) = +100 لـ 10 مزايدة مع 13 خذة",
+      "fail": "فشلت في المزايدة: -10 × المزايدة = -100 لـ 10 مزايدة فاشلة",
+      "nonBidder": "لم تزايد: الخذات الفائزة × 10 = 13 خذة = +130 نقطة"
+    },
+    "close": "إغلاق"
   }
 }

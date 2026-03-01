@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Entre com sua carteira Solana",
+    "walletReady": "Pronto para conectar",
+    "walletOpening": "Abrindo Seeker...",
+    "walletWaiting": "Aguardando autorização...",
+    "walletApprove": "Por favor aprove no app Seeker",
+    "walletAuthenticating": "Autenticando com o servidor...",
+    "walletSuccess": "Conectado com sucesso!",
+    "walletFailed": "Falha na conexão",
+    "walletConnecting": "Conectando...",
+    "walletWhyTitle": "Por que usar uma carteira?",
+    "walletHowTitle": "Como funciona",
+    "walletStep1": "Toque em \"Conectar Seeker Wallet\"",
+    "walletStep2": "Aprove no app Seeker",
+    "walletStep3": "Comece a jogar!",
+    "walletPreferEmail": "Prefere email/senha? ",
+    "walletSignIn": "Entrar",
+    "featureSecure": "Seguro",
+    "featureSecureDesc": "Suas chaves nunca saem do seu dispositivo",
+    "featureFast": "Rápido",
+    "featureFastDesc": "Sem senha para lembrar",
+    "featureRewards": "Recompensas",
+    "featureRewardsDesc": "Ganhe NFTs por vitórias em torneios",
+    "featurePlay": "Jogar e Ganhar",
+    "featurePlayDesc": "Compita em torneios classificatórios",
+    "checkSeeker": "App Seeker está instalado",
+    "checkWallet": "Você tem uma carteira no Seeker",
+    "checkInternet": "Conexão com internet está estável"
   },
   "lobby": {
     "title": "Lobby",
@@ -58,7 +85,11 @@
     "hard": "Difícil",
     "bots": "Bots",
     "quickPlay": "Partida rápida",
-    "customGame": "Partida personalizada"
+    "customGame": "Partida personalizada",
+    "pvp": "JcJ",
+    "skrTournament": "Torneio SKR",
+    "skrTournamentSub": "Aposte SKR · Vencedor leva tudo",
+    "unknownMode": "Desconhecido"
   },
   "game": {
     "round": "Rodada",
@@ -126,7 +157,15 @@
     "recentGames": "Partidas recentes",
     "rounds": "rodadas",
     "loading": "Carregando...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "V",
+    "loss": "D",
+    "nft": "NFT",
+    "anonymous": "Anônimo",
+    "minted": "Cunhado",
+    "pending": "Pendente",
+    "daysAgo": "há {{count}}d",
+    "weeksAgo": "há {{count}}s"
   },
   "leaderboard": {
     "title": "Ranking",
@@ -165,7 +204,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Tipo de Auth",
+    "walletAddress": "Carteira",
+    "emailAddress": "Email",
+    "myTrophies": "Meus Troféus",
+    "noTrophiesMsg": "Vença um torneio para ganhar seu primeiro NFT troféu",
+    "mintingPending": "Cunhando na rede...",
+    "appDescription": "Jogue o jogo de cartas turco na Solana",
+    "champion": "Campeão"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Placar",
+    "profile": "Perfil",
+    "settings": "Configurações"
+  },
+  "game_result": {
+    "victory": "Vitória!",
+    "gameOver": "Fim de Jogo",
+    "finalRankings": "Classificação Final",
+    "showRoundDetails": "Mostrar detalhes da rodada",
+    "hideRoundDetails": "Ocultar detalhes da rodada",
+    "gameMode": "Modo de Jogo",
+    "rounds": "Rodadas",
+    "tricks": "Vazas",
+    "backToLobby": "Voltar ao Lobby",
+    "noRoundsPlayed": "Nenhuma rodada jogada",
+    "loading": "Carregando resultados...",
+    "notAvailable": "Resultados não disponíveis",
+    "wonWith": "ganhou com",
+    "points": "pontos",
+    "roundScores": "Pontuações por Rodada"
   },
   "common": {
     "yes": "Sim",
@@ -230,5 +300,37 @@
     "Q": "Rainha",
     "K": "Rei",
     "A": "Ás"
+  },
+  "help": {
+    "title": "Como Jogar",
+    "objective": {
+      "title": "Objetivo",
+      "content": "Preveja quantos trucos ganhará, depois tente pegar pelo menos essa quantidade. Faça seu lance para ganhar pontos ou vá para o negativo!"
+    },
+    "cardRanking": {
+      "title": "Hierarquia das Cartas",
+      "content": "Ás (A) é o mais alto, 2 é o mais baixo: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Modos de Jogo",
+      "kozMaca": "Espadas sempre é trunfo. Aposte apenas o número de truques que você acha que pode ganhar (5-13). A pontuação mais alta vence!",
+      "ihaleli": "O vencedor do lance escolhe o naipe do trunfo. Deve superar o lance anterior para aquele naipe. A pontuação mais baixa vence!"
+    },
+    "bidding": {
+      "title": "Lances",
+      "content": "Cada jogador dá um lance de quantos truques acha que pode ganhar. O lance mínimo é 5. Se todos passarem, as cartas são redistribuídas."
+    },
+    "playing": {
+      "title": "Jogando Cartas",
+      "followSuit": "Você deve jogar o mesmo naipe da primeira carta se a tiver",
+      "trump": "Cartas de trunfo vencem cartas que não são de trunfo"
+    },
+    "scoring": {
+      "title": "Pontuação",
+      "success": "Lance feito: 10 × lance + (truques ganhos - lance) = +100 por 10 de lance com 13 truques",
+      "fail": "Lance falhou: -10 × lance = -100 por lance de 10 falhado",
+      "nonBidder": "Sem lance: truques ganhos × 10 = 13 truques = +130 pontos"
+    },
+    "close": "Fechar"
   }
 }

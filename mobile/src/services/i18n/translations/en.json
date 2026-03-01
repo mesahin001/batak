@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Sign in with your Solana wallet",
+    "walletReady": "Ready to connect",
+    "walletOpening": "Opening Seeker...",
+    "walletWaiting": "Waiting for authorization...",
+    "walletApprove": "Please approve in Seeker app",
+    "walletAuthenticating": "Authenticating with server...",
+    "walletSuccess": "Connected successfully!",
+    "walletFailed": "Connection Failed",
+    "walletConnecting": "Connecting...",
+    "walletWhyTitle": "Why use a wallet?",
+    "walletHowTitle": "How it works",
+    "walletStep1": "Tap \"Connect Seeker Wallet\"",
+    "walletStep2": "Approve in Seeker app",
+    "walletStep3": "Start playing!",
+    "walletPreferEmail": "Prefer email/password? ",
+    "walletSignIn": "Sign In",
+    "featureSecure": "Secure",
+    "featureSecureDesc": "Your keys never leave your device",
+    "featureFast": "Fast",
+    "featureFastDesc": "No password to remember",
+    "featureRewards": "Rewards",
+    "featureRewardsDesc": "Earn NFTs for tournament wins",
+    "featurePlay": "Play & Earn",
+    "featurePlayDesc": "Compete in ranked tournaments",
+    "checkSeeker": "Seeker app is installed",
+    "checkWallet": "You have a wallet in Seeker",
+    "checkInternet": "Internet connection is stable"
   },
   "lobby": {
     "title": "Lobby",
@@ -92,7 +119,11 @@
     "authErrorMsg": "Please log in again",
     "enterCode": "Please enter a room code",
     "kozMacaDesc": "Spades are always trump. Win the most tricks!",
-    "ihaleliBatakDesc": "Bid your suit and tricks. Lowest score wins!"
+    "ihaleliBatakDesc": "Bid your suit and tricks. Lowest score wins!",
+    "pvp": "PvP",
+    "skrTournament": "SKR Tournament",
+    "skrTournamentSub": "Stake SKR · Winner takes the pot",
+    "unknownMode": "Unknown"
   },
   "game": {
     "round": "Round",
@@ -188,7 +219,15 @@
     "recentGames": "Recent Games",
     "rounds": "rounds",
     "loading": "Loading...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "W",
+    "loss": "L",
+    "nft": "NFT",
+    "anonymous": "Anonymous",
+    "minted": "Minted",
+    "pending": "Pending",
+    "daysAgo": "{{count}}d ago",
+    "weeksAgo": "{{count}}w ago"
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -227,7 +266,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Auth Type",
+    "walletAddress": "Wallet",
+    "emailAddress": "Email",
+    "myTrophies": "My Trophies",
+    "noTrophiesMsg": "Win a tournament to earn your first trophy NFT",
+    "mintingPending": "Minting on-chain...",
+    "appDescription": "Play Turkish card game on Solana",
+    "champion": "Champion"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Leaderboard",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "game_result": {
+    "victory": "Victory!",
+    "gameOver": "Game Over",
+    "finalRankings": "Final Rankings",
+    "showRoundDetails": "Show Round Details",
+    "hideRoundDetails": "Hide Round Details",
+    "gameMode": "Game Mode",
+    "rounds": "Rounds",
+    "tricks": "Tricks",
+    "backToLobby": "Back to Lobby",
+    "noRoundsPlayed": "No rounds played",
+    "loading": "Loading results...",
+    "notAvailable": "Game results not available",
+    "wonWith": "won with",
+    "points": "points",
+    "roundScores": "Round Scores"
   },
   "common": {
     "yes": "Yes",
@@ -292,5 +362,37 @@
     "Q": "Queen",
     "K": "King",
     "A": "Ace"
+  },
+  "help": {
+    "title": "How to Play",
+    "objective": {
+      "title": "Objective",
+      "content": "Predict how many tricks you'll win, then try to take at least that many. Hit your bid to win points or go negative!"
+    },
+    "cardRanking": {
+      "title": "Card Rankings",
+      "content": "Ace (A) is highest, 2 is lowest: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Game Modes",
+      "kozMaca": "Spades are always trump. Bid only the number of tricks you think you can win (5-13). Highest score wins!",
+      "ihaleli": "Bid winner chooses trump suit. Must exceed previous bid for that suit. Lowest score wins!"
+    },
+    "bidding": {
+      "title": "Bidding",
+      "content": "Each player bids how many tricks they think they can win. Minimum bid is 5. If everyone passes, cards are redealt."
+    },
+    "playing": {
+      "title": "Playing Cards",
+      "followSuit": "You must play the same suit as the first card if you have it",
+      "trump": "Trump cards beat non-trump cards"
+    },
+    "scoring": {
+      "title": "Scoring",
+      "success": "Made your bid: 10 × bid + (tricks won - bid) = +100 for 10 bid with 13 tricks",
+      "fail": "Failed your bid: -10 × bid = -100 for failed 10 bid",
+      "nonBidder": "Didn't bid: tricks won × 10 = 13 tricks = +130 points"
+    },
+    "close": "Close"
   }
 }

@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "使用 Solana 钱包登录",
+    "walletReady": "准备连接",
+    "walletOpening": "正在打开 Seeker...",
+    "walletWaiting": "等待授权...",
+    "walletApprove": "请在 Seeker 应用中批准",
+    "walletAuthenticating": "正在与服务器认证...",
+    "walletSuccess": "连接成功！",
+    "walletFailed": "连接失败",
+    "walletConnecting": "连接中...",
+    "walletWhyTitle": "为什么使用钱包？",
+    "walletHowTitle": "如何使用",
+    "walletStep1": "点击「连接 Seeker 钱包」",
+    "walletStep2": "在 Seeker 应用中批准",
+    "walletStep3": "开始游戏！",
+    "walletPreferEmail": "更喜欢邮箱/密码？ ",
+    "walletSignIn": "登录",
+    "featureSecure": "安全",
+    "featureSecureDesc": "您的密钥永不离开您的设备",
+    "featureFast": "快速",
+    "featureFastDesc": "无需记住密码",
+    "featureRewards": "奖励",
+    "featureRewardsDesc": "赢得锦标赛即可获得 NFT",
+    "featurePlay": "游戏赚钱",
+    "featurePlayDesc": "参加排名赛",
+    "checkSeeker": "已安装 Seeker 应用",
+    "checkWallet": "您在 Seeker 中有钱包",
+    "checkInternet": "网络连接稳定"
   },
   "lobby": {
     "title": "大厅",
@@ -58,7 +85,11 @@
     "hard": "困难",
     "bots": "机器人",
     "quickPlay": "快速游戏",
-    "customGame": "自定义游戏"
+    "customGame": "自定义游戏",
+    "pvp": "PvP",
+    "skrTournament": "SKR 锦标赛",
+    "skrTournamentSub": "质押 SKR · 赢家通吃",
+    "unknownMode": "未知"
   },
   "game": {
     "round": "回合",
@@ -126,7 +157,15 @@
     "recentGames": "最近游戏",
     "rounds": "回合",
     "loading": "加载中...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "胜",
+    "loss": "负",
+    "nft": "NFT",
+    "anonymous": "匿名",
+    "minted": "已铸造",
+    "pending": "待处理",
+    "daysAgo": "{{count}}天前",
+    "weeksAgo": "{{count}}周前"
   },
   "leaderboard": {
     "title": "排行榜",
@@ -165,7 +204,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "认证类型",
+    "walletAddress": "钱包",
+    "emailAddress": "邮箱",
+    "myTrophies": "我的奖杯",
+    "noTrophiesMsg": "赢得锦标赛以获取第一个 NFT 奖杯",
+    "mintingPending": "链上铸造中...",
+    "appDescription": "在 Solana 上玩土耳其纸牌游戏",
+    "champion": "冠军"
+  },
+  "nav": {
+    "lobby": "大厅",
+    "leaderboard": "排行榜",
+    "profile": "个人资料",
+    "settings": "设置"
+  },
+  "game_result": {
+    "victory": "胜利！",
+    "gameOver": "游戏结束",
+    "finalRankings": "最终排名",
+    "showRoundDetails": "显示回合详情",
+    "hideRoundDetails": "隐藏回合详情",
+    "gameMode": "游戏模式",
+    "rounds": "回合",
+    "tricks": "墩",
+    "backToLobby": "返回大厅",
+    "noRoundsPlayed": "未进行回合",
+    "loading": "加载结果中...",
+    "notAvailable": "游戏结果不可用",
+    "wonWith": "赢得了",
+    "points": "分",
+    "roundScores": "回合得分"
   },
   "common": {
     "yes": "是",
@@ -230,5 +300,37 @@
     "Q": "女王",
     "K": "国王",
     "A": "王牌"
+  },
+  "help": {
+    "title": "如何游玩",
+    "objective": {
+      "title": "目标",
+      "content": "预测你会赢得多少墩，然后尝试至少拿那么多。完成叫牌即可得分，否则会扣分！"
+    },
+    "cardRanking": {
+      "title": "牌面大小",
+      "content": "A (A) 最大，2 最小: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "游戏模式",
+      "kozMaca": "黑桃总是王牌。只叫你认为能赢得的墩数 (5-13)。得分最高者获胜！",
+      "ihaleli": "叫牌获胜者选择王牌花色。必须超过该花色的先前叫牌。得分最低者获胜！"
+    },
+    "bidding": {
+      "title": "叫牌",
+      "content": "每位玩家叫牌他们认为自己能赢得多少墩。最低叫牌为5。如果所有人都过牌，则重新发牌。"
+    },
+    "playing": {
+      "title": "出牌",
+      "followSuit": "如果有第一张牌的花色，必须出该花色",
+      "trump": "王牌会击败非王牌"
+    },
+    "scoring": {
+      "title": "计分",
+      "success": "完成叫牌: 10 × 叫牌 + (赢得的墩 - 叫牌) = 叫牌10赢13墩得 +100 分",
+      "fail": "未完成叫牌: -10 × 叫牌 = 叫牌10失败得 -100 分",
+      "nonBidder": "未叫牌: 赢得的墩 × 10 = 13墩 = +130 分"
+    },
+    "close": "关闭"
   }
 }

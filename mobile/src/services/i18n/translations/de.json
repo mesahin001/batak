@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Melde dich mit deiner Solana-Wallet an",
+    "walletReady": "Bereit zur Verbindung",
+    "walletOpening": "Seeker wird geöffnet...",
+    "walletWaiting": "Warte auf Autorisierung...",
+    "walletApprove": "Bitte in der Seeker App bestätigen",
+    "walletAuthenticating": "Authentifizierung mit Server...",
+    "walletSuccess": "Erfolgreich verbunden!",
+    "walletFailed": "Verbindung fehlgeschlagen",
+    "walletConnecting": "Verbinden...",
+    "walletWhyTitle": "Warum eine Wallet verwenden?",
+    "walletHowTitle": "So funktioniert es",
+    "walletStep1": "Tippe auf \"Seeker Wallet verbinden\"",
+    "walletStep2": "In der Seeker App genehmigen",
+    "walletStep3": "Spielen beginnen!",
+    "walletPreferEmail": "E-Mail/Passwort bevorzugen? ",
+    "walletSignIn": "Anmelden",
+    "featureSecure": "Sicher",
+    "featureSecureDesc": "Deine Schlüssel verlassen nie dein Gerät",
+    "featureFast": "Schnell",
+    "featureFastDesc": "Kein Passwort zu merken",
+    "featureRewards": "Belohnungen",
+    "featureRewardsDesc": "NFTs für Turniersieg verdienen",
+    "featurePlay": "Spielen & Verdienen",
+    "featurePlayDesc": "An Rangturnieren teilnehmen",
+    "checkSeeker": "Seeker App ist installiert",
+    "checkWallet": "Du hast eine Wallet in Seeker",
+    "checkInternet": "Internetverbindung ist stabil"
   },
   "lobby": {
     "title": "Lobby",
@@ -58,7 +85,12 @@
     "hard": "Schwer",
     "bots": "Bots",
     "quickPlay": "Schnellspiel",
-    "customGame": "Benutzerdefiniertes Spiel"
+    "customGame": "Benutzerdefiniertes Spiel",
+    "ihaleliBatakDesc": "Biete auf Trumpf und Stichanzahl. Der niedrigste Punktestand gewinnt!",
+    "pvp": "PvP",
+    "skrTournament": "SKR Turnier",
+    "skrTournamentSub": "SKR einsetzen · Gewinner erhält den Pot",
+    "unknownMode": "Unbekannt"
   },
   "game": {
     "round": "Runde",
@@ -126,7 +158,15 @@
     "recentGames": "Letzte Spiele",
     "rounds": "Runden",
     "loading": "Laden...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "S",
+    "loss": "N",
+    "nft": "NFT",
+    "anonymous": "Anonym",
+    "minted": "Geprägt",
+    "pending": "Ausstehend",
+    "daysAgo": "vor {{count}}T",
+    "weeksAgo": "vor {{count}}W"
   },
   "leaderboard": {
     "title": "Rangliste",
@@ -165,7 +205,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Auth-Typ",
+    "walletAddress": "Wallet",
+    "emailAddress": "E-Mail",
+    "myTrophies": "Meine Trophäen",
+    "noTrophiesMsg": "Gewinne ein Turnier, um dein erstes NFT-Trophäe zu verdienen",
+    "mintingPending": "Wird geprägt...",
+    "appDescription": "Türkisches Kartenspiel auf Solana spielen",
+    "champion": "Champion"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Bestenliste",
+    "profile": "Profil",
+    "settings": "Einstellungen"
+  },
+  "game_result": {
+    "victory": "Sieg!",
+    "gameOver": "Spiel Vorbei",
+    "finalRankings": "Endrangliste",
+    "showRoundDetails": "Rundendetails anzeigen",
+    "hideRoundDetails": "Rundendetails ausblenden",
+    "gameMode": "Spielmodus",
+    "rounds": "Runden",
+    "tricks": "Stiche",
+    "backToLobby": "Zurück zur Lobby",
+    "noRoundsPlayed": "Keine Runden gespielt",
+    "loading": "Ergebnisse laden...",
+    "notAvailable": "Spielergebnisse nicht verfügbar",
+    "wonWith": "gewonnen mit",
+    "points": "Punkten",
+    "roundScores": "Rundenpunkte"
   },
   "common": {
     "yes": "Ja",
@@ -230,5 +301,37 @@
     "Q": "Dame",
     "K": "König",
     "A": "Ass"
+  },
+  "help": {
+    "title": "Wie man spielt",
+    "objective": {
+      "title": "Ziel",
+      "content": "Sage voraus, wie viele Stiche du gewinnen wirst, und versuche dann, mindestens so viele zu nehmen. Erreiche dein Reiz, um Punkte zu gewinnen, oder falle ins Negative!"
+    },
+    "cardRanking": {
+      "title": "Kartenreihenfolge",
+      "content": "Ass (A) ist am höchsten, 2 am niedrigsten: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Spielmodi",
+      "kozMaca": "Pik ist immer Trumpf. Biete nur die Anzahl der Stiche, die du zu gewinnen glaubst (5-13). Höchste Punktzahl gewinnt!",
+      "ihaleli": "Der Gewinner der Auktion wählt die Trumpffarbe. Muss das Vorangebot für diese Farbe überbieten. Niedrigste Punktzahl gewinnt!"
+    },
+    "bidding": {
+      "title": "Reizen",
+      "content": "Jeder Spieler bietet, wie viele Stiche er zu gewinnen glaubt. Mindestgebot ist 5. Wenn alle passen, werden die Karten neu verteilt."
+    },
+    "playing": {
+      "title": "Karten spielen",
+      "followSuit": "Du musst dieselbe Farbe wie die erste Karte spielen, wenn du sie hast",
+      "trump": "Trumpfkarten schlagen Nicht-Trumpf-Karten"
+    },
+    "scoring": {
+      "title": "Punktzahl",
+      "success": "Reiz erfüllt: 10 × Reiz + (gewonnene Stiche - Reiz) = +100 für 10 Reiz mit 13 Stichen",
+      "fail": "Reiz nicht erfüllt: -10 × Reiz = -100 für fehlgeschlagenen 10er Reiz",
+      "nonBidder": "Nicht geboten: gewonnene Stiche × 10 = 13 Stiche = +130 Punkte"
+    },
+    "close": "Schließen"
   }
 }

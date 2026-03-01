@@ -190,6 +190,24 @@ Strategy pattern: `EasyStrategy` (random), `NormalStrategy` (hand analysis), `Ha
 
 Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left/right/bottom).
 
+### Modal Pattern (Bottom Sheet)
+
+For scrollable bottom sheet modals (e.g., `HelpModal.tsx`, `SkrStakeModal.tsx`):
+```tsx
+<Modal visible={visible} transparent animationType="slide">
+  <View style={styles.overlay}>
+    <Pressable style={styles.backdrop} onPress={onClose} />
+    <View style={styles.sheet}>
+      <ScrollView>{/* content */}</ScrollView>
+    </View>
+  </View>
+</Modal>
+```
+Key points:
+- Separate `Pressable` backdrop for closing on outside tap
+- `View` overlay container (not TouchableOpacity/Pressable wrapper) to avoid blocking scroll
+- For interactive headers (expand/collapse), use `View` with `onTouchStart`/`onTouchEnd` to detect taps without blocking scroll
+
 ### Design System
 
 **Web:** `/client/src/styles/tokens.css` — CSS custom properties (`var(--gold-primary)`, `var(--shadow-md)`, `var(--gradient-felt)`)
@@ -239,6 +257,7 @@ Trick card positions use `getTrickSlotForPlayer()` (relative direction: top/left
 - `mobile/src/services/wallet/SeekerWalletService.ts` — MWA operations + `claimNftReward()`
 - `mobile/src/services/SkrService.ts` — SKR mainnet balance query
 - `mobile/src/components/ui/SkrStakeModal.tsx` — SKR stake UI (balance, presets, MWA approval)
+- `mobile/src/components/ui/HelpModal.tsx` — In-app game rules modal with accordion sections (supports 11 languages)
 
 ## Game Rules Quick Reference
 

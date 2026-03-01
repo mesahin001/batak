@@ -40,7 +40,34 @@
     "usernameMinLength": "Kullanıcı adı en az 3 karakter olmalı",
     "unexpectedError": "Beklenmeyen bir hata oluştu. Tekrar deneyin.",
     "walletAuthTitle": "Cüzdan Girişi",
-    "walletAuthSubtitle": "Solana cüzdanınızla giriş yapın"
+    "walletAuthSubtitle": "Solana cüzdanınızla giriş yapın",
+    "walletSubtitle": "Solana cüzdanınızla giriş yapın",
+    "walletReady": "Bağlanmaya hazır",
+    "walletOpening": "Seeker açılıyor...",
+    "walletWaiting": "Yetkilendirme bekleniyor...",
+    "walletApprove": "Lütfen Seeker uygulamasında onaylayın",
+    "walletAuthenticating": "Sunucu kimlik doğrulanıyor...",
+    "walletSuccess": "Başarıyla bağlandı!",
+    "walletFailed": "Bağlantı Başarısız",
+    "walletConnecting": "Bağlanıyor...",
+    "walletWhyTitle": "Neden cüzdan kullanmalısın?",
+    "walletHowTitle": "Nasıl çalışır",
+    "walletStep1": "\"Seeker Cüzdanı Bağla\"ya dokun",
+    "walletStep2": "Seeker uygulamasında onayla",
+    "walletStep3": "Oynamaya başla!",
+    "walletPreferEmail": "E-posta/şifre tercih ediyor musun? ",
+    "walletSignIn": "Giriş Yap",
+    "featureSecure": "Güvenli",
+    "featureSecureDesc": "Anahtarlarınız asla cihazınızdan ayrılmaz",
+    "featureFast": "Hızlı",
+    "featureFastDesc": "Şifre hatırlamaya gerek yok",
+    "featureRewards": "Ödüller",
+    "featureRewardsDesc": "Turnuva kazanımları için NFT kazan",
+    "featurePlay": "Oyna ve Kazan",
+    "featurePlayDesc": "Sıralı turnuvalarda yarış",
+    "checkSeeker": "Seeker uygulaması yüklü",
+    "checkWallet": "Seeker'da bir cüzdanın var",
+    "checkInternet": "İnternet bağlantısı kararlı"
   },
   "lobby": {
     "title": "Lobi",
@@ -92,7 +119,11 @@
     "authErrorMsg": "Lütfen tekrar giriş yapın",
     "enterCode": "Lütfen oda kodu girin",
     "kozMacaDesc": "Maça her zaman koz. En fazla eli al!",
-    "ihaleliBatakDesc": "Koz ve el sayısı için ihale ver. En düşük skor kazanır!"
+    "ihaleliBatakDesc": "Koz ve el sayısı için ihale ver. En düşük skor kazanır!",
+    "pvp": "PvP",
+    "skrTournament": "SKR Turnuvası",
+    "skrTournamentSub": "SKR stake et · Kazanan tüm potayı alır",
+    "unknownMode": "Bilinmiyor"
   },
   "game": {
     "round": "Tur",
@@ -188,7 +219,15 @@
     "recentGames": "Son Oyunlar",
     "rounds": "Tur",
     "loading": "Yükleniyor...",
-    "serverNotConnected": "Sunucu bağlantısı yok"
+    "serverNotConnected": "Sunucu bağlantısı yok",
+    "win": "G",
+    "loss": "K",
+    "nft": "NFT",
+    "anonymous": "Anonim",
+    "minted": "Basıldı",
+    "pending": "Beklemede",
+    "daysAgo": "{{count}}g önce",
+    "weeksAgo": "{{count}}h önce"
   },
   "leaderboard": {
     "title": "Skor Tablosu",
@@ -227,7 +266,38 @@
     "editUsername": "Kullanıcı Adını Düzenle",
     "usernameUpdated": "Kullanıcı adı güncellendi",
     "enterNewUsername": "Yeni kullanıcı adı girin",
-    "usernameRules": "3-20 karakter, harf/rakam/alt çizgi"
+    "usernameRules": "3-20 karakter, harf/rakam/alt çizgi",
+    "authType": "Kimlik Doğrulama",
+    "walletAddress": "Cüzdan",
+    "emailAddress": "E-posta",
+    "myTrophies": "Kupalarım",
+    "noTrophiesMsg": "İlk kupa NFT'ni kazanmak için bir turnuva kazan",
+    "mintingPending": "Zincirde basılıyor...",
+    "appDescription": "Solana'da Türk kart oyunu oyna",
+    "champion": "Şampiyon"
+  },
+  "nav": {
+    "lobby": "Lobi",
+    "leaderboard": "Skor Tablosu",
+    "profile": "Profil",
+    "settings": "Ayarlar"
+  },
+  "game_result": {
+    "victory": "Zafer!",
+    "gameOver": "Oyun Bitti",
+    "finalRankings": "Final Sıralaması",
+    "showRoundDetails": "Tur Detaylarını Göster",
+    "hideRoundDetails": "Tur Detaylarını Gizle",
+    "gameMode": "Oyun Modu",
+    "rounds": "Turlar",
+    "tricks": "Eller",
+    "backToLobby": "Lobby'ye Dön",
+    "noRoundsPlayed": "Tur oynanmadı",
+    "loading": "Sonuçlar yükleniyor...",
+    "notAvailable": "Oyun sonuçları mevcut değil",
+    "wonWith": "kazandı",
+    "points": "puan",
+    "roundScores": "Tur Skorları"
   },
   "common": {
     "yes": "Evet",
@@ -292,5 +362,37 @@
     "Q": "Kız",
     "K": "Papaz",
     "A": "As"
+  },
+  "help": {
+    "title": "Nasıl Oynanır",
+    "objective": {
+      "title": "Amaç",
+      "content": "Kaç el alacağını tahmin et, sonra en az o kadar eldeğiştirmeye çalış. İhaleyi yaparak puan kazan, yapamazsan eksiye düş!"
+    },
+    "cardRanking": {
+      "title": "Kuvvet Sırası",
+      "content": "As (A) en yüksek, 2 en düşük: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Oyun Modları",
+      "kozMaca": "Maça her zaman kozdur. Sadece alabileceğin eli sayısı kadar ihale ver (5-13). En yüksek puan kazanır!",
+      "ihaleli": "İhaleyi kazanan koz rengini seçer. Aynı renk için önceki ihaleyi geçmelisin. En düşük puan kazanır!"
+    },
+    "bidding": {
+      "title": "İhale",
+      "content": "Her oyuncu kaç el alabileceğini tahmin eder. Minimum ihale 5'dir. Herkes pas derse kartlar yeniden dağıtılır."
+    },
+    "playing": {
+      "title": "Kart Oynama",
+      "followSuit": "İlk kartın renginde elinizde kart varsa o renk oynamalısınız",
+      "trump": "Koz kartlar koz olmayan kartları yener"
+    },
+    "scoring": {
+      "title": "Puanlama",
+      "success": "İhaleyi yaptın: 10 × ihale + (alınan el - ihale) = 13 el için +100 puan",
+      "fail": "İhaleyi kaçırdın: -10 × ihale = 10 ihale için -100 puan",
+      "nonBidder": "İhale yapmadın: alınan el × 10 = 13 el = +130 puan"
+    },
+    "close": "Kapat"
   }
 }

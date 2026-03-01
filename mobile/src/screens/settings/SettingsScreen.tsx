@@ -24,6 +24,7 @@ import { useWallet } from '../../contexts/WalletContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { changeLanguage, getCurrentLanguage, SUPPORTED_LANGUAGES, SupportedLanguage } from '../../services/i18n/I18nService';
 import { soundManager } from '../../utils/SoundManager';
+import { HelpModal } from '../../components/ui/HelpModal';
 
 interface NftReward {
   id: number;
@@ -55,6 +56,7 @@ export const SettingsScreen = () => {
   const [newUsername, setNewUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
 
   // Load initial preferences
   useEffect(() => {
@@ -155,7 +157,7 @@ export const SettingsScreen = () => {
 
   const getAuthTypeDisplay = () => {
     if (!authType) return t('auth.notLoggedIn');
-    return authType === 'wallet' ? '👛 Wallet' : '📧 Email';
+    return authType === 'wallet' ? `👛 ${t('settings.walletAddress')}` : `📧 ${t('settings.emailAddress')}`;
   };
 
   return (
@@ -189,14 +191,14 @@ export const SettingsScreen = () => {
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Auth Type</Text>
+              <Text style={styles.infoLabel}>{t('settings.authType')}</Text>
               <Text style={styles.infoValue}>{getAuthTypeDisplay()}</Text>
             </View>
             {publicKey && (
               <>
                 <View style={styles.divider} />
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Wallet</Text>
+                  <Text style={styles.infoLabel}>{t('settings.walletAddress')}</Text>
                   <Text style={styles.infoValueSmall}>
                     {publicKey.slice(0, 8)}...{publicKey.slice(-8)}
                   </Text>
@@ -261,7 +263,7 @@ export const SettingsScreen = () => {
         {publicKey && (
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>My Trophies</Text>
+              <Text style={styles.sectionTitle}>{t('settings.myTrophies')}</Text>
               {nftsLoading && <ActivityIndicator size="small" color="#d4af37" />}
               {!nftsLoading && (
                 <TouchableOpacity onPress={loadNfts} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -273,7 +275,7 @@ export const SettingsScreen = () => {
             {nfts.length === 0 && !nftsLoading ? (
               <View style={styles.emptyTrophies}>
                 <Text style={styles.emptyTrophiesIcon}>🏆</Text>
-                <Text style={styles.emptyTrophiesText}>Win a tournament to earn your first trophy NFT</Text>
+                <Text style={styles.emptyTrophiesText}>{t('settings.noTrophiesMsg')}</Text>
               </View>
             ) : (
               nfts.map((nft) => {
@@ -292,13 +294,13 @@ export const SettingsScreen = () => {
                     <Text style={styles.nftTierEmoji}>{tier.emoji}</Text>
                     <View style={styles.nftInfo}>
                       <Text style={[styles.nftTierName, { color: tier.color }]}>
-                        {tier.name} Champion
+                        {t(`profile.${tier.name.toLowerCase()}`)} {t('settings.champion')}
                       </Text>
                       <Text style={styles.nftDate}>Tournament #{nft.tournamentId.slice(0, 8)} · {date}</Text>
                       {nft.mintAddress ? (
                         <Text style={styles.nftMint}>{nft.mintAddress.slice(0, 8)}...{nft.mintAddress.slice(-6)} ↗</Text>
                       ) : (
-                        <Text style={styles.nftMintPending}>Minting on-chain...</Text>
+                        <Text style={styles.nftMintPending}>{t('settings.mintingPending')}</Text>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -313,12 +315,24 @@ export const SettingsScreen = () => {
           <Text style={styles.sectionTitle}>{t('settings.about')}</Text>
 
           <View style={styles.aboutCard}>
-            <Text style={styles.appName}>Batak Tournament</Text>
+            <Text style={styles.appName}>{t('app.name')}</Text>
             <Text style={styles.appVersion}>Version 1.0.0</Text>
             <Text style={styles.appDescription}>
-              Play Turkish card game on Solana
+              {t('settings.appDescription')}
             </Text>
           </View>
+
+          {/* Help Button */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => setHelpModalVisible(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.settingIcon}>❓</Text>
+            <Text style={styles.settingText}>{t('help.title')}</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Danger Zone */}
@@ -456,6 +470,9 @@ export const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Help Modal */}
+      <HelpModal visible={helpModalVisible} onClose={() => setHelpModalVisible(false)} />
     </View>
   );
 };
@@ -565,6 +582,11 @@ const styles = StyleSheet.create({
   settingValue: {
     fontSize: 14,
     color: '#888',
+  },
+  chevron: {
+    fontSize: 20,
+    color: '#888',
+    fontWeight: '300',
   },
   comingSoonBadge: {
     fontSize: 12,

@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Войдите через кошелёк Solana",
+    "walletReady": "Готов к подключению",
+    "walletOpening": "Открывается Seeker...",
+    "walletWaiting": "Ожидание авторизации...",
+    "walletApprove": "Подтвердите в приложении Seeker",
+    "walletAuthenticating": "Аутентификация на сервере...",
+    "walletSuccess": "Успешно подключено!",
+    "walletFailed": "Ошибка подключения",
+    "walletConnecting": "Подключение...",
+    "walletWhyTitle": "Зачем использовать кошелёк?",
+    "walletHowTitle": "Как это работает",
+    "walletStep1": "Нажмите «Подключить Seeker Wallet»",
+    "walletStep2": "Подтвердите в приложении Seeker",
+    "walletStep3": "Начните играть!",
+    "walletPreferEmail": "Предпочитаете email/пароль? ",
+    "walletSignIn": "Войти",
+    "featureSecure": "Безопасно",
+    "featureSecureDesc": "Ваши ключи никогда не покидают устройство",
+    "featureFast": "Быстро",
+    "featureFastDesc": "Не нужно запоминать пароль",
+    "featureRewards": "Награды",
+    "featureRewardsDesc": "Получайте NFT за победы в турнирах",
+    "featurePlay": "Играй и Зарабатывай",
+    "featurePlayDesc": "Участвуйте в рейтинговых турнирах",
+    "checkSeeker": "Приложение Seeker установлено",
+    "checkWallet": "У вас есть кошелёк в Seeker",
+    "checkInternet": "Интернет-соединение стабильно"
   },
   "lobby": {
     "title": "Лобби",
@@ -58,7 +85,11 @@
     "hard": "Сложно",
     "bots": "Боты",
     "quickPlay": "Быстрая игра",
-    "customGame": "Пользовательская игра"
+    "customGame": "Пользовательская игра",
+    "pvp": "PvP",
+    "skrTournament": "Турнир SKR",
+    "skrTournamentSub": "Ставьте SKR · Победитель берёт всё",
+    "unknownMode": "Неизвестно"
   },
   "game": {
     "round": "Раунд",
@@ -126,7 +157,15 @@
     "recentGames": "Последние игры",
     "rounds": "раундов",
     "loading": "Загрузка...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "П",
+    "loss": "П",
+    "nft": "NFT",
+    "anonymous": "Аноним",
+    "minted": "Выпущен",
+    "pending": "Ожидает",
+    "daysAgo": "{{count}}д назад",
+    "weeksAgo": "{{count}}н назад"
   },
   "leaderboard": {
     "title": "Таблица лидеров",
@@ -165,7 +204,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Тип авторизации",
+    "walletAddress": "Кошелёк",
+    "emailAddress": "Email",
+    "myTrophies": "Мои трофеи",
+    "noTrophiesMsg": "Выиграйте турнир, чтобы получить первый NFT-трофей",
+    "mintingPending": "Чеканка в блокчейне...",
+    "appDescription": "Играйте в турецкие карты на Solana",
+    "champion": "Чемпион"
+  },
+  "nav": {
+    "lobby": "Лобби",
+    "leaderboard": "Рейтинг",
+    "profile": "Профиль",
+    "settings": "Настройки"
+  },
+  "game_result": {
+    "victory": "Победа!",
+    "gameOver": "Игра окончена",
+    "finalRankings": "Финальный рейтинг",
+    "showRoundDetails": "Показать детали раунда",
+    "hideRoundDetails": "Скрыть детали раунда",
+    "gameMode": "Режим игры",
+    "rounds": "Раунды",
+    "tricks": "Взятки",
+    "backToLobby": "Назад в лобби",
+    "noRoundsPlayed": "Раунды не сыграны",
+    "loading": "Загрузка результатов...",
+    "notAvailable": "Результаты недоступны",
+    "wonWith": "выиграл с",
+    "points": "очков",
+    "roundScores": "Очки по раундам"
   },
   "common": {
     "yes": "Да",
@@ -230,5 +300,37 @@
     "Q": "Дама",
     "K": "Король",
     "A": "Туз"
+  },
+  "help": {
+    "title": "Как играть",
+    "objective": {
+      "title": "Цель",
+      "content": "Предскажите, сколько взяток выиграете, затем постарайтесь взять хотя бы столько. Выполните контракт, чтобы заработать очки или уйдите в минус!"
+    },
+    "cardRanking": {
+      "title": "Старшинство карт",
+      "content": "Туз (A) самый старший, 2 самый младший: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Режимы игры",
+      "kozMaca": "Пики всегда козырь. Делайте ставки только на количество взяток, которые, как вы думаете, сможете выиграть (5-13). Самый высокий счёт выигрывает!",
+      "ihaleli": "Победитель торгов выбирает козырную масть. Должен превзойти предыдущую ставку для этой масти. Самый низкий счёт выигрывает!"
+    },
+    "bidding": {
+      "title": "Торги",
+      "content": "Каждый игрок делает ставку на количество взяток, которые, как он думает, сможет выиграть. Минимальная ставка 5. Если все пасуют, карты раздаются заново."
+    },
+    "playing": {
+      "title": "Игра картами",
+      "followSuit": "Вы должны играть масть первой карты, если она у вас есть",
+      "trump": "Козырные карты бьют некозырные карты"
+    },
+    "scoring": {
+      "title": "Подсчёт очков",
+      "success": "Контракт выполнен: 10 × ставка + (взятки - ставка) = +100 за 10 ставки с 13 взятками",
+      "fail": "Контракт не выполнен: -10 × ставка = -100 за провальную ставку 10",
+      "nonBidder": "Без ставки: взятки × 10 = 13 взяток = +130 очков"
+    },
+    "close": "Закрыть"
   }
 }

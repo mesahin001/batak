@@ -40,7 +40,34 @@
     "usernameMinLength": "Username must be at least 3 characters",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "walletAuthTitle": "Wallet Authentication",
-    "walletAuthSubtitle": "Sign in with your Solana wallet"
+    "walletAuthSubtitle": "Sign in with your Solana wallet",
+    "walletSubtitle": "Accedi con il tuo portafoglio Solana",
+    "walletReady": "Pronto per connettersi",
+    "walletOpening": "Apertura di Seeker...",
+    "walletWaiting": "In attesa di autorizzazione...",
+    "walletApprove": "Si prega di approvare nell'app Seeker",
+    "walletAuthenticating": "Autenticazione con il server...",
+    "walletSuccess": "Connesso con successo!",
+    "walletFailed": "Connessione fallita",
+    "walletConnecting": "Connessione...",
+    "walletWhyTitle": "Perché usare un portafoglio?",
+    "walletHowTitle": "Come funziona",
+    "walletStep1": "Tocca \"Connetti Seeker Wallet\"",
+    "walletStep2": "Approva nell'app Seeker",
+    "walletStep3": "Inizia a giocare!",
+    "walletPreferEmail": "Preferisci email/password? ",
+    "walletSignIn": "Accedi",
+    "featureSecure": "Sicuro",
+    "featureSecureDesc": "Le tue chiavi non lasciano mai il tuo dispositivo",
+    "featureFast": "Veloce",
+    "featureFastDesc": "Nessuna password da ricordare",
+    "featureRewards": "Premi",
+    "featureRewardsDesc": "Guadagna NFT per le vittorie nei tornei",
+    "featurePlay": "Gioca e Guadagna",
+    "featurePlayDesc": "Compete nei tornei classificati",
+    "checkSeeker": "L'app Seeker è installata",
+    "checkWallet": "Hai un portafoglio in Seeker",
+    "checkInternet": "La connessione internet è stabile"
   },
   "lobby": {
     "title": "Lobby",
@@ -58,7 +85,12 @@
     "hard": "Difficile",
     "bots": "Bot",
     "quickPlay": "Partita rapida",
-    "customGame": "Partita personalizzata"
+    "customGame": "Partita personalizzata",
+    "ihaleliBatakDesc": "Offri su briscola e numero di prese. Il punteggio più basso vince!",
+    "pvp": "GcG",
+    "skrTournament": "Torneo SKR",
+    "skrTournamentSub": "Punta SKR · Il vincitore prende tutto",
+    "unknownMode": "Sconosciuto"
   },
   "game": {
     "round": "Round",
@@ -126,7 +158,15 @@
     "recentGames": "Partite recenti",
     "rounds": "round",
     "loading": "Caricamento...",
-    "serverNotConnected": "Server not connected"
+    "serverNotConnected": "Server not connected",
+    "win": "V",
+    "loss": "P",
+    "nft": "NFT",
+    "anonymous": "Anonimo",
+    "minted": "Coniato",
+    "pending": "In attesa",
+    "daysAgo": "{{count}}g fa",
+    "weeksAgo": "{{count}}s fa"
   },
   "leaderboard": {
     "title": "Classifica",
@@ -165,7 +205,38 @@
     "editUsername": "Edit Username",
     "usernameUpdated": "Username updated successfully",
     "enterNewUsername": "Enter new username",
-    "usernameRules": "3-20 characters, letters/numbers/underscore only"
+    "usernameRules": "3-20 characters, letters/numbers/underscore only",
+    "authType": "Tipo di Auth",
+    "walletAddress": "Portafoglio",
+    "emailAddress": "Email",
+    "myTrophies": "I Miei Trofei",
+    "noTrophiesMsg": "Vinci un torneo per guadagnare il tuo primo trofeo NFT",
+    "mintingPending": "Coniatura in corso...",
+    "appDescription": "Gioca al gioco di carte turco su Solana",
+    "champion": "Campione"
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "leaderboard": "Classifica",
+    "profile": "Profilo",
+    "settings": "Impostazioni"
+  },
+  "game_result": {
+    "victory": "Vittoria!",
+    "gameOver": "Fine del Gioco",
+    "finalRankings": "Classifica Finale",
+    "showRoundDetails": "Mostra dettagli round",
+    "hideRoundDetails": "Nascondi dettagli round",
+    "gameMode": "Modalità di Gioco",
+    "rounds": "Round",
+    "tricks": "Prese",
+    "backToLobby": "Torna alla Lobby",
+    "noRoundsPlayed": "Nessun round giocato",
+    "loading": "Caricamento risultati...",
+    "notAvailable": "Risultati non disponibili",
+    "wonWith": "ha vinto con",
+    "points": "punti",
+    "roundScores": "Punteggi per Round"
   },
   "common": {
     "yes": "Sì",
@@ -230,5 +301,37 @@
     "Q": "Regina",
     "K": "Re",
     "A": "Asso"
+  },
+  "help": {
+    "title": "Come Giocare",
+    "objective": {
+      "title": "Obiettivo",
+      "content": "Prevedi quante prese vincerai, poi cerca di prenderne almeno quante. Riesci nella tua scommessa per guadagnare punti o vai in negativo!"
+    },
+    "cardRanking": {
+      "title": "Gerarchia delle Carte",
+      "content": "Asso (A) è il più alto, 2 è il più basso: A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2"
+    },
+    "gameModes": {
+      "title": "Modalità di Gioco",
+      "kozMaca": "Picche è sempre briscole. Scommetti solo il numero di prese che pensi di poter vincere (5-13). Il punteggio più alto vince!",
+      "ihaleli": "Il vincitore della scommessa sceglie il seme delle briscole. Deve superare la scommessa precedente per quel seme. Il punteggio più basso vince!"
+    },
+    "bidding": {
+      "title": "Scommesse",
+      "content": "Ogni giocatore scommette quante prese pensa di poter vincere. La scommessa minima è 5. Se tutti passano, le carte vengono ridistribute."
+    },
+    "playing": {
+      "title": "Giocare le Carte",
+      "followSuit": "Devi giocare lo stesso seme della prima carta se ce l'hai",
+      "trump": "Le carte briscole battono le carte non briscole"
+    },
+    "scoring": {
+      "title": "Punteggio",
+      "success": "Scommessa fatta: 10 × scommessa + (prese vinte - scommessa) = +100 per 10 di scommessa con 13 prese",
+      "fail": "Scommessa fallita: -10 × scommessa = -100 per scommessa di 10 fallita",
+      "nonBidder": "Nessuna scommessa: prese vinte × 10 = 13 prese = +130 punti"
+    },
+    "close": "Chiudi"
   }
 }
