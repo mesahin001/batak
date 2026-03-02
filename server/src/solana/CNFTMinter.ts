@@ -70,8 +70,17 @@ export class CNFTMinter {
     try {
       const metadataUri = await this.uploadMetadata(metadata);
 
+      // Normalize winnerAddress to base58 — player IDs may be base64 encoded
+      // (e.g. from JWT auth where public key bytes are base64 encoded)
+      let leafOwnerBase58 = winnerAddress;
+      if (/[+/=]/.test(winnerAddress)) {
+        const bytes = Buffer.from(winnerAddress, 'base64');
+        leafOwnerBase58 = new PublicKey(bytes).toBase58();
+        console.log(`[cNFT] Converted winner address from base64 to base58: ${leafOwnerBase58.slice(0, 8)}...`);
+      }
+
       const builder = mintV1(this.umi, {
-        leafOwner: winnerAddress as any,
+        leafOwner: leafOwnerBase58 as any,
         merkleTree: this.merkleTree.toBase58() as any,
         metadata: {
           name: metadata.name,

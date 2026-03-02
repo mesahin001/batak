@@ -13,12 +13,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { GameClientState, PlayerState } from '../../types/game';
 
 interface RouteParams {
   roomId: string;
+  gameData?: any; // Game completion data passed from GameRoomScreen
 }
 
 interface PlayerWithRank extends PlayerState {
@@ -28,6 +30,7 @@ interface PlayerWithRank extends PlayerState {
 export const GameResultScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { socket } = useSocket();
   const { playerId } = useAuth();
 
@@ -39,16 +42,43 @@ export const GameResultScreen = () => {
   const [showRoundBreakdown, setShowRoundBreakdown] = useState(false);
 
   useEffect(() => {
+    // If gameData was passed from GameRoomScreen, use it directly
+    const params = route.params as RouteParams;
+    if (params.gameData) {
+      // Convert game completion data to GameClientState format
+      const completionData = params.gameData;
+      const gameState: GameClientState = {
+        state: 'finished',
+        gameMode: completionData.gameMode || 'koz_maca',
+        players: completionData.players || [],
+        currentRound: completionData.roundsPlayed || 0,
+        totalRounds: completionData.totalRounds || 5,
+        winner: completionData.winner,
+        roundHistory: completionData.roundHistory || [],
+        // Add other required fields for compatibility
+        deck: [],
+        hands: [],
+        currentTrick: null,
+        bids: [],
+        trump: null,
+        leadSuit: null,
+        currentTurn: null,
+      };
+      setGameState(gameState);
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: try to fetch from server (for backwards compatibility)
     if (!socket || !roomId) return;
 
-    // Request current game state to get results
     socket.emit('get_game_state', { roomId }, (response: any) => {
       if (response.gameState) {
         setGameState(response.gameState);
       }
       setLoading(false);
     });
-  }, [socket, roomId]);
+  }, [socket, roomId, route.params]);
 
   /**
    * Sort players by total score (lowest first for Batak rules)
@@ -94,7 +124,7 @@ export const GameResultScreen = () => {
    */
   const renderRoundScores = (player: PlayerWithRank) => {
     if (!player.roundScores || player.roundScores.length === 0) {
-      return <Text style={styles.noRoundsText}>No rounds played</Text>;
+      return <Text style={styles.noRoundsText}>{t('game_result.noRoundsPlayed')}</Text>;
     }
 
     return (
@@ -137,14 +167,14 @@ export const GameResultScreen = () => {
               <Text style={styles.botBadge}>🤖</Text>
             )}
           </View>
-          <Text style={styles.totalScore}>{player.totalScore} pts</Text>
+          <Text style={styles.totalScore}>{player.totalScore} {t('game_result.points')}</Text>
         </View>
 
         {/* Stats */}
         <View style={styles.playerStats}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{player.tricksWon}</Text>
-            <Text style={styles.statLabel}>Tricks</Text>
+            <Text style={styles.statLabel}>{t('game_result.tricks')}</Text>
           </View>
         </View>
       </View>
@@ -178,21 +208,21 @@ export const GameResultScreen = () => {
                 <Text style={styles.botBadge}>🤖</Text>
               )}
             </View>
-            <Text style={styles.totalScore}>{player.totalScore} pts</Text>
+            <Text style={styles.totalScore}>{player.totalScore} {t('game_result.points')}</Text>
           </View>
 
           {/* Stats */}
           <View style={styles.playerStats}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{player.tricksWon}</Text>
-              <Text style={styles.statLabel}>Tricks</Text>
+              <Text style={styles.statLabel}>{t('game_result.tricks')}</Text>
             </View>
           </View>
         </View>
 
         {/* Round Scores */}
         <View style={styles.roundScoresWrapper}>
-          <Text style={styles.roundScoresTitle}>Round Scores</Text>
+          <Text style={styles.roundScoresTitle}>{t('game_result.roundScores')}</Text>
           {renderRoundScores(player)}
         </View>
       </View>
@@ -205,7 +235,7 @@ export const GameResultScreen = () => {
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6C63FF" />
-          <Text style={styles.loadingText}>Loading results...</Text>
+          <Text style={styles.loadingText}>{t('game_result.loading')}</Text>
         </View>
       </View>
     );
@@ -217,10 +247,10 @@ export const GameResultScreen = () => {
       <View style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorText}>Game results not available</Text>
+          <Text style={styles.errorText}>{t('game_result.notAvailable')}</Text>
         </View>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.backButtonText}>{t('game.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -235,10 +265,10 @@ export const GameResultScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>
-          {playerWon ? 'Victory!' : 'Game Over'}
+          {playerWon ? t('game_result.victory') : t('game_result.gameOver')}
         </Text>
         <Text style={styles.subtitle}>
-          {winner?.name} won with {winner?.totalScore} points!
+          {winner?.name} {t('game_result.wonWith')} {winner?.totalScore} {t('game_result.points')}!
         </Text>
       </View>
 
@@ -247,12 +277,12 @@ export const GameResultScreen = () => {
         <View style={styles.winnerCard}>
           <Text style={styles.winnerEmoji}>🏆</Text>
           <Text style={styles.winnerName}>{winner?.name}</Text>
-          <Text style={styles.winnerScore}>{winner?.totalScore} points</Text>
+          <Text style={styles.winnerScore}>{winner?.totalScore} {t('game_result.points')}</Text>
         </View>
 
         {/* Rankings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Final Rankings</Text>
+          <Text style={styles.sectionTitle}>{t('game_result.finalRankings')}</Text>
 
           {sortedPlayers.map((player) =>
             showRoundBreakdown
@@ -267,20 +297,20 @@ export const GameResultScreen = () => {
           onPress={() => setShowRoundBreakdown(!showRoundBreakdown)}
         >
           <Text style={styles.toggleButtonText}>
-            {showRoundBreakdown ? 'Hide Round Details' : 'Show Round Details'}
+            {showRoundBreakdown ? t('game_result.hideRoundDetails') : t('game_result.showRoundDetails')}
           </Text>
         </TouchableOpacity>
 
         {/* Game Info */}
         <View style={styles.gameInfoCard}>
           <View style={styles.gameInfoRow}>
-            <Text style={styles.gameInfoLabel}>Game Mode</Text>
+            <Text style={styles.gameInfoLabel}>{t('game_result.gameMode')}</Text>
             <Text style={styles.gameInfoValue}>
-              {gameState.gameMode === 'koz_maca' ? 'Koz Maça' : 'İhaleli Batak'}
+              {gameState.gameMode === 'koz_maca' ? t('lobby.kozMaca') : t('lobby.ihaleliBatak')}
             </Text>
           </View>
           <View style={styles.gameInfoRow}>
-            <Text style={styles.gameInfoLabel}>Rounds</Text>
+            <Text style={styles.gameInfoLabel}>{t('game_result.rounds')}</Text>
             <Text style={styles.gameInfoValue}>
               {gameState.totalRounds || 'Unknown'}
             </Text>
@@ -291,9 +321,9 @@ export const GameResultScreen = () => {
       {/* Back to Lobby Button */}
       <TouchableOpacity
         style={styles.actionButton}
-        onPress={() => navigation.navigate('Lobby' as never)}
+        onPress={() => navigation.navigate('Main' as never)}
       >
-        <Text style={styles.actionButtonText}>Back to Lobby</Text>
+        <Text style={styles.actionButtonText}>{t('game_result.backToLobby')}</Text>
       </TouchableOpacity>
     </View>
   );
