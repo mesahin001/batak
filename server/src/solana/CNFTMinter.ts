@@ -9,10 +9,11 @@ import { createTree, mintV1 } from '@metaplex-foundation/mpl-bubblegum';
 // @ts-ignore - optional dependency
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 // @ts-ignore - optional dependency
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { keypairIdentity, generateSigner } from '@metaplex-foundation/umi';
+// @ts-ignore - optional dependency
+import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
+import bs58 from 'bs58';
 
-// Alias for backwards compatibility
-const mintCompressedNft = mintV1;
 import { SolanaClient } from './SolanaClient.js';
 import { CNFTMetadata } from '../types/tournament.js';
 import { config } from '../config.js';
@@ -29,22 +30,11 @@ export class CNFTMinter {
     this.client = new SolanaClient();
     this.merkleTree = new PublicKey(merkleTreeAddress);
 
-    // Initialize Umi for Bubblegum operations
-    // Note: irysStorage and dasApi are optional plugins removed for simplicity
-    this.umi = createUmi(config.solanaRpcUrl)
-      .use(walletAdapterIdentity(this.createWalletAdapter()));
-  }
+    const web3Keypair = this.client.getPayer();
+    const umiKeypair = fromWeb3JsKeypair(web3Keypair);
 
-  /**
-   * Create wallet adapter for Umi
-   */
-  private createWalletAdapter(): any {
-    const keypair = this.client.getPayer();
-    return {
-      publicKey: keypair.publicKey.toBase58(),
-      signTransaction: async (tx: any) => tx,
-      signAllTransactions: async (txs: any[]) => txs,
-    };
+    this.umi = createUmi(config.solanaRpcUrl)
+      .use(keypairIdentity(umiKeypair));
   }
 
   /**
@@ -52,17 +42,18 @@ export class CNFTMinter {
    */
   async createMerkleTree(maxDepth: number = 14, maxBufferSize: number = 64): Promise<string> {
     try {
-      // @ts-expect-error - API signature changed in newer mpl-bubblegum, works at runtime with as any
-      const builder = createTree(this.umi, {
+      const treeKeypair = generateSigner(this.umi);
+
+      const builder = await createTree(this.umi, {
+        merkleTree: treeKeypair,
         maxDepth,
         maxBufferSize,
       });
 
-      // The newer Umi API uses different methods - try the most common pattern
-      const result = await (builder as any).sendAndConfirm(this.umi);
+      await builder.sendAndConfirm(this.umi);
 
-      console.log(`[cNFT] Created Merkle tree: ${result.signature || result}`);
-      return result.signature || result;
+      console.log(`[cNFT] Created Merkle tree: ${treeKeypair.publicKey}`);
+      return treeKeypair.publicKey as string;
     } catch (error) {
       console.error('[cNFT] Failed to create Merkle tree:', error);
       throw error;
@@ -75,42 +66,37 @@ export class CNFTMinter {
   async mintRewardNFT(
     winnerAddress: string,
     metadata: CNFTMetadata
-  ): Promise<{ signature: string; assetId: string }> {
+  ): Promise<{ signature: string; assetId: string; metadataUri: string }> {
     try {
-      // Upload metadata to Arweave/Irys
       const metadataUri = await this.uploadMetadata(metadata);
 
-      // Mint compressed NFT
-      const builder = mintCompressedNft(this.umi, {
-        leafOwner: new PublicKey(winnerAddress) as any,
-        merkleTree: this.merkleTree as any,
-        // @ts-expect-error - API signature changed (metadataUrl -> metadata), works at runtime
-        metadataUrl: metadataUri,
-        name: metadata.name,
-        symbol: metadata.symbol,
-        sellerFeeBasisPoints: 500, // 5% royalty
-        creators: [
-          {
-            address: this.client.getPayer().publicKey as any,
-            verified: true,
-            share: 100,
-          },
-        ],
-        collection: null,
-        isMutable: false, // Immutable for MVP
+      const builder = mintV1(this.umi, {
+        leafOwner: winnerAddress as any,
+        merkleTree: this.merkleTree.toBase58() as any,
+        metadata: {
+          name: metadata.name,
+          symbol: metadata.symbol || '',
+          uri: metadataUri,
+          sellerFeeBasisPoints: 500,
+          primarySaleHappened: false,
+          isMutable: false,
+          collection: null,
+          creators: [
+            {
+              address: this.client.getPayer().publicKey.toBase58() as any,
+              verified: true,
+              share: 100,
+            },
+          ],
+        },
       });
 
       const result = await builder.sendAndConfirm(this.umi);
 
-      console.log(`[cNFT] Minted reward NFT: ${result.signature}`);
+      const sig = bs58.encode(result.signature);
+      console.log(`[cNFT] Minted reward NFT: ${sig}`);
 
-      const sig: string = result.signature as any;
-      // @ts-expect-error - assetId property missing in newer API
-      const assetId: string = result.assetId || 'pending';
-      return {
-        signature: sig,
-        assetId: assetId,
-      };
+      return { signature: sig, assetId: 'pending', metadataUri };
     } catch (error) {
       console.error('[cNFT] Failed to mint reward NFT:', error);
       throw error;
@@ -223,45 +209,8 @@ export class CNFTMinter {
     winnerAddress: string,
     rewardTier: 'bronze' | 'silver' | 'gold'
   ): Promise<{ signature: string; assetId: string; metadataUri: string }> {
-    const metadata = this.getTournamentMetadata(
-      tournamentId,
-      winnerAddress,
-      rewardTier,
-      new Date()
-    );
-
-    const metadataUri = await this.uploadMetadata(metadata);
-
-    const builder = mintCompressedNft(this.umi, {
-      leafOwner: new PublicKey(winnerAddress) as any,
-      merkleTree: this.merkleTree as any,
-      // @ts-expect-error - API signature changed (metadataUrl -> metadata), works at runtime
-      metadataUrl: metadataUri,
-      name: metadata.name,
-      symbol: metadata.symbol,
-      sellerFeeBasisPoints: 500,
-      creators: [
-        {
-          address: this.client.getPayer().publicKey as any,
-          verified: true,
-          share: 100,
-        },
-      ],
-      collection: null,
-      isMutable: false,
-    });
-
-    const result = await builder.sendAndConfirm(this.umi);
-    console.log(`[cNFT] Minted tournament reward for ${winnerAddress.slice(0, 8)}: ${result.signature}`);
-
-    const sig: string = result.signature as any;
-    // @ts-expect-error - assetId property missing in newer API
-    const assetId: string = result.assetId || 'pending';
-    return {
-      signature: sig,
-      assetId: assetId,
-      metadataUri,
-    };
+    const metadata = this.getTournamentMetadata(tournamentId, winnerAddress, rewardTier, new Date());
+    return this.mintRewardNFT(winnerAddress, metadata);
   }
 
   /**
