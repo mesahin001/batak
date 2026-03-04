@@ -9,7 +9,7 @@ import { createTree, mintV1 } from '@metaplex-foundation/mpl-bubblegum';
 // @ts-ignore - optional dependency
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 // @ts-ignore - optional dependency
-import { keypairIdentity, generateSigner } from '@metaplex-foundation/umi';
+import { keypairIdentity, generateSigner, publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 // @ts-ignore - optional dependency
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 import bs58 from 'bs58';
@@ -80,8 +80,8 @@ export class CNFTMinter {
       }
 
       const builder = mintV1(this.umi, {
-        leafOwner: leafOwnerBase58 as any,
-        merkleTree: this.merkleTree.toBase58() as any,
+        leafOwner: umiPublicKey(leafOwnerBase58),
+        merkleTree: umiPublicKey(this.merkleTree.toBase58()),
         metadata: {
           name: metadata.name,
           symbol: metadata.symbol || '',
@@ -92,7 +92,7 @@ export class CNFTMinter {
           collection: null,
           creators: [
             {
-              address: this.client.getPayer().publicKey.toBase58() as any,
+              address: umiPublicKey(this.client.getPayer().publicKey.toBase58()),
               verified: true,
               share: 100,
             },

@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSocket } from '../../contexts/SocketContext';
@@ -103,6 +104,27 @@ export const TournamentResultScreen = () => {
     });
   }, [socket, tournamentId, playerId]);
 
+  // Listen for server-side mint completion
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('reward_minted', (data: { signature?: string; assetId?: string; mintAddress?: string; tier?: string }) => {
+      setClaimingReward(false);
+      setRewardClaimed(true);
+      if (data.signature) {
+        Alert.alert(
+          '🏆 NFT Reward Minted!',
+          `Sent to your wallet!\n\nTx: ${data.signature.slice(0, 20)}...`,
+          [{ text: 'OK' }]
+        );
+      }
+    });
+
+    return () => {
+      socket.off('reward_minted');
+    };
+  }, [socket]);
+
   /**
    * Start confetti animation
    */
@@ -192,15 +214,21 @@ export const TournamentResultScreen = () => {
    * Handle NFT claim
    */
   const handleClaimReward = () => {
-    if (!socket || claimingReward || rewardClaimed) return;
-
+    if (!socket || claimingReward || rewardClaimed || !playerId) return;
     setClaimingReward(true);
 
-    // Simulate claiming process
-    setTimeout(() => {
-      setClaimingReward(false);
-      setRewardClaimed(true);
-    }, 2000);
+    socket.emit(
+      'claim_reward',
+      { tournamentId, publicKey: playerId },
+      (response: any) => {
+        setClaimingReward(false);
+        if (response?.error) {
+          Alert.alert('Error', response.error);
+        } else {
+          setRewardClaimed(true);
+        }
+      }
+    );
   };
 
   /**
