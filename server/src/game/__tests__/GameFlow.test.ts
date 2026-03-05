@@ -64,7 +64,7 @@ describe('Game Flow Integration', () => {
     for (let i = 0; i < 4; i++) {
       state = machine.getRoom();
       const currentPlayer = state.players[state.currentPlayerIndex];
-      const playableCards = getPlayableCards(currentPlayer, state.currentTrick.leadSuit);
+      const playableCards = getPlayableCards(currentPlayer, state.currentTrick.leadSuit, state.trumpSuit, state.currentTrick.cards.map(c => c.card));
       const card = playableCards[0];
       machine.playCard(currentPlayer.id, card.id);
     }
@@ -118,7 +118,7 @@ describe('Game Flow Integration', () => {
           throw new Error(`Player ${currentPlayer.name} has no cards at trick ${trickNum + 1}, card ${cardNum + 1}`);
         }
 
-        const playableCards = getPlayableCards(currentPlayer, gameState.currentTrick.leadSuit);
+        const playableCards = getPlayableCards(currentPlayer, gameState.currentTrick.leadSuit, gameState.trumpSuit, gameState.currentTrick.cards.map(c => c.card));
         const card = playableCards[0];
         machine.playCard(currentPlayer.id, card.id);
       }

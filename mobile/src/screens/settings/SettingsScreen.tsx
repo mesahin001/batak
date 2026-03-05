@@ -17,7 +17,7 @@ import {
   Linking,
   TextInput,
 } from 'react-native';
-import { ActionSheetIOS } from 'react-native';
+// ActionSheetIOS import removed - causing Android import issues
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWallet } from '../../contexts/WalletContext';
@@ -33,6 +33,7 @@ interface NftReward {
   mintAddress: string | null;
   signature: string | null;
   mintedAt: string;
+  onChainMinted?: boolean; // true if actually minted on mainnet
 }
 
 const TIER_LABELS: Record<number, { emoji: string; name: string; color: string }> = {
@@ -111,26 +112,8 @@ export const SettingsScreen = () => {
   };
 
   const handleLanguagePress = () => {
-    const languages = Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => name);
-
-    if (Platform.OS === 'ios') {
-      // iOS: Use ActionSheetIOS for native feel
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...languages, t('app.cancel')],
-          cancelButtonIndex: languages.length,
-        },
-        async (buttonIndex) => {
-          if (buttonIndex < languages.length) {
-            const langCode = Object.keys(SUPPORTED_LANGUAGES)[buttonIndex] as SupportedLanguage;
-            await changeLanguage(langCode);
-            setCurrentLanguage(langCode);
-          }
-        }
-      );
-    } else {
-      setShowLanguagePicker(true);
-    }
+    // Show language picker modal for both iOS and Android
+    setShowLanguagePicker(true);
   };
 
   const handleSoundToggle = async (value: boolean) => {
@@ -296,9 +279,11 @@ export const SettingsScreen = () => {
                       <Text style={[styles.nftTierName, { color: tier.color }]}>
                         {t(`profile.${tier.name.toLowerCase()}`)} {t('settings.champion')}
                       </Text>
-                      <Text style={styles.nftDate}>Tournament #{nft.tournamentId.slice(0, 8)} · {date}</Text>
-                      {nft.mintAddress ? (
+                      <Text style={styles.nftDate}>Tournament #{String(nft.tournamentId).slice(0, 8)} · {date}</Text>
+                      {nft.onChainMinted && nft.mintAddress ? (
                         <Text style={styles.nftMint}>{nft.mintAddress.slice(0, 8)}...{nft.mintAddress.slice(-6)} ↗</Text>
+                      ) : nft.onChainMinted === false ? (
+                        <Text style={styles.nftMintFailed}>{t('settings.mintingFailed')}</Text>
                       ) : (
                         <Text style={styles.nftMintPending}>{t('settings.mintingPending')}</Text>
                       )}
@@ -776,6 +761,11 @@ const styles = StyleSheet.create({
   nftMintPending: {
     fontSize: 11,
     color: '#f59e0b',
+    fontStyle: 'italic',
+  },
+  nftMintFailed: {
+    fontSize: 11,
+    color: '#ef4444',
     fontStyle: 'italic',
   },
   // Username edit row

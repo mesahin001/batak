@@ -35,8 +35,8 @@ const TournamentResults: React.FC<TournamentResultsProps> = ({ results, onBackTo
     setClaimingReward(false);
   };
 
-  // Sort players by total score (lowest first - Batak rules)
-  const sortedPlayers = [...results.players].sort((a, b) => a.totalScore - b.totalScore);
+  // Sort players by total score (highest first)
+  const sortedPlayers = [...results.players].sort((a, b) => b.totalScore - a.totalScore);
 
   // Generate confetti pieces
   const confettiPieces = isWinner ? Array.from({ length: 20 }, (_, i) => i) : [];

@@ -1,5 +1,19 @@
 import { transact, Web3MobileWallet } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
+import {
+  Connection,
+  Transaction,
+  TransactionInstruction,
+  PublicKey,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from '@solana/web3.js';
 import { AsyncStorageService } from '../storage/AsyncStorageService';
+
+// Solana devnet connection for transaction submission
+const DEVNET_CONNECTION = new Connection('https://api.devnet.solana.com', 'confirmed');
+
+// SPL Memo program ID — used to write on-chain memos without transferring funds
+const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 /**
  * App identity for Solana Mobile Wallet Adapter
@@ -155,6 +169,67 @@ export class SeekerWalletService {
       console.error('Transaction signing failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Claim an NFT reward by signing a memo transaction on-chain.
+   * This proves wallet ownership and initiates the minting process.
+   * The memo contains the tournamentId so the reward can be verified on-chain.
+   *
+   * @returns transaction signature on Solana devnet
+   */
+  static async claimNftReward(tournamentId: string): Promise<string> {
+    const authToken = await AsyncStorageService.getWalletToken();
+    const publicKeyStr = await AsyncStorageService.getWalletPublicKey();
+
+    if (!authToken || !publicKeyStr) {
+      throw new Error('Wallet not authorized');
+    }
+
+    // Build a memo transaction: writes "batak:claim:<tournamentId>" on-chain.
+    // This is a real on-chain transaction that costs ~0.000005 SOL.
+    const walletPublicKey = new PublicKey(publicKeyStr);
+    const memoText = `batak:claim:${tournamentId}`;
+
+    const { blockhash, lastValidBlockHeight } = await DEVNET_CONNECTION.getLatestBlockhash();
+
+    const transaction = new Transaction({
+      feePayer: walletPublicKey,
+      recentBlockhash: blockhash,
+    }).add(
+      new TransactionInstruction({
+        programId: MEMO_PROGRAM_ID,
+        keys: [{ pubkey: walletPublicKey, isSigner: true, isWritable: false }],
+        data: Buffer.from(memoText, 'utf-8'),
+      })
+    );
+
+    // Sign via MWA (opens Seeker wallet for approval)
+    const signedTxs = await transact(async (wallet: Web3MobileWallet) => {
+      // Reauthorize to ensure session is fresh
+      await wallet.reauthorize({
+        identity: APP_IDENTITY,
+        auth_token: authToken,
+      });
+      return await wallet.signTransactions({ transactions: [transaction] });
+    });
+
+    const signedTx = signedTxs[0];
+
+    // Submit to devnet
+    const signature = await DEVNET_CONNECTION.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
+
+    // Wait for confirmation
+    await DEVNET_CONNECTION.confirmTransaction(
+      { signature, blockhash, lastValidBlockHeight },
+      'confirmed'
+    );
+
+    console.log(`[SeekerWallet] NFT claim transaction confirmed: ${signature}`);
+    return signature;
   }
 
   /**

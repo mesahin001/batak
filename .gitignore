@@ -29,6 +29,10 @@ npm-debug.log*
 .anchor/
 test-ledger/
 
+# Solana wallet backups (NEVER commit private keys!)
+wallet.json
+**/wallet.json
+
 # Remix compiler artifacts
 **/artifacts/
 **/artifacts/**

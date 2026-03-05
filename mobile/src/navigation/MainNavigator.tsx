@@ -6,6 +6,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LobbyScreen } from '../screens/lobby/LobbyScreen';
 import { LeaderboardScreen } from '../screens/lobby/LeaderboardScreen';
 import { ProfileScreen } from '../screens/settings/ProfileScreen';
@@ -35,6 +36,7 @@ const TabBarIcon = ({ name, focused }: { name: string; focused: boolean }) => {
 };
 
 export const MainNavigator = () => {
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -49,22 +51,22 @@ export const MainNavigator = () => {
       <Tab.Screen
         name="Lobby"
         component={LobbyScreen}
-        options={{ tabBarLabel: 'Lobby' }}
+        options={{ tabBarLabel: t('nav.lobby') }}
       />
       <Tab.Screen
         name="Leaderboard"
         component={LeaderboardScreen}
-        options={{ tabBarLabel: 'Leaderboard' }}
+        options={{ tabBarLabel: t('nav.leaderboard') }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ tabBarLabel: 'Profile' }}
+        options={{ tabBarLabel: t('nav.profile') }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ tabBarLabel: 'Settings' }}
+        options={{ tabBarLabel: t('nav.settings') }}
       />
     </Tab.Navigator>
   );

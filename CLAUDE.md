@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Mobile: React Native + Expo + Socket.IO Client
 - Auth: JWT + bcryptjs — **wallet-only** (email auth temporarily disabled; `LoginScreen`/`RegisterScreen` exist but not in `AuthNavigator`)
 - Database: SQLite via better-sqlite3 (player stats, game history, auth)
-- Blockchain: Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs)
+- Blockchain: Solana **Mainnet** (cNFT minting) + Devnet (game/auth) + Anchor + Metaplex Bubblegum
 
 **Production:**
 - Server: `https://batakci.xyz` (Hetzner VPS, Docker + Nginx + Cloudflare)
@@ -41,6 +41,19 @@ adb reverse tcp:8081 tcp:8081
 EXPO_PUBLIC_SOCKET_URL=https://batakci.xyz npx expo run:android
 # OR: edit mobile/.env EXPO_PUBLIC_SOCKET_URL=https://batakci.xyz then npx expo run:android
 
+# Build a STANDALONE APK (no Metro/USB required — JS bundle embedded)
+# Step 1: embed JS bundle into Android assets
+cd mobile && npx expo export:embed \
+  --platform android \
+  --entry-file index.ts \
+  --bundle-output android/app/src/main/assets/index.android.bundle \
+  --assets-dest android/app/src/main/res
+# Step 2: build APK (android/app/build.gradle must have debuggableVariants = [])
+cd android && ./gradlew assembleDebug
+# NOTE: mobile/android/app/build.gradle has debuggableVariants = [] so Gradle
+# embeds the bundle instead of expecting Metro. Without this, debug APK shows
+# "runtime not ready" when launched without USB.
+
 # Type-check
 cd server && npx tsc --noEmit
 cd client && npx tsc --noEmit
@@ -61,6 +74,18 @@ lsof -ti:3001 | xargs kill -9
 
 # Docker production stack
 docker-compose up -d
+
+# VPS: update .env vars and recreate container (MUST use up -d, not restart)
+# docker compose restart does NOT re-read .env — env vars are baked at container creation
+ssh -i ~/.ssh/id_ed25519 batak@91.99.218.37 "cd ~/app && docker compose up -d batak-server"
+
+# Create Merkle tree for cNFT minting
+cd server && npx tsx scripts/create-merkle-tree-umi.ts  # requires SOLANA_PRIVATE_KEY in .env
+
+# Database initialization
+cd server && npm run db:init    # Initialize SQLite database
+cd server && npm run create-wallet  # Create minter wallet for cNFTs
+cd server && npm run setup-tree    # Create Merkle tree for cNFT minting
 ```
 
 ## Architecture
@@ -164,10 +189,17 @@ Always use `useAuth()` hook from `client/src/auth/AuthContext.tsx` — never `us
 - The game server runs on **devnet**; SKR balance is read-only from mainnet. Keep these networks separate.
 
 **cNFT minting** (`server/src/solana/CNFTMinter.ts`):
-- Only activates when `MERKLE_TREE` env var is set
-- `uploadMetadata()`: uses nft.storage HTTP API if `NFT_STORAGE_KEY` is set; otherwise encodes metadata as data URI (works for demos)
+- Only activates when `MERKLE_TREE` env var is set; logs "cNFT Minting: Enabled" at startup
+- Uses **mainnet-beta** RPC (`SOLANA_RPC_URL=https://api.mainnet-beta.solana.com`)
+- Production Merkle tree: `EQPVVrkCnPh4FvzFxUwctCeDCi85bWRNBDjB7GvxUBo6` (maxDepth=14, mainnet)
+- `uploadMetadata()`: uses nft.storage HTTP API if `NFT_STORAGE_KEY` is set; otherwise encodes as data URI
 - `mintTournamentReward()` returns `{signature, assetId, metadataUri}` — all three stored in `nft_rewards` table
-- To enable real minting: fund a devnet wallet → set `SOLANA_PRIVATE_KEY` → run `npm run setup-tree` → set `MERKLE_TREE`
+- **Player ID encoding:** MWA wallet IDs may arrive as base64 (contains `+/=`), not base58. `mintRewardNFT()` normalizes automatically via `Buffer.from(addr, 'base64') → new PublicKey(bytes).toBase58()`. Always pass raw player ID; normalization is internal.
+
+**SolanaClient (`server/src/solana/SolanaClient.ts`):**
+- The `program` property is optional (`Program<any> | undefined`) — Anchor Program IDL is not currently loaded
+- CNFTMinter only needs `getPayer()`, not the Program
+- TournamentManager methods that use `program` will throw descriptive errors if called
 
 ### Bot AI (`server/src/bots/`)
 
@@ -180,6 +212,15 @@ Strategy pattern: `EasyStrategy` (random), `NormalStrategy` (hand analysis), `Ha
 - Bidding sheet: in-flow bottom panel (not fixed), max-height 34vh
 - Scoreboard: slide-in overlay from right (hamburger toggle)
 - Navbar hidden during gameplay (`appState === 'playing'` in App.tsx)
+
+**Mobile Navigator Structure (critical for cross-screen navigation):**
+```
+RootNavigator (Stack)
+├── Auth (AuthNavigator — shown when not authenticated)
+├── Main (MainNavigator — bottom tabs: Lobby, Leaderboard, Profile, Settings)
+└── Game (GameNavigator — stack: GameRoom, GameResult, TournamentResult)
+```
+To navigate from `Game` screens back to the lobby: use `navigation.navigate('Main')`, NOT `navigation.navigate('Lobby')`. `Lobby` is a tab _inside_ `Main` and cannot be navigated to directly from the `Game` stack.
 
 **Mobile (`mobile/src/screens/game/GameRoomScreen.tsx`):**
 - Absolute positioning for all game elements (~390px portrait target)
@@ -222,6 +263,40 @@ Key points:
 
 **Mobile:** Built-in `Animated` API only (`Animated.loop`, `Animated.sequence`). Turn glow and winner popup already implemented in `GameRoomScreen.tsx`. All animation properties must be GPU-accelerated (`transform`, `opacity`).
 
+### Android-Specific Gotchas
+
+**ActionSheetIOS Import Issue:**
+- `ActionSheetIOS` from 'react-native' causes "undefined is not a function" crash on Android
+- **Solution:** Use conditional imports (`Platform.OS === 'ios'`) or platform-specific modals
+- **Location:** `SettingsScreen.tsx` — uses `showLanguagePicker` modal for both platforms instead
+
+**zIndex and elevation:**
+- Android requires `elevation` along with `zIndex` for proper layering
+- Always set both values for layered components
+- **Example:** In `GameRoomScreen.tsx`, bidding overlay uses `{ zIndex: 50, elevation: 50 }`
+
+**Navigation gotchas:**
+- `Lobby` is a tab inside `MainNavigator`, not a root navigator
+- To navigate from Game screens to lobby: use `navigation.navigate('Main')`, NOT `navigation.navigate('Lobby')`
+
+### NFT Status Handling
+
+NFT display logic in `SettingsScreen.tsx` and `ProfileScreen.tsx`:
+
+- **`onChainMinted: true` + `mintAddress`** → Show Solscan link (green "Minted" badge)
+- **`onChainMinted: false`** → Show "Minting failed" (red badge)
+- **`onChainMinted: undefined` + no `mintAddress`** → Show "Minting on-chain..." (yellow badge)
+
+This pattern handles the three states of cNFT minting: pending, successful, and failed.
+
+### Data Type Handling
+
+**String() wrapper pattern for IDs:**
+- Database may return numbers for ID fields (e.g., `tournamentId`)
+- `tournamentId.slice()` fails if `tournamentId` is not a string
+- **Solution:** Use `String(nft.tournamentId).slice()` for safety
+- **Pattern:** Always wrap potentially non-string values in `String()` before calling string methods
+
 ## Key Files
 
 **Server:**
@@ -233,7 +308,7 @@ Key points:
 - `server/src/database/DatabaseManager.ts` — SQLite schema + queries
 - `server/src/auth/AuthService.ts` — JWT + bcrypt
 
-**Web Client:**
+**Web Client** (runs on port 5173, PWA-capable):
 - `client/src/components/GameRoom.tsx` + `GameRoom.css` — main game UI
 - `client/src/components/Lobby.tsx` — matchmaking + private room UI
 - `client/src/styles/tokens.css` — design tokens
@@ -249,7 +324,10 @@ Key points:
 - `mobile/src/screens/results/GameResultScreen.tsx`, `TournamentResultScreen.tsx` — post-game/tournament results
 - `mobile/src/screens/settings/SettingsScreen.tsx` — user info, NFT trophy gallery, language/sound, username edit (✏️ modal)
 - `mobile/src/screens/settings/ProfileScreen.tsx` — player stats, game history, NFT list
-- `mobile/src/services/i18n/translations/` — 11 language files (en, tr, de, es, fr, it, pt, ru, ja, zh, ar); use `useTranslation()` from `react-i18next`, never hardcode UI strings
+- `mobile/src/services/i18n/translations/` — 11 language files (en, tr, de, es, fr, it, pt, ru, ja, zh, ar)
+  - **Always use `useTranslation()` hook** from `react-i18next` — never hardcode UI strings
+  - **Add new translations to ALL language files**, not just en/tr
+  - Location: `mobile/src/services/i18n/translations/`
 - `mobile/src/services/storage/AsyncStorageService.ts` — auth token + settings persistence (used by SocketContext for reconnect)
 - `mobile/src/styles/tokens.ts` — design tokens
 - `mobile/src/contexts/AuthContext.tsx` — mobile auth context
@@ -276,6 +354,7 @@ Key points:
 - `client/src/phaser/` — legacy, unused, has compilation errors; ignore.
 - `server/src/database/migrate-to-postgres.ts` — `pg` module not found by `tsc`; pre-existing.
 - `mobile/src/screens/game/GameRoomScreen.tsx` — several pre-existing TS errors (variable used before declaration, `currentGameState` null checks, duplicate `elevation`); do not fix unless asked.
+- `ActionSheetIOS` from 'react-native' causes "undefined is not a function" crash on Android — use platform-specific modals or conditional imports instead.
 
 ## Environment Variables
 
@@ -287,8 +366,10 @@ Key points:
 
 **Web Client (`.env`):** `VITE_SERVER_URL=ws://localhost:3001`, `VITE_SOLANA_NETWORK=devnet`, `VITE_PROGRAM_ID`, `VITE_DEFAULT_BOT_DIFFICULTY=normal`, `VITE_DEFAULT_BOT_COUNT=0`
 
-**Mobile (`.env`):** `EXPO_PUBLIC_SOCKET_URL=ws://<your-machine-ip>:3001`, `EXPO_PUBLIC_DEFAULT_BOT_COUNT=0`
-Note: uses `ws://` prefix (not `http://`); if unset, falls back to hardcoded LAN IP in `App.tsx:13`
+**Mobile (`.env`):** `EXPO_PUBLIC_SOCKET_URL=https://batakci.xyz` (production) or `ws://<machine-ip>:3001` (local)
+- Use `https://` for production (Cloudflare terminates TLS; Socket.IO upgrades to WSS automatically)
+- Use `ws://` for local dev (plain WebSocket to local server)
+- If unset, falls back to hardcoded LAN IP in `App.tsx:13`
 
 **Mobile dependencies note:** `@solana/web3.js` is used in `SkrService.ts` and `SeekerWalletService.ts` for balance queries and transaction building. `SkrService` uses **mainnet** RPC; everything else uses devnet.
 
@@ -297,4 +378,6 @@ Note: uses `ws://` prefix (not `http://`); if unset, falls back to hardcoded LAN
 - **Game state:** in-memory only (lost on server restart)
 - **Persistent:** SQLite — player stats, game history, auth records, NFT rewards
 - **Solana Program ID (Devnet):** `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h`
+- **cNFT Merkle Tree (Mainnet):** `EQPVVrkCnPh4FvzFxUwctCeDCi85bWRNBDjB7GvxUBo6`
 - **Docker:** `docker-compose.yml` — batak-server, postgres, redis, nginx
+- **VPS IP:** `91.99.218.37` (Hetzner); app lives at `~/app/`; env at `~/app/.env`

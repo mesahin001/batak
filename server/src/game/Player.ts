@@ -3,7 +3,8 @@
  * Oyuncu oluşturma, kart dağıtma, el yönetimi ve trik kazanma işlemleri.
  */
 
-import { PlayerState, Card, Bid, PlayerType } from '../types/game.js';
+import { PlayerState, Card, Bid, PlayerType, Suit } from '../types/game.js';
+import { canPlayCard } from './Card.js';
 export function createPlayer(
   id: string,
   name: string,
@@ -105,24 +106,18 @@ export function playerHasSuit(player: PlayerState, suit: string): boolean {
 }
 
 /**
- * Get player's playable cards based on lead suit
+ * Get player's playable cards based on lead suit, trump, and current trick.
+ * Enforces must-follow, must-raise, and must-trump rules.
  */
-export function getPlayableCards(player: PlayerState, leadSuit: string | null): Card[] {
-  if (!leadSuit) {
-    // Any card can be played when leading
-    return [...player.hand];
-  }
-
-  // Check if player has lead suit
-  const hasLeadSuit = playerHasSuit(player, leadSuit);
-
-  if (hasLeadSuit) {
-    // Must follow lead suit
-    return player.hand.filter(card => card.suit === leadSuit);
-  }
-
-  // Can play any card if void in lead suit
-  return [...player.hand];
+export function getPlayableCards(
+  player: PlayerState,
+  leadSuit: Suit | string | null,
+  trumpSuit?: Suit | null,
+  currentTrickCards?: Card[]
+): Card[] {
+  return player.hand.filter(card =>
+    canPlayCard(card, player.hand, leadSuit as Suit | null, trumpSuit, currentTrickCards)
+  );
 }
 
 /**

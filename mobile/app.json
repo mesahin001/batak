@@ -33,7 +33,7 @@
       "statusBar": {
         "barStyle": "light-content",
         "backgroundColor": "#1a1a2e",
-        "hidden": false
+        "hidden": true
       }
     },
     "web": {

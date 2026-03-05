@@ -265,8 +265,8 @@ export interface Ranking {
 }
 
 export function calculateRankings(players: PlayerState[]): Ranking[] {
-  // Sort by lowest score (Batak rules)
-  const sorted = [...players].sort((a, b) => a.totalScore - b.totalScore);
+  // Sort by highest score
+  const sorted = [...players].sort((a, b) => b.totalScore - a.totalScore);
 
   return sorted.map((player, index) => ({
     playerId: player.id,

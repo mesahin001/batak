@@ -26,6 +26,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GameClientState, RoundCompleteData, GameState } from '../../types/game';
 import { COLORS, SHADOWS, RADIUS } from '../../styles/tokens';
 import { soundManager } from '../../utils/SoundManager';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ interface TrickCard {
 }
 
 export const GameRoomScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const { socket } = useSocket();
@@ -224,14 +226,14 @@ export const GameRoomScreen = () => {
     const handleGameComplete = (data: any) => {
       clearPlayingState();
       soundManager.play('game-complete'); // Sound effect (haptic feedback)
-      // Navigate to result screen
-      navigation.navigate('GameResult' as never, { roomId } as never);
+      // Navigate to result screen with game completion data
+      navigation.navigate('GameResult' as never, { roomId, gameData: data } as never);
     };
 
     const handleError = (error: any) => {
       clearPlayingState();
-      const errorMessage = error?.message || 'Kart oynatılamadı. Lütfen yeniden dene.';
-      Alert.alert('Hata', errorMessage);
+      const errorMessage = error?.message || t('game.cardPlayError');
+      Alert.alert(t('common.error'), errorMessage);
     };
 
     socket.on('game_state_update', handleGameStateUpdate);
@@ -329,12 +331,12 @@ export const GameRoomScreen = () => {
 
   const handleLeaveGame = () => {
     Alert.alert(
-      'Oyundan Ayrıl',
-      'Oyundan ayrılmak istediğine emin misin?',
+      t('game.leaveGame'),
+      t('game.leaveConfirm'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('app.cancel'), style: 'cancel' },
         {
-          text: 'Ayrıl',
+          text: t('game.leave'),
           style: 'destructive',
           onPress: () => {
             // Notify server that player is leaving
@@ -482,7 +484,7 @@ export const GameRoomScreen = () => {
   const formatPlayerBid = (pid: string) => {
     const bid = getPlayerBid(pid);
     if (!bid) return null;
-    if (bid.amount === 0) return 'Pas';
+    if (bid.amount === 0) return t('game.pass');
     if (currentGameState.gameMode === 'ihaleli_batak' && bid.suit && bid.suit !== 'spades') {
       return `${bid.amount}${getSuitSymbol(bid.suit)}`;
     }
@@ -506,7 +508,7 @@ export const GameRoomScreen = () => {
       <View style={styles.loadingContainer}>
         <StatusBar hidden={true} />
         <ActivityIndicator size="large" color="#4ade80" />
-        <Text style={styles.loadingText}>Oyun yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('game.loadingGame')}</Text>
       </View>
     );
   }
@@ -517,7 +519,7 @@ export const GameRoomScreen = () => {
         <StatusBar hidden={true} />
         <Text style={styles.errorText}>{connectionError}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.retryButtonText}>Geri Dön</Text>
+          <Text style={styles.retryButtonText}>{t('game.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -527,7 +529,7 @@ export const GameRoomScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar hidden={true} />
-        <Text style={styles.loadingText}>Oyun durumu yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('game.loadingState')}</Text>
       </View>
     );
   }
@@ -574,7 +576,7 @@ export const GameRoomScreen = () => {
         <Text style={styles.oppIcon}>{player.type === 'bot' ? '🤖' : '👤'}</Text>
         <Text style={styles.oppName} numberOfLines={1}>{player.name}</Text>
         <View style={styles.oppStats}>
-          <Text style={styles.oppTricks}>{player.tricksWon ?? 0}el</Text>
+          <Text style={styles.oppTricks}>{player.tricksWon ?? 0}{t('game.trickAbbr')}</Text>
           {bidText && (
             <>
               <Text style={styles.oppStatsSeparator}> • </Text>
@@ -651,11 +653,11 @@ export const GameRoomScreen = () => {
               <Text style={{ color: getSuitColor(currentGameState.trumpSuit) }}>
                 {getSuitSymbol(currentGameState.trumpSuit)}
               </Text>
-              {' '}Koz
+              {' '}{t('game.trump')}
             </Text>
           )}
-          <Text style={styles.headerTrickCount}>{currentGameState.tricks ?? 0}.el</Text>
-          <Text style={styles.headerState}>{currentGameState.state}</Text>
+          <Text style={styles.headerTrickCount}>{currentGameState.tricks ?? 0}{t('game.trickAbbr')}</Text>
+          <Text style={styles.headerState}>{t('game.' + currentGameState.state, { defaultValue: currentGameState.state })}</Text>
         </View>
         <TouchableOpacity
           style={styles.hamburgerButton}
@@ -707,11 +709,11 @@ export const GameRoomScreen = () => {
           {isScoring ? (
             <View style={styles.scoringOverlay}>
               <ActivityIndicator size="large" color="#4ade80" />
-              <Text style={styles.scoringText}>Skor hesaplanıyor...</Text>
+              <Text style={styles.scoringText}>{t('game.calculating')}</Text>
             </View>
           ) : isBidding ? (
             <View style={[styles.trickStatus, isMyTurn && styles.myTurn]}>
-              <Text style={styles.trickStatusText}>İhale yapılıyor...</Text>
+              <Text style={styles.trickStatusText}>{t('game.biddingInProgress')}</Text>
             </View>
           ) : trickCards.length > 0 ? (
             <View style={[styles.trickSlots, isCollectingTrick && styles.trickCollecting]}>
@@ -720,7 +722,7 @@ export const GameRoomScreen = () => {
           ) : (
             <View style={[styles.trickStatus, isMyTurn && styles.myTurn]}>
               <Text style={styles.trickStatusText}>
-                {isMyTurn ? 'Sıra sende' : `${currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || 'Rakip'} oynuyor`}
+                {isMyTurn ? t('game.yourTurn') : t('game.playerPlaying', { name: currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || '' })}
               </Text>
             </View>
           )}
@@ -751,17 +753,17 @@ export const GameRoomScreen = () => {
             <Text style={styles.infoValueName} numberOfLines={1}>{myPlayer?.name}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>El:</Text>
+            <Text style={styles.infoLabel}>{t('game.tricksLabel')}</Text>
             <Text style={styles.infoValue}>{myPlayer?.tricksWon ?? 0}</Text>
           </View>
           {formatPlayerBid(myPlayer?.id || '') && (
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>İhale:</Text>
+              <Text style={styles.infoLabel}>{t('game.bidLabel')}</Text>
               <Text style={styles.infoValue}>{formatPlayerBid(myPlayer?.id || '')}</Text>
             </View>
           )}
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>S:</Text>
+            <Text style={styles.infoLabel}>{t('game.scoreLabel')}</Text>
             <Text style={styles.infoValue}>{myPlayer?.totalScore ?? 0}</Text>
           </View>
         </View>
@@ -795,13 +797,13 @@ export const GameRoomScreen = () => {
       {/* ===== Bidding Overlay (Above all) ===== */}
       {isBidding && (
         <View style={styles.biddingOverlay}>
-          <Text style={styles.bidHeader}>İhale - Kaç El?</Text>
+          <Text style={styles.bidHeader}>{t('game.biddingTitle')}</Text>
           <Text style={styles.bidInfo}>
             {currentGameState.gameMode === 'koz_maca'
-              ? 'Koz Maça: ♠ koz, sadece el sayısı'
+              ? t('game.kozMacaBidHint')
               : selectedSuit
-                ? `${getSuitSymbol(selectedSuit)} koz — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
-                : 'Önce koz rengi seç'
+                ? t('game.minBidHint', { suit: getSuitSymbol(selectedSuit), min: getHighestBidForSuit(selectedSuit) + 1 })
+                : t('game.selectTrumpSuit')
             }
           </Text>
 
@@ -855,12 +857,12 @@ export const GameRoomScreen = () => {
                   activeOpacity={0.6}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text style={styles.passButtonText}>Pas Geç</Text>
+                  <Text style={styles.passButtonText}>{t('game.passBid')}</Text>
                 </TouchableOpacity>
               </View>
               {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
                 <Text style={styles.highestBidText}>
-                  En Yüksek: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
+                  {t('game.highestBid', { amount: getHighestBid(), suit: selectedSuit ? getSuitSymbol(selectedSuit) : '♠' })}
                 </Text>
               )}
             </>
@@ -882,7 +884,7 @@ export const GameRoomScreen = () => {
             onPress={() => setShowScoreboard(false)}
           />
           <View style={styles.scoreboardPanel}>
-            <Text style={styles.scoreboardTitle}>Skorlar</Text>
+            <Text style={styles.scoreboardTitle}>{t('game.scores')}</Text>
             <ScrollView style={styles.scoreboardList}>
               {currentGameState.players?.map((player) => (
                 <View key={player.id} style={styles.sbPlayer}>
@@ -890,12 +892,12 @@ export const GameRoomScreen = () => {
                     {player.name}
                   </Text>
                   <View style={styles.sbScores}>
-                    <Text style={styles.sbRound}>Round: {player.score ?? 0}</Text>
+                    <Text style={styles.sbRound}>{t('game.roundScore')} {player.score ?? 0}</Text>
                     {player.totalScore !== undefined && (
-                      <Text style={styles.sbTotal}>Total: {player.totalScore}</Text>
+                      <Text style={styles.sbTotal}>{t('game.totalScore')}: {player.totalScore}</Text>
                     )}
                   </View>
-                  <Text style={styles.sbTricks}>{player.tricksWon} el kazandı</Text>
+                  <Text style={styles.sbTricks}>{t('game.tricksWonLabel', { count: player.tricksWon })}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -905,7 +907,7 @@ export const GameRoomScreen = () => {
               activeOpacity={0.6}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.leaveButtonText}>Oyundan Çık</Text>
+              <Text style={styles.leaveButtonText}>{t('game.leaveGame')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -920,13 +922,13 @@ export const GameRoomScreen = () => {
       >
         <View style={styles.roundCompleteBackdrop}>
           <View style={styles.roundCompleteContent}>
-            <Text style={styles.roundCompleteTitle}>Round {roundCompleteData?.roundNumber} Bitti!</Text>
+            <Text style={styles.roundCompleteTitle}>{t('game.roundComplete', { number: roundCompleteData?.roundNumber })}</Text>
             <Text style={styles.roundSubTitle}>
-              Round {roundCompleteData?.roundNumber} / {roundCompleteData?.totalRounds}
+              {t('game.roundProgress', { number: roundCompleteData?.roundNumber, total: roundCompleteData?.totalRounds })}
             </Text>
 
             <View style={styles.roundScores}>
-              <Text style={styles.roundScoresTitle}>Skorlar</Text>
+              <Text style={styles.roundScoresTitle}>{t('game.scores')}</Text>
               <ScrollView style={styles.roundScoresList}>
                 {roundCompleteData?.players.map((player) => (
                   <View key={player.id} style={styles.roundScoreItem}>
@@ -944,11 +946,11 @@ export const GameRoomScreen = () => {
                 activeOpacity={0.7}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.nextRoundButtonText}>Round {currentRound + 1} Başlat</Text>
+                <Text style={styles.nextRoundButtonText}>{t('game.startRound', { number: currentRound + 1 })}</Text>
               </TouchableOpacity>
             ) : (
               <View style={styles.roundFinalMessage}>
-                <Text style={styles.roundFinalText}>Oyun bitti — Skorlar hesaplanıyor...</Text>
+                <Text style={styles.roundFinalText}>{t('game.gameFinishing')}</Text>
               </View>
             )}
           </View>

@@ -5,6 +5,7 @@
 
 import { Card, Suit, PlayerState } from '../../types/game.js';
 import { analyzeHand } from '../HandAnalyzer.js';
+import { getPlayableCards } from '../../game/Player.js';
 export class HardStrategy {
   private cardsPlayed: Map<string, Card[]> = new Map();
   private trumpsPlayed: Card[] = [];
@@ -109,7 +110,7 @@ export class HardStrategy {
     trumpSuit: Suit | null,
     currentTrick: Card[]
   ): Card {
-    const validCards = this.getValidCards(player, leadSuit);
+    const validCards = getPlayableCards(player, leadSuit, trumpSuit, currentTrick);
 
     // Leading
     if (!leadSuit || currentTrick.length === 0) {
@@ -261,23 +262,6 @@ export class HardStrategy {
     if (card2IsLead && !card1IsLead) return false;
 
     return card1.rank > card2.rank;
-  }
-
-  /**
-   * Get valid cards
-   */
-  private getValidCards(player: PlayerState, leadSuit: Suit | null): Card[] {
-    if (!leadSuit) {
-      return [...player.hand];
-    }
-
-    const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
-
-    if (hasLeadSuit) {
-      return player.hand.filter(c => c.suit === leadSuit);
-    }
-
-    return [...player.hand];
   }
 
   /**

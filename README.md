@@ -1,453 +1,273 @@
-# Batak Tournament Game - NFT Rewards on Solana
+# Batak Tournament — Solana Mobile Hackathon Submission
 
-A complete multiplayer Turkish Batak card game with Compressed NFT (cNFT) rewards on Solana, targeting Solana Seeker (Android) via PWA→APK approach.
+> **Turkish Trick-Taking Card Game · cNFT Trophies · SKR Staking · Seeker Wallet**
 
-## Table of Contents
+[![Hackathon](https://img.shields.io/badge/Monolith%20Hackathon-Solana%20Mobile%20+%20Radiants-9945FF)](https://solanamobile.radiant.nexus/?panel=hackathon)
+[![Platform](https://img.shields.io/badge/Platform-Android%20(Seeker)-green)](https://seeker.solana.com)
+[![Network](https://img.shields.io/badge/Network-Solana%20Devnet-14F195)](https://explorer.solana.com/?cluster=devnet)
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Game Rules](#game-rules)
-- [Solana Integration](#solana-integration)
-- [Development](#development)
-- [Deployment](#deployment)
-- [APK Build](#apk-build)
-- [Environment Variables](#environment-variables)
-- [Testing](#testing)
+---
 
-## Features
+## What is Batak?
 
-- **Multiplayer Gameplay:** 4 players per table (humans + bots)
-- **Bot AI:** Three difficulty levels (Easy, Normal, Hard)
-- **Server-Authoritative:** All game logic validated on server
-- **cNFT Rewards:** Compressed NFTs for tournament winners (~100x cheaper)
-- **Mobile-First:** Optimized for Android with Solana Seeker support
-- **PWA Support:** Install as app on mobile devices
+Batak is the most popular card game in Turkey — a competitive trick-taking game for 4 players. Think of it as Turkey's answer to Spades, with complex bidding and high social stakes.
+
+**Batak Tournament** brings it to Solana Mobile with:
+- 🃏 **Full multiplayer** (humans + smart bots)
+- 🏆 **cNFT trophies** minted to winners' wallets on Solana
+- ◎ **SKR staking** — stake SKR tokens, winner takes the pot
+- 👛 **Seeker wallet** via Mobile Wallet Adapter (one-tap login + tx signing)
+
+---
+
+## Why Solana? (The Pitch)
+
+Traditional multiplayer games store achievements in their database. If the service shuts down, your trophies vanish.
+
+**Batak Tournament solves this in three concrete ways:**
+
+1. **Your wallet = your permanent identity.**
+   One Seeker wallet works across any device. No account to create. Your game history is tied to your public key — not our database. Hardware-secured on Seeker.
+
+2. **Your trophies are real digital assets.**
+   When you win a tournament, you receive a **compressed NFT (cNFT)** on Solana. It's cryptographically yours — verifiable by anyone, survives even if Batak shuts down.
+
+3. **Trustless tournament stakes with SKR.**
+   Using Solana Mobile's native SKR token, players stake before entering high-stakes rooms. The contract holds it — not us. Winners receive the pot automatically.
+
+---
+
+## Screenshots
+
+| Lobby | Gameplay | NFT Trophy | SKR Stake |
+|-------|----------|------------|-----------|
+| _(screenshot)_ | _(screenshot)_ | _(screenshot)_ | _(screenshot)_ |
+
+---
+
+## Solana Integration
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| MWA Login (Seeker) | ✅ Live | `SeekerWalletService.authorize()` |
+| JWT Auth via wallet | ✅ Live | `auth_wallet` socket event |
+| cNFT minting (game win) | ✅ Code ready | Requires `MERKLE_TREE` + funded wallet |
+| Claim via MWA transaction | ✅ Live | Memo tx on devnet proves ownership |
+| NFT Gallery (Settings) | ✅ Live | Shows trophies with Solscan links |
+| SKR balance display | ✅ Live | Mainnet SPL token query |
+| SKR tournament staking | ✅ Live | MWA approval → room creation |
+| Solana Program (Anchor) | ✅ Deployed | `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h` |
+
+---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| **Client** | React + Phaser.js + Socket.IO Client |
+| Layer | Technology |
+|-------|-----------|
+| **Mobile** | React Native + Expo + Socket.IO Client |
+| **Wallet** | `@solana-mobile/mobile-wallet-adapter-protocol-web3js` |
 | **Server** | Node.js + TypeScript + Express + Socket.IO |
-| **Blockchain** | Solana Devnet + Anchor + Metaplex Bubblegum |
-| **Packaging** | Bubblewrap (PWA → APK) |
+| **Blockchain** | Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs) |
+| **Token** | SKR — `SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3` (mainnet) |
+| **Database** | SQLite (game history, NFT rewards, auth) |
 
-## Architecture
-
-```
-┌─────────────────┐    WebSocket    ┌─────────────────┐
-│   React +       │  ────────────▶  │   Node.js       │
-│   Phaser PWA    │                  │   Game Server   │
-└─────────────────┘                  └────────┬────────┘
-      │                                     │
-      │                                     ▼
-      │ Solana Tx                    ┌──────────────┐
-      ▼                              │   Solana     │
-┌─────────────┐                      │   Devnet     │
-│   Solana    │                      └──────────────┘
-│   Seeker    │                              │
-│   Wallet    │                              ▼
-└─────────────┘                      ┌──────────────┐
-                                     │  Anchor +    │
-                                     │  Bubblegum   │
-                                     │  (cNFTs)     │
-                                     └──────────────┘
-```
-
-## Project Structure
-
-```
-batak/
-├── client/                      # PWA Client
-│   ├── src/
-│   │   ├── components/          # React components
-│   │   │   ├── WalletConnect.tsx
-│   │   │   ├── Lobby.tsx
-│   │   │   ├── GameRoom.tsx
-│   │   │   └── TournamentResults.tsx
-│   │   ├── phaser/              # Game engine
-│   │   │   ├── scenes/
-│   │   │   │   └── GameScene.ts
-│   │   │   ├── objects/
-│   │   │   │   ├── Card.ts
-│   │   │   │   └── PlayerArea.ts
-│   │   │   └── utils/
-│   │   ├── solana/              # Wallet integration
-│   │   │   └── WalletContext.tsx
-│   │   ├── socket/              # WebSocket client
-│   │   │   └── SocketContext.tsx
-│   │   └── types/               # TypeScript types
-│   └── package.json
-│
-├── server/                      # Game Server
-│   ├── src/
-│   │   ├── game/                # Game logic
-│   │   │   ├── GameStateMachine.ts
-│   │   │   ├── Card.ts
-│   │   │   ├── Deck.ts
-│   │   │   ├── Player.ts
-│   │   │   ├── TurnValidator.ts
-│   │   │   └── Scoring.ts
-│   │   ├── bots/                # AI opponents
-│   │   │   ├── BatakBot.ts
-│   │   │   ├── HandAnalyzer.ts
-│   │   │   └── strategies/
-│   │   │       ├── EasyStrategy.ts
-│   │   │       ├── NormalStrategy.ts
-│   │   │       └── HardStrategy.ts
-│   │   ├── socket/              # WebSocket server
-│   │   │   └── SocketServer.ts
-│   │   ├── solana/              # Blockchain integration
-│   │   │   ├── SolanaClient.ts
-│   │   │   ├── TournamentManager.ts
-│   │   │   ├── CNFTMinter.ts
-│   │   │   └── MerkleTreeManager.ts
-│   │   └── server.ts            # Entry point
-│   └── package.json
-│
-├── solana-program/              # Anchor Smart Contract
-│   └── programs/
-│       └── batak-tournament/
-│           └── src/
-│               ├── lib.rs
-│               ├── state.rs
-│               ├── instructions/
-│               └── error.rs
-│
-├── metadata/                    # NFT Metadata
-│   ├── nft-metadata.json
-│   └── ai-prompts.txt           # Image generation prompts
-│
-├── scripts/                     # Utility Scripts
-│   ├── bubblewrap-build.sh      # APK build
-│   ├── deploy.sh                # Deployment
-│   └── local-dev.sh             # Local development
-│
-└── README.md
-```
+---
 
 ## Quick Start
 
 ### Prerequisites
 
-```bash
-# Node.js 18+
-node --version
+- Node.js 18+
+- Android device with [Seeker wallet](https://seeker.solana.com) (or emulator)
+- ADB for device connection
 
-# Rust (for Anchor)
-rustc --version
-
-# Anchor CLI
-anchor --version
-
-# Solana CLI
-solana --version
-```
-
-### Installation
+### 1. Clone & Install
 
 ```bash
-# Clone repository
-git clone https://github.com/your-username/batak.git
+git clone https://github.com/your-org/batak
 cd batak
 
-# Install dependencies (using the helper script)
-chmod +x scripts/local-dev.sh
-./scripts/local-dev.sh
-
-# Or manually:
+# Server
 cd server && npm install
-cd ../client && npm install
+
+# Mobile
+cd ../mobile && npm install
 ```
 
-### Local Development
+### 2. Configure Environment
 
 ```bash
-# Start everything with the helper script
-./scripts/local-dev.sh
+# server/.env
+cp server/.env.example server/.env
+```
 
-# Or manually:
-# Terminal 1 - Server
+Edit `server/.env`:
+```env
+PORT=3001
+JWT_SECRET=your-secret-here
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_PRIVATE_KEY=      # Optional: funded devnet keypair for cNFT minting
+MERKLE_TREE=             # Optional: run 'npm run setup-tree' to create one
+NFT_STORAGE_KEY=         # Optional: free key from https://nft.storage
+PROGRAM_ID=5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h
+```
+
+```bash
+# mobile/.env
+EXPO_PUBLIC_SERVER_URL=http://YOUR_LOCAL_IP:3001
+```
+
+### 3. Run
+
+```bash
+# Terminal 1: Start server
 cd server && npm run dev
 
-# Terminal 2 - Client
-cd client && npm run dev
+# Terminal 2: Start mobile (Expo)
+cd mobile && npm start
+# Press 'a' for Android
 ```
 
-## Game Rules
-
-### Batak Overview
-
-Batak is a Turkish trick-taking card game for 4 players. The game has two main variants:
-
-### Game Modes
-
-**Koz Maça (Trump Jack):**
-- Spades (♠) is always trump
-- Players bid only trick count (1-13)
-- Highest cumulative score wins
-- Play all rounds (no early ending)
-
-**İhaleli Batak (Auction Batak):**
-- Players bid both suit (as trump) AND trick count
-- Lowest cumulative score wins
-- First to reach ≤1 wins early
-- More competitive/strategic
-
-### Game Flow
-
-1. **LOBBY:** Players wait for 4 participants (humans + bots)
-2. **DEALING:** Each player receives 13 cards
-3. **BIDDING:** Players bid number of tricks (1-13)
-   - Koz Maça: Bid trick count only (spades always trump)
-   - İhaleli Batak: Select suit, then bid trick count
-4. **PLAYING:** 13 tricks are played
-5. **SCORING:** Scores calculated based on bids and tricks won
-
-### Card Ranking
-
-High to Low: **A → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2**
-
-### Play Rules
-
-- Must follow suit if possible
-- Trump suit beats non-trump
-- Highest trump wins, or highest card of lead suit
-
-### Scoring
-
-| Result | Score Formula | Example |
-|--------|--------------|---------|
-| Made bid or MORE | `10 × bid + (tricks_won - bid)` | Bid 7, take 9 → 72 points |
-| Failed bid | `-10 × bid` | Bid 7, take 5 → -70 points |
-| No bid (passed) | `tricks_won × 10` | No bid, take 3 → 30 points |
-| El almaz (no tricks) | +50 if 0 tricks, -50 if any | Success → +50 |
-
-### Multi-Round Games
-
-- Games consist of 5, 7, 9, or 11 rounds
-- Cumulative score tracked across all rounds
-- İhaleli Batak: First to ≤1 wins immediately
-- Koz Maça: Highest score after all rounds wins
-
-## Solana Integration
-
-### Compressed NFTs (cNFT)
-
-Uses Metaplex Bubblegum for cost-effective minting:
-
-| Feature | cNFT | Standard NFT |
-|---------|------|--------------|
-| Cost per mint | ~$0.0001 | ~$0.02 |
-| Storage | Merkle tree | Individual account |
-| Transfer | Standard | Standard |
-
-### Instructions
-
-| Instruction | Purpose |
-|-------------|---------|
-| `create_tournament` | Create new tournament |
-| `register_player` | Register player |
-| `submit_match_result` | Submit verified result |
-| `mint_compressed_nft_reward` | Mint cNFT to winner |
-
-### NFT Metadata
-
-```json
-{
-  "name": "Batak Champion 🥇 - Season 1",
-  "symbol": "BTK",
-  "description": "Winner of Tournament #1234",
-  "attributes": [
-    { "trait_type": "Tournament ID", "value": "1234" },
-    { "trait_type": "Date", "value": "2025-01-26" },
-    { "trait_type": "Rank", "value": "1st Place" },
-    { "trait_type": "Prize Tier", "value": "Gold" }
-  ]
-}
-```
-
-## Development
-
-### Server Development
+### 4. Connect Physical Device
 
 ```bash
-cd server
-npm run dev    # Start with hot reload
-npm run build  # Build TypeScript
-npm test       # Run tests
+adb reverse tcp:8081 tcp:8081   # Metro
+adb reverse tcp:3001 tcp:3001   # Game server
 ```
-
-### Client Development
-
-```bash
-cd client
-npm run dev     # Start Vite dev server
-npm run build   # Build for production
-npm run preview # Preview production build
-```
-
-### Solana Program Development
-
-```bash
-cd solana-program
-anchor build      # Build program
-anchor test       # Run tests
-anchor deploy     # Deploy to devnet
-```
-
-## Deployment
-
-### Server (Render/Railway)
-
-1. Push code to GitHub
-2. Connect repository to Render/Railway
-3. Configure:
-   - **Root:** `./server`
-   - **Build:** `npm run build`
-   - **Start:** `npm run start`
-4. Set environment variables
-
-### Client (Vercel)
-
-```bash
-cd client
-npm install -g vercel
-vercel --prod
-```
-
-Or via Vercel dashboard:
-1. Import GitHub repository
-2. Configure:
-   - **Root:** `./client`
-   - **Build:** `npm run build`
-   - **Output:** `./dist`
-
-### Solana Program
-
-```bash
-# Configure for devnet
-solana config set --url devnet
-
-# Deploy
-anchor deploy
-
-# Save program ID
-export PROGRAM_ID=$(anchor keys list)
-```
-
-## APK Build
-
-### Prerequisites
-
-```bash
-# Install Bubblewrap
-npm install -g @bubblewrap/cli
-
-# Install Java JDK 11+
-java -version
-```
-
-### Build Steps
-
-```bash
-# Make script executable
-chmod +x scripts/bubblewrap-build.sh
-
-# Build APK (requires client running on localhost:5173)
-./scripts/bubblewrap-build.sh
-```
-
-### Solana Seeker Integration
-
-The APK includes:
-- Deep-linking support for wallet connection
-- Related application declaration
-- Mobile-optimized UI
-
-## Environment Variables
-
-### Server (.env)
-
-```bash
-PORT=3001
-
-# Solana Configuration
-SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_PRIVATE_KEY=[base58 encoded key]
-SOLANA_NETWORK=devnet
-
-# Program Configuration
-PROGRAM_ID=[your program ID]
-MERKLE_TREE=[merkle tree address]
-
-# Game Configuration
-MAX_PLAYERS=4
-DEFAULT_BOT_DIFFICULTY=normal
-GAME_TIMEOUT=300000
-```
-
-### Client (.env)
-
-```bash
-VITE_SERVER_URL=ws://localhost:3001
-VITE_SOLANA_NETWORK=devnet
-VITE_PROGRAM_ID=[your program ID]
-VITE_DEFAULT_BOT_DIFFICULTY=normal
-VITE_DEFAULT_BOT_COUNT=3
-```
-
-## Testing
-
-### Unit Tests
-
-```bash
-# Server tests
-cd server && npm test
-
-# Solana program tests
-cd solana-program && anchor test
-```
-
-### Manual Testing
-
-1. **Local Multiplayer:** Open 4 browser tabs
-2. **Bot Games:** 1 human + 3 bots
-3. **cNFT Minting:** Test on devnet
-4. **APK Testing:** Install on Android device
-
-### Test Checklist
-
-- [ ] Wallet connection (Phantom, Solana Seeker)
-- [ ] Matchmaking with bots
-- [ ] Bidding phase
-- [ ] Card play validation
-- [ ] Scoring calculation
-- [ ] cNFT minting
-- [ ] APK installation
-- [ ] Deep-linking
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/your-username/batak/issues)
-- Discord: [Join our Discord](https://discord.gg/batak)
 
 ---
 
-**Built with ❤️ for the Solana ecosystem**
+## Enable Real cNFT Minting (Optional)
+
+To mint actual compressed NFTs to winners:
+
+1. **Create a devnet wallet and fund it:**
+   ```bash
+   solana-keygen new -o server/wallet.json
+   solana airdrop 2 $(solana-keygen pubkey server/wallet.json) --url devnet
+   ```
+
+2. **Export the private key** and set in `.env`:
+   ```env
+   SOLANA_PRIVATE_KEY=[1,2,3,...] # JSON array from wallet.json
+   ```
+
+3. **Create a Merkle tree:**
+   ```bash
+   cd server && npm run setup-tree
+   # Outputs: MERKLE_TREE=<address> — add this to .env
+   ```
+
+4. **(Optional) Get a free nft.storage API key** at https://nft.storage and set `NFT_STORAGE_KEY` for real IPFS metadata hosting.
+
+When `MERKLE_TREE` is configured, cNFT minting activates automatically at game completion.
+
+---
+
+## Game Modes
+
+| Mode | Rules | Winning |
+|------|-------|---------|
+| **Koz Maça** | Spades always trump; bid trick count | Highest cumulative score |
+| **İhaleli Batak** | Bid suit + amount; must beat current high bid | First to ≤1 points wins |
+
+**Scoring:** Made bid → `10×bid + (tricks−bid)`. Failed → `−10×bid`.
+
+---
+
+## Architecture
+
+```
+Mobile (React Native)
+  ↓ Socket.IO WebSocket
+Server (Node.js + TypeScript)
+  ├── GameStateMachine  ← all game logic, server-authoritative
+  ├── Matchmaker        ← queue, private rooms, SKR rooms
+  ├── CNFTMinter        ← Bubblegum compressed NFT minting
+  └── DatabaseManager   ← SQLite (stats, NFTs, auth)
+  ↓ on game complete
+Solana Devnet
+  └── mintCompressedNft → winner's wallet
+```
+
+**Player identification:** Seeker wallet `publicKey`, not socket ID. Reconnects are seamless.
+
+---
+
+## APK Build
+
+```bash
+cd mobile/android
+./gradlew assembleDebug
+
+# Install on device
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+---
+
+## Project Structure
+
+```
+batak/
+├── server/
+│   ├── src/
+│   │   ├── game/           # GameStateMachine, TurnValidator, Scoring
+│   │   ├── socket/         # SocketServer, event handlers
+│   │   ├── matchmaker/     # Queue, private rooms, SKR rooms
+│   │   ├── solana/         # CNFTMinter, SolanaClient
+│   │   ├── database/       # SQLite schema, queries
+│   │   └── auth/           # JWT + bcrypt
+│   └── .env.example
+├── mobile/
+│   ├── src/
+│   │   ├── screens/        # Lobby, GameRoom, Settings
+│   │   ├── services/       # SeekerWalletService, SkrService
+│   │   ├── components/     # SkrStakeModal, cards, UI
+│   │   └── contexts/       # Auth, Wallet, Socket
+│   └── android/
+└── client/                 # Web client (React + Vite)
+```
+
+---
+
+## Environment Variables
+
+### Server (`server/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | Yes | Server port (default: 3001) |
+| `JWT_SECRET` | Yes | JWT signing secret |
+| `SOLANA_RPC_URL` | No | Devnet RPC (default: public endpoint) |
+| `SOLANA_PRIVATE_KEY` | No* | Server wallet for minting (*required for real cNFTs) |
+| `MERKLE_TREE` | No* | Bubblegum tree address (*required for real cNFTs) |
+| `NFT_STORAGE_KEY` | No | nft.storage API key for IPFS metadata |
+| `NFT_IMAGE_URI` | No | IPFS URI for trophy NFT image |
+| `PROGRAM_ID` | No | Anchor program ID |
+
+### Mobile (`mobile/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `EXPO_PUBLIC_SERVER_URL` | Yes | Server URL (e.g. `http://192.168.x.x:3001`) |
+| `EXPO_PUBLIC_DEFAULT_BOT_COUNT` | No | Default bot count (0 = real players only) |
+
+---
+
+## Testing
+
+```bash
+# Server (expects 86 pass / 8 fail — scoring edge case)
+cd server && npm test
+
+# Type check
+cd server && npx tsc --noEmit
+cd mobile && npx tsc --noEmit
+```
+
+---
+
+## License
+
+MIT — built for the [Monolith Hackathon](https://solanamobile.radiant.nexus/?panel=hackathon) by Solana Mobile + Radiants.

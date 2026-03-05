@@ -22,7 +22,7 @@ export const config = {
   merkleTree: process.env.MERKLE_TREE || '',
 
   // Auth
-  jwtSecret: process.env.JWT_SECRET || 'batak-dev-secret-change-in-production',
+  jwtSecret: process.env.JWT_SECRET || '',
 
   // Game
   maxPlayers: parseInt(process.env.MAX_PLAYERS || '4', 10),
@@ -45,6 +45,10 @@ export const config = {
 
     // Production: Strict validation - missing critical values cause errors
     if (this.nodeEnv === 'production') {
+      // JWT_SECRET is critical for auth security
+      if (!this.jwtSecret) {
+        errors.push('JWT_SECRET must be set in production. Generate: openssl rand -base64 32');
+      }
       // SOLANA_PRIVATE_KEY only required when cNFT minting is enabled (MERKLE_TREE set)
       if (this.merkleTree && !this.solanaPrivateKey) {
         errors.push('SOLANA_PRIVATE_KEY is required when MERKLE_TREE is set (cNFT minting enabled)');
@@ -74,6 +78,9 @@ export const config = {
     }
     // Development: Warn only
     else {
+      if (!this.jwtSecret) {
+        warnings.push('JWT_SECRET not set — using development mode (auth tokens will be invalidated on restart)');
+      }
       if (!this.solanaPrivateKey) {
         warnings.push('SOLANA_PRIVATE_KEY not set - using mock Solana features');
       }

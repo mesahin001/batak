@@ -15,9 +15,13 @@ import {
   TextInput,
 } from 'react-native';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWallet } from '../../contexts/WalletContext';
 import { GameMode } from '../../types/game';
+import { getSkrBalance, formatSkrBalance } from '../../services/SkrService';
+import { SkrStakeModal } from '../../components/ui/SkrStakeModal';
 
 interface QueueStatus {
   status: 'waiting' | 'matched_with_bots';
@@ -36,6 +40,11 @@ export const LobbyScreen = () => {
   const navigation = useNavigation();
   const { socket, isConnected } = useSocket();
   const { playerId, username } = useAuth();
+  const { publicKey } = useWallet();
+  const { t } = useTranslation();
+
+  // SKR balance
+  const [skrBalance, setSkrBalance] = useState<number | null>(null);
 
   // Game settings
   const [gameMode, setGameMode] = useState<GameMode>(GameMode.KOZ_MACA);
@@ -58,6 +67,15 @@ export const LobbyScreen = () => {
 
   // UI state
   const [error, setError] = useState<string | null>(null);
+  const [showSkrModal, setShowSkrModal] = useState(false);
+
+  /**
+   * Load SKR balance when wallet is connected
+   */
+  useEffect(() => {
+    if (!publicKey) return;
+    getSkrBalance(publicKey).then(setSkrBalance).catch(() => setSkrBalance(0));
+  }, [publicKey]);
 
   /**
    * Setup socket listeners
@@ -87,7 +105,7 @@ export const LobbyScreen = () => {
         });
       } else {
         console.error('[Lobby] Could not access root navigator');
-        Alert.alert('Navigation Error', 'Unable to start game. Please try again.');
+        Alert.alert(t('lobby.navError'), t('lobby.navErrorMsg'));
       }
     };
 
@@ -110,7 +128,7 @@ export const LobbyScreen = () => {
       setPrivateRoomCode(null);
       setPrivateRoomPlayers([]);
       setIsHost(false);
-      Alert.alert('Room Closed', 'The room has been closed by the host');
+      Alert.alert(t('lobby.roomClosed'), t('lobby.roomClosedMsg'));
     };
 
     socket.on('queue_status', handleQueueStatus);
@@ -133,12 +151,12 @@ export const LobbyScreen = () => {
    */
   const handleJoinQueue = () => {
     if (!socket || !isConnected) {
-      Alert.alert('Connection Error', 'Please check your internet connection');
+      Alert.alert(t('lobby.connError'), t('lobby.connErrorMsg'));
       return;
     }
 
     if (!playerId) {
-      Alert.alert('Authentication Error', 'Please log in again');
+      Alert.alert(t('lobby.connError'), t('lobby.authErrorMsg'));
       return;
     }
 
@@ -170,7 +188,7 @@ export const LobbyScreen = () => {
    */
   const handleCreatePrivateRoom = () => {
     if (!socket || !playerId) {
-      Alert.alert('Error', 'Please log in again');
+      Alert.alert(t('common.error'), t('lobby.authErrorMsg'));
       return;
     }
 
@@ -182,7 +200,7 @@ export const LobbyScreen = () => {
       gameMode,
     }, (response: any) => {
       if (response.error) {
-        Alert.alert('Error', response.error);
+        Alert.alert(t('common.error'), response.error);
         return;
       }
       setPrivateRoomCode(response.code);
@@ -197,7 +215,7 @@ export const LobbyScreen = () => {
    */
   const handleJoinPrivateRoom = () => {
     if (!socket || !playerId || !joinCodeInput) {
-      Alert.alert('Error', 'Please enter a room code');
+      Alert.alert(t('common.error'), t('lobby.enterCode'));
       return;
     }
 
@@ -208,7 +226,7 @@ export const LobbyScreen = () => {
       username,
     }, (response: any) => {
       if (response.error) {
-        Alert.alert('Error', response.error);
+        Alert.alert(t('common.error'), response.error);
         return;
       }
       setPrivateRoomCode(response.code);
@@ -229,6 +247,34 @@ export const LobbyScreen = () => {
     socket.emit('start_private_room', {
       code: privateRoomCode,
       publicKey: playerId,
+    });
+  };
+
+  /**
+   * Create a SKR tournament room (requires MWA wallet signature)
+   */
+  const handleCreateSkrRoom = (stake: number, claimSignature: string) => {
+    if (!socket || !playerId) return;
+
+    setShowSkrModal(false);
+    setError(null);
+
+    socket.emit('create_skr_room', {
+      publicKey: playerId,
+      username,
+      botDifficulty,
+      gameMode,
+      skrStake: stake,
+      claimSignature,
+    }, (response: any) => {
+      if (response.error) {
+        Alert.alert(t('common.error'), response.error);
+        return;
+      }
+      setPrivateRoomCode(response.code);
+      setPrivateRoomPlayers(response.players);
+      setIsHost(true);
+      setShowPrivateRoom(true);
     });
   };
 
@@ -254,7 +300,7 @@ export const LobbyScreen = () => {
    */
   const copyRoomCode = () => {
     if (privateRoomCode) {
-      Alert.alert('Room Code', privateRoomCode);
+      Alert.alert(t('lobby.roomCode'), privateRoomCode);
     }
   };
 
@@ -265,19 +311,19 @@ export const LobbyScreen = () => {
     switch (mode) {
       case GameMode.KOZ_MACA:
         return {
-          title: 'Koz Maça',
-          description: 'Spades are always trump. Win tricks to score points!',
+          title: t('lobby.kozMaca'),
+          description: t('lobby.kozMacaDesc'),
           emoji: '♠️',
         };
       case GameMode.IHALELI_BATAK:
         return {
-          title: 'İhaleli Batak',
-          description: 'Bid your trump and tricks. Lowest score wins!',
+          title: t('lobby.ihaleliBatak'),
+          description: t('lobby.ihaleliBatakDesc'),
           emoji: '🃏',
         };
       default:
         return {
-          title: 'Unknown',
+          title: t('lobby.unknownMode'),
           description: '',
           emoji: '❓',
         };
@@ -304,16 +350,16 @@ export const LobbyScreen = () => {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.privateRoomContainer}>
-            <Text style={styles.headerTitle}>Private Room</Text>
-            <Text style={styles.headerSubtitle}>Invite your friends!</Text>
+            <Text style={styles.headerTitle}>{t('lobby.privateRoom')}</Text>
+            <Text style={styles.headerSubtitle}>{t('lobby.inviteFriends')}</Text>
 
             {/* Room Code Display */}
             <View style={styles.roomCodeCard}>
-              <Text style={styles.roomCodeLabel}>Room Code</Text>
+              <Text style={styles.roomCodeLabel}>{t('lobby.roomCode')}</Text>
               <View style={styles.roomCodeDisplay}>
                 <Text style={styles.roomCodeText}>{privateRoomCode}</Text>
                 <TouchableOpacity style={styles.copyButton} onPress={copyRoomCode}>
-                  <Text style={styles.copyButtonText}>Copy</Text>
+                  <Text style={styles.copyButtonText}>{t('common.copy')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -321,7 +367,7 @@ export const LobbyScreen = () => {
             {/* Player List */}
             <View style={styles.playersCard}>
               <Text style={styles.playersLabel}>
-                Players ({privateRoomPlayers.length}/4)
+                {t('lobby.players')} ({privateRoomPlayers.length}/4)
               </Text>
               {privateRoomPlayers.map((player, index) => (
                 <View key={player.publicKey} style={styles.playerItem}>
@@ -331,7 +377,7 @@ export const LobbyScreen = () => {
                   </Text>
                   {index === 0 && (
                     <View style={styles.hostBadge}>
-                      <Text style={styles.hostBadgeText}>Host</Text>
+                      <Text style={styles.hostBadgeText}>{t('lobby.host')}</Text>
                     </View>
                   )}
                 </View>
@@ -341,7 +387,7 @@ export const LobbyScreen = () => {
                 <View key={`empty-${i}`} style={styles.playerItem}>
                   <Text style={styles.playerIcon}>🤖</Text>
                   <Text style={[styles.playerName, styles.botSlotText]}>
-                    Bot (empty slot)
+                    {t('lobby.botSlot')}
                   </Text>
                 </View>
               ))}
@@ -354,14 +400,14 @@ export const LobbyScreen = () => {
                 onPress={handleStartPrivateRoom}
                 activeOpacity={0.7}
               >
-                <Text style={styles.startButtonText}>Start Game</Text>
+                <Text style={styles.startButtonText}>{t('lobby.startGame')}</Text>
               </TouchableOpacity>
             )}
 
             {/* Non-host: Waiting message */}
             {!isHost && (
               <Text style={styles.waitingText}>
-                Waiting for host to start the game...
+                {t('lobby.waitingForHost')}
               </Text>
             )}
 
@@ -371,7 +417,7 @@ export const LobbyScreen = () => {
               onPress={handleLeavePrivateRoom}
               activeOpacity={0.7}
             >
-              <Text style={styles.leaveRoomButtonText}>Leave Room</Text>
+              <Text style={styles.leaveRoomButtonText}>{t('lobby.leaveRoom')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -384,21 +430,29 @@ export const LobbyScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Lobby</Text>
-          <Text style={styles.subtitle}>Ready to play, {username || 'Player'}?</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>{t('lobby.title')}</Text>
+            {publicKey && skrBalance !== null && (
+              <View style={styles.skrChip}>
+                <Text style={styles.skrChipIcon}>◎</Text>
+                <Text style={styles.skrChipText}>{formatSkrBalance(skrBalance)} SKR</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.subtitle}>{t('lobby.readyToPlay', { name: username || 'Player' })}</Text>
         </View>
 
         {/* Connection Status */}
         {!isConnected && (
           <View style={styles.connectionWarning}>
             <Text style={styles.warningIcon}>⚠️</Text>
-            <Text style={styles.warningText}>Connecting to server...</Text>
+            <Text style={styles.warningText}>{t('lobby.connectingServer')}</Text>
           </View>
         )}
 
         {/* Game Mode Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game Mode</Text>
+          <Text style={styles.sectionTitle}>{t('lobby.gameModes')}</Text>
 
           <TouchableOpacity
             style={[
@@ -414,9 +468,9 @@ export const LobbyScreen = () => {
               <Text style={styles.modeEmoji}>♠️</Text>
             </View>
             <View style={styles.modeContent}>
-              <Text style={styles.modeTitle}>Koz Maça</Text>
+              <Text style={styles.modeTitle}>{t('lobby.kozMaca')}</Text>
               <Text style={styles.modeDescription}>
-                Spades are always trump. Win the most tricks!
+                {t('lobby.kozMacaDesc')}
               </Text>
             </View>
             {gameMode === GameMode.KOZ_MACA && (
@@ -440,9 +494,9 @@ export const LobbyScreen = () => {
               <Text style={styles.modeEmoji}>🃏</Text>
             </View>
             <View style={styles.modeContent}>
-              <Text style={styles.modeTitle}>İhaleli Batak</Text>
+              <Text style={styles.modeTitle}>{t('lobby.ihaleliBatak')}</Text>
               <Text style={styles.modeDescription}>
-                Bid your suit and tricks. Lowest score wins!
+                {t('lobby.ihaleliBatakDesc')}
               </Text>
             </View>
             {gameMode === GameMode.IHALELI_BATAK && (
@@ -455,13 +509,13 @@ export const LobbyScreen = () => {
 
         {/* Game Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game Settings</Text>
+          <Text style={styles.sectionTitle}>{t('lobby.gameSettings')}</Text>
 
           {/* Bot Difficulty */}
           <View style={styles.settingRow}>
             <View style={styles.settingLabel}>
-              <Text style={styles.settingTitle}>Bot Difficulty</Text>
-              <Text style={styles.settingDescription}>AI opponent skill level</Text>
+              <Text style={styles.settingTitle}>{t('lobby.botDifficulty')}</Text>
+              <Text style={styles.settingDescription}>{t('lobby.aiSkillLevel')}</Text>
             </View>
             <View style={styles.difficultySelector}>
               {(['easy', 'normal', 'hard'] as const).map((difficulty) => (
@@ -485,7 +539,7 @@ export const LobbyScreen = () => {
                       botDifficulty === difficulty && styles.difficultyButtonTextActive,
                     ]}
                   >
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                    {t('lobby.' + difficulty)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -495,8 +549,8 @@ export const LobbyScreen = () => {
           {/* Bot Count */}
           <View style={styles.settingRow}>
             <View style={styles.settingLabel}>
-              <Text style={styles.settingTitle}>Bot Count</Text>
-              <Text style={styles.settingDescription}>Number of AI opponents</Text>
+              <Text style={styles.settingTitle}>{t('lobby.botCount')}</Text>
+              <Text style={styles.settingDescription}>{t('lobby.botsDescription')}</Text>
             </View>
             <View style={styles.countSelector}>
               {[0, 1, 2, 3].map((count) => (
@@ -517,7 +571,7 @@ export const LobbyScreen = () => {
                       botCount === count && styles.countButtonTextActive,
                     ]}
                   >
-                    {count === 0 ? 'PvP' : count}
+                    {count === 0 ? t('lobby.pvp') : count}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -530,13 +584,13 @@ export const LobbyScreen = () => {
           <View style={styles.queueStatusCard}>
             <View style={styles.queueStatusHeader}>
               <ActivityIndicator color="#6C63FF" size="small" />
-              <Text style={styles.queueStatusTitle}>Finding Match...</Text>
+              <Text style={styles.queueStatusTitle}>{t('lobby.findingMatch')}</Text>
             </View>
             <Text style={styles.queueStatusMessage}>{queueStatus.message}</Text>
             {queueStatus.playersInQueue > 0 && (
               <View style={styles.queuePlayersInfo}>
                 <Text style={styles.queuePlayersText}>
-                  Players in queue: {queueStatus.playersInQueue}
+                  {t('lobby.playersInQueue', { count: queueStatus.playersInQueue })}
                 </Text>
               </View>
             )}
@@ -561,7 +615,7 @@ export const LobbyScreen = () => {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.playButtonEmoji}>🎮</Text>
-            <Text style={styles.playButtonText}>Find Match</Text>
+            <Text style={styles.playButtonText}>{t('lobby.findMatch')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -570,7 +624,7 @@ export const LobbyScreen = () => {
             activeOpacity={0.6}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.cancelButtonText}>Cancel Search</Text>
+            <Text style={styles.cancelButtonText}>{t('lobby.cancelSearch')}</Text>
           </TouchableOpacity>
         )}
 
@@ -584,7 +638,7 @@ export const LobbyScreen = () => {
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.privateRoomButtonText}>Create Room</Text>
+              <Text style={styles.privateRoomButtonText}>{t('lobby.createRoom')}</Text>
             </TouchableOpacity>
 
             {!showJoinInput ? (
@@ -595,7 +649,7 @@ export const LobbyScreen = () => {
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.privateRoomButtonText}>Join Room</Text>
+                <Text style={styles.privateRoomButtonText}>{t('lobby.joinRoom')}</Text>
               </TouchableOpacity>
             ) : (
               <View style={styles.joinRoomInput}>
@@ -603,7 +657,7 @@ export const LobbyScreen = () => {
                   style={styles.roomCodeInput}
                   value={joinCodeInput}
                   onChangeText={(text) => setJoinCodeInput(text.toUpperCase())}
-                  placeholder="Room code..."
+                  placeholder={t('lobby.roomCodePlaceholder')}
                   placeholderTextColor="#888"
                   maxLength={6}
                   autoCapitalize="characters"
@@ -618,7 +672,7 @@ export const LobbyScreen = () => {
                   disabled={joinCodeInput.length !== 6}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.joinButtonText}>Join</Text>
+                  <Text style={styles.joinButtonText}>{t('lobby.join')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.cancelJoinButton}
@@ -635,16 +689,42 @@ export const LobbyScreen = () => {
           </View>
         )}
 
+        {/* SKR Tournament — only for wallet users */}
+        {!inQueue && publicKey && (
+          <TouchableOpacity
+            style={[styles.skrTournamentButton, !isConnected && styles.buttonDisabled]}
+            onPress={() => setShowSkrModal(true)}
+            disabled={!isConnected}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.skrTournamentIcon}>◎</Text>
+            <View>
+              <Text style={styles.skrTournamentTitle}>{t('lobby.skrTournament')}</Text>
+              <Text style={styles.skrTournamentSub}>{t('lobby.skrTournamentSub')}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Quick Info */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>💡</Text>
           <Text style={styles.infoText}>
-            {botCount === 0
-              ? `You'll play with 4 real players on ${currentGameMode.title} mode.`
-              : `You'll play against ${botCount} bot${botCount > 1 ? 's' : ''} on ${currentGameMode.title} mode.`}
+            {botCount === 0 ? t('lobby.infoAllReal', { mode: currentGameMode.title }) : t('lobby.infoBots', { count: botCount, mode: currentGameMode.title })}
           </Text>
         </View>
       </ScrollView>
+
+      {/* SKR Stake Modal */}
+      {publicKey && (
+        <SkrStakeModal
+          visible={showSkrModal}
+          publicKey={publicKey}
+          gameMode={gameMode}
+          botDifficulty={botDifficulty}
+          onConfirm={handleCreateSkrRoom}
+          onClose={() => setShowSkrModal(false)}
+        />
+      )}
     </View>
   );
 };
@@ -661,11 +741,36 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 6,
+  },
+  skrChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 241, 149, 0.12)',
+    borderWidth: 1,
+    borderColor: '#14F195',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  skrChipIcon: {
+    fontSize: 13,
+    color: '#14F195',
+    marginRight: 4,
+  },
+  skrChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#14F195',
   },
   subtitle: {
     fontSize: 15,
@@ -1126,5 +1231,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // SKR Tournament Button
+  skrTournamentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 241, 149, 0.06)',
+    borderWidth: 1.5,
+    borderColor: '#14F195',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  skrTournamentIcon: {
+    fontSize: 28,
+    color: '#14F195',
+    marginRight: 14,
+  },
+  skrTournamentTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#14F195',
+    marginBottom: 2,
+  },
+  skrTournamentSub: {
+    fontSize: 12,
+    color: '#888',
   },
 });

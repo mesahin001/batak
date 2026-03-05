@@ -106,7 +106,7 @@ export const GameResultScreen = () => {
     if (!gameState?.players) return [];
 
     const sorted = [...gameState.players]
-      .sort((a, b) => a.totalScore - b.totalScore)
+      .sort((a, b) => b.totalScore - a.totalScore)
       .map((player, index) => ({ ...player, rank: index + 1 }));
 
     return sorted;

@@ -299,7 +299,9 @@ export class GameStateMachine {
       player,
       card,
       this.room.currentTrick.leadSuit,
-      true
+      true,
+      this.room.trumpSuit,
+      this.room.currentTrick.cards.map(c => c.card)
     );
 
     if (!validation.valid) {

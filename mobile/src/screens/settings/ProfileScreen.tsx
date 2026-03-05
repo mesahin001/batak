@@ -144,7 +144,7 @@ export const ProfileScreen = () => {
    * Format date
    */
   const formatDate = (dateString?: string): string => {
-    if (!dateString) return 'Unknown';
+    if (!dateString) return t('common.error');
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -152,8 +152,8 @@ export const ProfileScreen = () => {
 
     if (diffDays === 0) return t('common.today');
     if (diffDays === 1) return t('common.yesterday');
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+    if (diffDays < 7) return t('profile.daysAgo', { count: diffDays });
+    if (diffDays < 30) return t('profile.weeksAgo', { count: Math.floor(diffDays / 7) });
     return date.toLocaleDateString();
   };
 
@@ -166,12 +166,12 @@ export const ProfileScreen = () => {
     return (
       <View key={game.id} style={styles.gameItem}>
         <View style={[styles.gameResultBadge, won ? styles.gameResultWin : styles.gameResultLoss]}>
-          <Text style={styles.gameResultText}>{won ? 'W' : 'L'}</Text>
+          <Text style={styles.gameResultText}>{won ? t('profile.win') : t('profile.loss')}</Text>
         </View>
 
         <View style={styles.gameInfo}>
           <Text style={styles.gameMode}>
-            {game.gameMode === 'koz_maca' ? 'Koz Maça' : 'İhaleli Batak'}
+            {game.gameMode === 'koz_maca' ? t('lobby.kozMaca') : t('lobby.ihaleliBatak')}
           </Text>
           <Text style={styles.gameDate}>{formatDate(game.completedAt)}</Text>
         </View>
@@ -228,7 +228,7 @@ export const ProfileScreen = () => {
               <Text style={styles.rankText}>#{player.rankTier}</Text>
             </View>
             <View style={styles.playerInfo}>
-              <Text style={styles.playerName}>{player.username || 'Anonymous'}</Text>
+              <Text style={styles.playerName}>{player.username || t('profile.anonymous')}</Text>
               <Text style={styles.playerKey}>
                 {player.publicKey.slice(0, 8)}...{player.publicKey.slice(-4)}
               </Text>
@@ -271,7 +271,7 @@ export const ProfileScreen = () => {
 
             <View style={styles.statCard}>
               <Text style={[styles.statValue, styles.statNft]}>{player.nftsEarned}</Text>
-              <Text style={styles.statLabel}>NFT</Text>
+              <Text style={styles.statLabel}>{t('profile.nft')}</Text>
             </View>
 
             <View style={styles.statCard}>
@@ -337,7 +337,7 @@ export const ProfileScreen = () => {
                       Tier {nft.tier} {nft.onChainMinted ? '✅' : '⏳'}
                     </Text>
                     <Text style={styles.nftStatus}>
-                      {nft.onChainMinted ? 'Minted' : 'Pending'}
+                      {nft.onChainMinted ? t('profile.minted') : t('profile.pending')}
                     </Text>
                   </View>
                 </View>

@@ -188,7 +188,7 @@ export const TournamentResultScreen = () => {
     if (!gameData?.players) return [];
 
     return [...gameData.players]
-      .sort((a, b) => a.totalScore - b.totalScore)
+      .sort((a, b) => b.totalScore - a.totalScore)
       .map((player, index) => ({
         ...player,
         rank: index + 1,

@@ -10,7 +10,9 @@ export function validateCardPlay(
   player: PlayerState,
   card: Card,
   leadSuit: Suit | null,
-  isPlayerTurn: boolean
+  isPlayerTurn: boolean,
+  trumpSuit?: Suit | null,
+  currentTrickCards?: Card[]
 ): ValidationResult {
   // Check if it's the player's turn
   if (!isPlayerTurn) {
@@ -30,11 +32,15 @@ export function validateCardPlay(
   }
 
   // Check if card can be played according to Batak rules
-  if (!canPlayCard(card, player.hand, leadSuit)) {
-    return {
-      valid: false,
-      reason: 'Must follow suit if possible'
-    };
+  if (!canPlayCard(card, player.hand, leadSuit, trumpSuit, currentTrickCards)) {
+    const hasLeadSuit = leadSuit && player.hand.some(c => c.suit === leadSuit);
+    if (hasLeadSuit) {
+      if (card.suit !== leadSuit) {
+        return { valid: false, reason: 'Must follow suit if possible' };
+      }
+      return { valid: false, reason: 'Must raise if possible' };
+    }
+    return { valid: false, reason: 'Must play trump if no lead suit' };
   }
 
   return { valid: true };
@@ -101,9 +107,11 @@ export function validatePass(
  */
 export function getValidCards(
   player: PlayerState,
-  leadSuit: Suit | null
+  leadSuit: Suit | null,
+  trumpSuit?: Suit | null,
+  currentTrickCards?: Card[]
 ): Card[] {
-  return getPlayableCards(player, leadSuit);
+  return getPlayableCards(player, leadSuit, trumpSuit, currentTrickCards);
 }
 
 /**

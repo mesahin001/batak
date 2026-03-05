@@ -5,6 +5,7 @@
 
 import { Card, Suit, PlayerState } from '../../types/game.js';
 import { analyzeHand } from '../HandAnalyzer.js';
+import { getPlayableCards } from '../../game/Player.js';
 export class EasyStrategy {
   /**
    * Decide bid for easy bot
@@ -51,32 +52,11 @@ export class EasyStrategy {
   decideCard(
     player: PlayerState,
     leadSuit: Suit | null,
-    _trumpSuit: Suit | null,
-    _currentTrick: Card[]
+    trumpSuit: Suit | null,
+    currentTrick: Card[]
   ): Card {
-    // Get valid cards
-    const validCards = this.getValidCards(player, leadSuit);
-
-    // Return random valid card
+    const validCards = getPlayableCards(player, leadSuit, trumpSuit, currentTrick);
     return validCards[Math.floor(Math.random() * validCards.length)];
-  }
-
-  /**
-   * Get valid cards for play
-   */
-  private getValidCards(player: PlayerState, leadSuit: Suit | null): Card[] {
-    if (!leadSuit) {
-      return [...player.hand];
-    }
-
-    // Check if player has lead suit
-    const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
-
-    if (hasLeadSuit) {
-      return player.hand.filter(c => c.suit === leadSuit);
-    }
-
-    return [...player.hand];
   }
 
   /**

@@ -369,6 +369,96 @@ describe('TurnValidator Module', () => {
     });
   });
 
+  describe('Must raise validation', () => {
+    it('should reject lower lead-suit card when player can beat current winner', () => {
+      const eight = createCard(Suit.HEARTS, Rank.EIGHT, 'eight');
+      const king = createCard(Suit.HEARTS, Rank.KING, 'king');
+      const five = createCard(Suit.HEARTS, Rank.FIVE, 'five');
+      const player = createPlayer('p1', 'Player 1', [king, five]);
+      const trickCards = [eight];
+
+      // 5♥ should be rejected because player has K♥ which beats 8♥
+      const result = validateCardPlay(player, five, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Must raise if possible');
+    });
+
+    it('should accept raising card when player can beat current winner', () => {
+      const eight = createCard(Suit.HEARTS, Rank.EIGHT, 'eight');
+      const king = createCard(Suit.HEARTS, Rank.KING, 'king');
+      const five = createCard(Suit.HEARTS, Rank.FIVE, 'five');
+      const player = createPlayer('p1', 'Player 1', [king, five]);
+      const trickCards = [eight];
+
+      // K♥ should be accepted (beats 8♥)
+      const result = validateCardPlay(player, king, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should allow any lead-suit card when none can beat the winner', () => {
+      const queen = createCard(Suit.HEARTS, Rank.QUEEN, 'queen');
+      const jack = createCard(Suit.HEARTS, Rank.JACK, 'jack');
+      const five = createCard(Suit.HEARTS, Rank.FIVE, 'five');
+      const player = createPlayer('p1', 'Player 1', [jack, five]);
+      const trickCards = [queen];
+
+      // Neither J♥ nor 5♥ beats Q♥, so both should be valid
+      const resultJack = validateCardPlay(player, jack, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(resultJack.valid).toBe(true);
+
+      const resultFive = validateCardPlay(player, five, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(resultFive.valid).toBe(true);
+    });
+
+    it('should not enforce raise when current winner is a trump card', () => {
+      const trumpAce = createCard(Suit.SPADES, Rank.ACE, 'trump-ace');
+      const king = createCard(Suit.HEARTS, Rank.KING, 'king');
+      const five = createCard(Suit.HEARTS, Rank.FIVE, 'five');
+      const player = createPlayer('p1', 'Player 1', [king, five]);
+      // Lead is hearts but trick is currently won by A♠ (trump)
+      const trickCards = [trumpAce];
+
+      // K♥ and 5♥ both can't beat the trump, so both valid (no raise required)
+      const resultKing = validateCardPlay(player, king, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(resultKing.valid).toBe(true);
+
+      const resultFive = validateCardPlay(player, five, Suit.HEARTS, true, Suit.SPADES, trickCards);
+      expect(resultFive.valid).toBe(true);
+    });
+  });
+
+  describe('Must play trump validation', () => {
+    it('should reject non-trump card when void in lead suit and has trump', () => {
+      const trump = createCard(Suit.SPADES, Rank.TEN, 'trump');
+      const diamond = createCard(Suit.DIAMONDS, Rank.KING, 'diamond');
+      const player = createPlayer('p1', 'Player 1', [trump, diamond]);
+
+      // Lead is hearts, player has no hearts but has spade (trump) — must play trump
+      const result = validateCardPlay(player, diamond, Suit.HEARTS, true, Suit.SPADES, []);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Must play trump if no lead suit');
+    });
+
+    it('should accept trump card when void in lead suit and has trump', () => {
+      const trump = createCard(Suit.SPADES, Rank.TEN, 'trump');
+      const diamond = createCard(Suit.DIAMONDS, Rank.KING, 'diamond');
+      const player = createPlayer('p1', 'Player 1', [trump, diamond]);
+
+      const result = validateCardPlay(player, trump, Suit.HEARTS, true, Suit.SPADES, []);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should allow any card when void in lead suit and no trump', () => {
+      const club = createCard(Suit.CLUBS, Rank.TEN, 'club');
+      const diamond = createCard(Suit.DIAMONDS, Rank.KING, 'diamond');
+      const player = createPlayer('p1', 'Player 1', [club, diamond]);
+
+      // No trump suit — any card valid
+      const result = validateCardPlay(player, diamond, Suit.HEARTS, true, null, []);
+      expect(result.valid).toBe(true);
+    });
+  });
+
   describe('mustPlayTrump', () => {
     it('should return false when no trump suit selected', () => {
       const player = createPlayer('p1', 'Player 1', [

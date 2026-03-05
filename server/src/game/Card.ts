@@ -90,12 +90,34 @@ export function compareCards(
 }
 
 /**
- * Check if a card can be played based on current trick and hand
+ * Get the current winning card from the trick so far
+ */
+function getCurrentWinningCard(
+  trickCards: Card[],
+  leadSuit: Suit,
+  trumpSuit: Suit | null
+): Card | null {
+  if (trickCards.length === 0) return null;
+  let winner = trickCards[0];
+  for (let i = 1; i < trickCards.length; i++) {
+    winner = compareCards(trickCards[i], winner, leadSuit, trumpSuit);
+  }
+  return winner;
+}
+
+/**
+ * Check if a card can be played based on current trick and hand.
+ * Enforces:
+ *   1. Must follow lead suit if possible
+ *   2. Must raise (beat current winner) if possible, when winner is in lead suit
+ *   3. Must play trump if void in lead suit and trump cards remain in hand
  */
 export function canPlayCard(
   card: Card,
   hand: Card[],
-  leadSuit: Suit | null
+  leadSuit: Suit | null,
+  trumpSuit?: Suit | null,
+  currentTrickCards?: Card[]
 ): boolean {
   // If no card has been led yet, any card can be played
   if (!leadSuit) return true;
@@ -103,12 +125,35 @@ export function canPlayCard(
   // Check if player has the lead suit
   const hasLeadSuit = hand.some(c => c.suit === leadSuit);
 
-  // If player has lead suit, must follow it
   if (hasLeadSuit) {
-    return card.suit === leadSuit;
+    // Must follow lead suit
+    if (card.suit !== leadSuit) return false;
+
+    // Must raise: if current winner is a lead-suit card and player can beat it
+    if (currentTrickCards && currentTrickCards.length > 0) {
+      const trump = trumpSuit ?? null;
+      const currentWinner = getCurrentWinningCard(currentTrickCards, leadSuit, trump);
+      if (currentWinner && currentWinner.suit === leadSuit) {
+        const canRaise = hand.some(
+          c => c.suit === leadSuit && compareCards(c, currentWinner, leadSuit, trump) === c
+        );
+        if (canRaise && compareCards(card, currentWinner, leadSuit, trump) !== card) {
+          return false; // Must raise but this card doesn't beat the winner
+        }
+      }
+    }
+
+    return true;
   }
 
-  // If player doesn't have lead suit, can play any card
+  // Player has no lead suit cards
+  // Must play trump if they have trump cards
+  const trump = trumpSuit ?? null;
+  if (trump && hand.some(c => c.suit === trump)) {
+    return card.suit === trump;
+  }
+
+  // No lead suit and no trump - any card is valid
   return true;
 }
 

@@ -17,6 +17,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWallet } from '../../contexts/WalletContext';
 import type { AuthStackParamList } from '../../types/game';
@@ -26,6 +27,7 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, '
 
 export const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { t } = useTranslation();
   const { loginWithEmail, isLoading: authLoading } = useAuth();
   const { connect: connectWallet, isConnecting: walletConnecting, isConnected: walletConnected } = useWallet();
 
@@ -57,19 +59,19 @@ export const LoginScreen = () => {
 
     // Validate email
     if (!email.trim()) {
-      setEmailError('Email is required');
+      setEmailError(t('auth.email') + ' ' + t('common.error'));
       isValid = false;
     } else if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email');
+      setEmailError(t('auth.invalidEmail'));
       isValid = false;
     }
 
     // Validate password
     if (!password) {
-      setPasswordError('Password is required');
+      setPasswordError(t('auth.password') + ' ' + t('common.error'));
       isValid = false;
     } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('auth.passwordTooShort'));
       isValid = false;
     }
 
@@ -90,11 +92,11 @@ export const LoginScreen = () => {
       const result = await loginWithEmail(email.trim(), password);
 
       if (!result.success) {
-        setLoginError(result.error || 'Login failed. Please try again.');
+        setLoginError(result.error || t('auth.loginFailed'));
       }
       // If successful, AuthContext will handle navigation via RootNavigator
     } catch (error) {
-      setLoginError('An unexpected error occurred. Please try again.');
+      setLoginError(t('app.error'));
       console.error('Login error:', error);
     }
   };
@@ -109,7 +111,7 @@ export const LoginScreen = () => {
       await connectWallet();
       // If successful, AuthContext will detect wallet connection and authenticate
     } catch (error) {
-      setLoginError('Failed to connect wallet. Make sure Seeker is installed.');
+      setLoginError(t('auth.loginFailed'));
       console.error('Wallet connection error:', error);
     }
   };
@@ -137,8 +139,8 @@ export const LoginScreen = () => {
           <View style={styles.logoContainer}>
             <Text style={styles.logoEmoji}>🃏</Text>
           </View>
-          <Text style={styles.title}>Batak Tournament</Text>
-          <Text style={styles.subtitle}>Sign in to continue playing</Text>
+          <Text style={styles.title}>{t('app.name')}</Text>
+          <Text style={styles.subtitle}>{t('auth.login')}</Text>
         </View>
 
         {/* Login Error Message */}
@@ -158,7 +160,7 @@ export const LoginScreen = () => {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={[styles.modeToggleText, activeMode === 'email' && styles.modeToggleTextActive]}>
-              📧 Email
+              📧 {t('auth.email')}
             </Text>
           </TouchableOpacity>
 
@@ -170,7 +172,7 @@ export const LoginScreen = () => {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={[styles.modeToggleText, activeMode === 'wallet' && styles.modeToggleTextActive]}>
-              👛 Wallet
+              👛 {t('auth.walletConnection')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -179,7 +181,7 @@ export const LoginScreen = () => {
           <>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={[styles.input, emailError ? styles.inputError : null]}
                 placeholder="your@email.com"
@@ -201,7 +203,7 @@ export const LoginScreen = () => {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, styles.passwordInput, passwordError ? styles.inputError : null]}
@@ -242,7 +244,7 @@ export const LoginScreen = () => {
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>{t('auth.login')}</Text>
               )}
             </TouchableOpacity>
           </>
@@ -253,7 +255,7 @@ export const LoginScreen = () => {
             {/* Wallet Info Card */}
             <View style={styles.walletInfoCard}>
               <Text style={styles.walletInfoText}>
-                Connect your Seeker wallet to play on Solana
+                {t('auth.seekerConnect')}
               </Text>
             </View>
 
@@ -271,7 +273,7 @@ export const LoginScreen = () => {
                 <>
                   <Text style={styles.walletIcon}>👛</Text>
                   <Text style={styles.buttonText}>
-                    {walletConnected ? 'Wallet Connected' : 'Connect with Seeker'}
+                    {walletConnected ? t('auth.loginSuccess') : t('auth.seekerConnect')}
                   </Text>
                 </>
               )}
@@ -281,20 +283,20 @@ export const LoginScreen = () => {
 
         {/* Register Link */}
         <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Don't have an account? </Text>
+          <Text style={styles.registerText}>{t('common.back')} </Text>
           <TouchableOpacity
             onPress={navigateToRegister}
             disabled={isLoading}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.registerLink}>Sign Up</Text>
+            <Text style={styles.registerLink}>{t('auth.register')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Play Batak card game on Solana</Text>
+          <Text style={styles.footerText}>{t('app.name')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useWallet } from '../../contexts/WalletContext';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthStackParamList } from '../../types/game';
@@ -22,6 +23,7 @@ type WalletAuthScreenNavigationProp = NativeStackNavigationProp<AuthStackParamLi
 
 export const WalletAuthScreen = () => {
   const navigation = useNavigation<WalletAuthScreenNavigationProp>();
+  const { t } = useTranslation();
   const { connect, isConnected, isConnecting, publicKey } = useWallet();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -49,7 +51,7 @@ export const WalletAuthScreen = () => {
         setConnectionStep('success');
       }, 500);
     } catch (error) {
-      setConnectionError('Failed to connect to Seeker wallet. Please make sure:');
+      setConnectionError('Failed to connect to wallet. Please make sure:');
       setConnectionStep('idle');
       console.error('Wallet connection error:', error);
     }
@@ -84,8 +86,8 @@ export const WalletAuthScreen = () => {
           <View style={styles.logoContainer}>
             <Text style={styles.logoEmoji}>👛</Text>
           </View>
-          <Text style={styles.title}>Wallet Authentication</Text>
-          <Text style={styles.subtitle}>Sign in with your Solana wallet</Text>
+          <Text style={styles.title}>{t('auth.walletAuthTitle')}</Text>
+          <Text style={styles.subtitle}>{t('auth.walletSubtitle')}</Text>
         </View>
 
         {/* Connection Status */}
@@ -93,7 +95,7 @@ export const WalletAuthScreen = () => {
           {connectionStep === 'idle' && (
             <View style={styles.statusIdle}>
               <Text style={styles.statusIcon}>💡</Text>
-              <Text style={styles.statusText}>Ready to connect</Text>
+              <Text style={styles.statusText}>{t('auth.walletReady')}</Text>
             </View>
           )}
 
@@ -101,23 +103,23 @@ export const WalletAuthScreen = () => {
             <View style={styles.statusConnecting}>
               <ActivityIndicator color="#14F195" size="large" />
               <Text style={styles.statusText}>
-                {connectionStep === 'connecting' ? 'Opening Seeker...' : 'Waiting for authorization...'}
+                {connectionStep === 'connecting' ? t('auth.walletOpening') : t('auth.walletWaiting')}
               </Text>
-              <Text style={styles.statusSubtext}>Please approve in Seeker app</Text>
+              <Text style={styles.statusSubtext}>{t('auth.walletApprove')}</Text>
             </View>
           )}
 
           {connectionStep === 'authenticating' && (
             <View style={styles.statusConnecting}>
               <ActivityIndicator color="#6C63FF" size="large" />
-              <Text style={styles.statusText}>Authenticating with server...</Text>
+              <Text style={styles.statusText}>{t('auth.walletAuthenticating')}</Text>
             </View>
           )}
 
           {showSuccess && (
             <View style={styles.statusSuccess}>
               <Text style={styles.statusIcon}>✅</Text>
-              <Text style={styles.statusText}>Connected successfully!</Text>
+              <Text style={styles.statusText}>{t('auth.walletSuccess')}</Text>
               {publicKey && (
                 <Text style={styles.walletAddress}>
                   {publicKey.slice(0, 4)}...{publicKey.slice(-4)}
@@ -129,7 +131,7 @@ export const WalletAuthScreen = () => {
           {connectionError ? (
             <View style={styles.statusError}>
               <Text style={styles.statusIcon}>⚠️</Text>
-              <Text style={styles.errorTitle}>Connection Failed</Text>
+              <Text style={styles.errorTitle}>{t('auth.walletFailed')}</Text>
             </View>
           ) : null}
         </View>
@@ -139,9 +141,9 @@ export const WalletAuthScreen = () => {
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{connectionError}</Text>
             <View style={styles.errorList}>
-              <Text style={styles.errorBullet}>• Seeker app is installed</Text>
-              <Text style={styles.errorBullet}>• You have a wallet in Seeker</Text>
-              <Text style={styles.errorBullet}>• Internet connection is stable</Text>
+              <Text style={styles.errorBullet}>• {t('auth.checkSeeker')}</Text>
+              <Text style={styles.errorBullet}>• {t('auth.checkWallet')}</Text>
+              <Text style={styles.errorBullet}>• {t('auth.checkInternet')}</Text>
             </View>
           </View>
         ) : null}
@@ -156,12 +158,12 @@ export const WalletAuthScreen = () => {
             {isLoading ? (
               <>
                 <ActivityIndicator color="#fff" size="small" />
-                <Text style={styles.buttonText}>Connecting...</Text>
+                <Text style={styles.buttonText}>{t('auth.walletConnecting')}</Text>
               </>
             ) : (
               <>
                 <Text style={styles.connectIcon}>🔗</Text>
-                <Text style={styles.buttonText}>Connect Seeker Wallet</Text>
+                <Text style={styles.buttonText}>{t('auth.connectWalletButton')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -169,15 +171,15 @@ export const WalletAuthScreen = () => {
 
         {/* Why Use Wallet Section */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>Why use a wallet?</Text>
+          <Text style={styles.infoTitle}>{t('auth.walletWhyTitle')}</Text>
 
           <View style={styles.infoItem}>
             <View style={styles.infoIcon}>
               <Text style={styles.infoEmoji}>🔐</Text>
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoItemTitle}>Secure</Text>
-              <Text style={styles.infoItemText}>Your keys never leave your device</Text>
+              <Text style={styles.infoItemTitle}>{t('auth.featureSecure')}</Text>
+              <Text style={styles.infoItemText}>{t('auth.featureSecureDesc')}</Text>
             </View>
           </View>
 
@@ -186,8 +188,8 @@ export const WalletAuthScreen = () => {
               <Text style={styles.infoEmoji}>⚡</Text>
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoItemTitle}>Fast</Text>
-              <Text style={styles.infoItemText}>No password to remember</Text>
+              <Text style={styles.infoItemTitle}>{t('auth.featureFast')}</Text>
+              <Text style={styles.infoItemText}>{t('auth.featureFastDesc')}</Text>
             </View>
           </View>
 
@@ -196,8 +198,8 @@ export const WalletAuthScreen = () => {
               <Text style={styles.infoEmoji}>🏆</Text>
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoItemTitle}>Rewards</Text>
-              <Text style={styles.infoItemText}>Earn NFTs for tournament wins</Text>
+              <Text style={styles.infoItemTitle}>{t('auth.featureRewards')}</Text>
+              <Text style={styles.infoItemText}>{t('auth.featureRewardsDesc')}</Text>
             </View>
           </View>
 
@@ -206,44 +208,44 @@ export const WalletAuthScreen = () => {
               <Text style={styles.infoEmoji}>🎮</Text>
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoItemTitle}>Play & Earn</Text>
-              <Text style={styles.infoItemText}>Compete in ranked tournaments</Text>
+              <Text style={styles.infoItemTitle}>{t('auth.featurePlay')}</Text>
+              <Text style={styles.infoItemText}>{t('auth.featurePlayDesc')}</Text>
             </View>
           </View>
         </View>
 
         {/* How It Works */}
         <View style={styles.howItWorks}>
-          <Text style={styles.howTitle}>How it works</Text>
+          <Text style={styles.howTitle}>{t('auth.walletHowTitle')}</Text>
           <View style={styles.stepContainer}>
             <View style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
-              <Text style={styles.stepText}>Tap "Connect Seeker Wallet"</Text>
+              <Text style={styles.stepText}>{t('auth.walletStep1')}</Text>
             </View>
             <View style={styles.stepLine} />
             <View style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
-              <Text style={styles.stepText}>Approve in Seeker app</Text>
+              <Text style={styles.stepText}>{t('auth.walletStep2')}</Text>
             </View>
             <View style={styles.stepLine} />
             <View style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
-              <Text style={styles.stepText}>Start playing!</Text>
+              <Text style={styles.stepText}>{t('auth.walletStep3')}</Text>
             </View>
           </View>
         </View>
 
         {/* Back to Login */}
         <View style={styles.backContainer}>
-          <Text style={styles.backText}>Prefer email/password? </Text>
+          <Text style={styles.backText}>{t('auth.walletPreferEmail')}</Text>
           <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
-            <Text style={styles.backLink}>Sign In</Text>
+            <Text style={styles.backLink}>{t('auth.walletSignIn')}</Text>
           </TouchableOpacity>
         </View>
 
