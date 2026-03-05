@@ -67,3 +67,18 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Android signing credentials (contains passwords)
+mobile/android/gradle.properties
+
+# APK download serving directory
+downloads/
+
+# Internal hackathon/marketing docs (kept locally)
+MONOLITH_HACKATHON_SUMMARY.md
+mobile/HACKATHON_STATUS.md
+mobile/HACKATHON_SUBMISSION.md
+mobile/QUICKSTART_HACKATHON.md
+mobile/README_HACKATHON.md
+mobile/DEMO_VIDEO_SCRIPT.md
+mobile/DAPP_STORE_SUBMISSION.md
