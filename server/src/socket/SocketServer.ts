@@ -919,20 +919,6 @@ export class SocketServer {
   }
 
   /**
-   * Start a game
-   */
-  private startGame(roomId: string): void {
-    const room = this.matchmaker.getRoom(roomId);
-    if (!room) return;
-
-    room.gameMachine.startGame();
-    this.broadcastGameState(roomId, room);
-
-    // Start bot bidding (both game modes have bidding)
-    this.handleBotBidding(roomId, room);
-  }
-
-  /**
    * Handle bot bidding
    */
   private handleBotBidding(roomId: string, room: any): void {

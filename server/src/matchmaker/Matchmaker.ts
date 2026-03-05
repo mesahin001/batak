@@ -39,6 +39,7 @@ interface PrivateRoomEntry {
   players: Array<{ publicKey: string; socket: Socket; username?: string }>;
   botDifficulty: 'easy' | 'normal' | 'hard';
   gameMode: 'koz_maca' | 'ihaleli_batak';
+  skrStake?: number; // SKR token stake amount (0 = no stake)
 }
 
 /**
@@ -658,6 +659,7 @@ export class Matchmaker {
     username?: string;
     botDifficulty: 'easy' | 'normal' | 'hard';
     gameMode: 'koz_maca' | 'ihaleli_batak';
+    skrStake?: number;
   }): string {
     const code = this.generateRoomCode();
     const entry: PrivateRoomEntry = {
@@ -666,10 +668,12 @@ export class Matchmaker {
       hostSocket: params.hostSocket,
       players: [{ publicKey: params.hostPk, socket: params.hostSocket, username: params.username }],
       botDifficulty: params.botDifficulty,
-      gameMode: params.gameMode
+      gameMode: params.gameMode,
+      skrStake: params.skrStake || 0,
     };
     this.privateRooms.set(code, entry);
-    console.log('[Matchmaker] Private room created:', code, 'by', params.hostPk.slice(0, 8));
+    const stakeInfo = params.skrStake ? ` (SKR stake: ${params.skrStake})` : '';
+    console.log(`[Matchmaker] Private room created: ${code} by ${params.hostPk.slice(0, 8)}${stakeInfo}`);
     return code;
   }
 
