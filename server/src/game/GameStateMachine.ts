@@ -16,7 +16,6 @@ import {
   calculateScores,
   calculateTrickWinner,
   checkKingWinner,
-  getLowestScorer,
   getHighestScorer
 } from './Scoring.js';
 import { validateCardPlay, validateBid } from './TurnValidator.js';
@@ -25,7 +24,7 @@ import { validateCardPlay, validateBid } from './TurnValidator.js';
  * Configuration for game duration
  */
 export const TOTAL_ROUNDS_OPTIONS = [5, 7, 9, 11] as const;
-export const DEFAULT_TOTAL_ROUNDS = 5;
+export const DEFAULT_TOTAL_ROUNDS = 1; // TEMP: 1 round for NFT mint testing (revert to 5)
 
 /**
  * Game state machine for managing Batak game flow
@@ -396,11 +395,8 @@ export class GameStateMachine {
     // Check if we've reached max rounds - end game with appropriate winner
     if (this.room.currentRound >= this.room.totalRounds) {
       console.log('[completeRound] Max rounds reached, ending game');
-      // Koz Maça: HIGHEST score wins (least negative)
-      // İhaleli Batak: LOWEST score wins
-      const winner = this.room.gameMode === 'koz_maca'
-        ? getHighestScorer(this.room.players)
-        : getLowestScorer(this.room.players);
+      // Both modes: HIGHEST score wins
+      const winner = getHighestScorer(this.room.players);
       if (winner) {
         console.log('[completeRound] Winner:', winner.name, 'with score:', winner.totalScore, 'mode:', this.room.gameMode);
         this.completeGame(winner.id);
@@ -424,11 +420,8 @@ export class GameStateMachine {
     // Check if we've reached max rounds
     if (this.room.currentRound >= this.room.totalRounds) {
       // Game over - winner depends on game mode
-      // Koz Maça: HIGHEST score wins (least negative)
-      // İhaleli Batak: LOWEST score wins
-      const winner = this.room.gameMode === 'koz_maca'
-        ? getHighestScorer(this.room.players)
-        : getLowestScorer(this.room.players);
+      // Both modes: HIGHEST score wins
+      const winner = getHighestScorer(this.room.players);
       if (winner) {
         console.log('[startNextRound] Max rounds reached, winner:', winner.name, 'score:', winner.totalScore, 'mode:', this.room.gameMode);
         this.completeGame(winner.id);
