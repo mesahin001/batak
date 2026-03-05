@@ -4,7 +4,7 @@
  */
 
 import { Socket } from 'socket.io';
-import { GameStateMachine } from '../game/GameStateMachine.js';
+import { GameStateMachine, DEFAULT_TOTAL_ROUNDS } from '../game/GameStateMachine.js';
 import { BotManager } from '../bots/BatakBot.js';
 
 interface QueueEntry {
@@ -358,7 +358,7 @@ export class Matchmaker {
    */
   private createRealRoom(entries: QueueEntry[]): string {
     const roomId = `room_real_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const gameMachine = new GameStateMachine(roomId, 5, entries[0].gameMode);
+    const gameMachine = new GameStateMachine(roomId, DEFAULT_TOTAL_ROUNDS, entries[0].gameMode);
 
     // Add all 4 human players using PUBLIC KEY as ID (stable across reconnections)
     entries.forEach((entry, index) => {
@@ -418,7 +418,7 @@ export class Matchmaker {
    */
   private createBotRoom(entry: QueueEntry): string {
     const roomId = `room_bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const gameMachine = new GameStateMachine(roomId, 5, entry.gameMode);
+    const gameMachine = new GameStateMachine(roomId, DEFAULT_TOTAL_ROUNDS, entry.gameMode);
 
     // Add human player using PUBLIC KEY as ID
     const displayName = entry.username || 'Player';
@@ -699,7 +699,7 @@ export class Matchmaker {
     if (privateRoom.players.length < 1) return null;
 
     const roomId = `room_private_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const gameMachine = new GameStateMachine(roomId, 5, privateRoom.gameMode);
+    const gameMachine = new GameStateMachine(roomId, DEFAULT_TOTAL_ROUNDS, privateRoom.gameMode);
     const gameRoom: GameRoom = {
       id: roomId,
       gameMachine,
