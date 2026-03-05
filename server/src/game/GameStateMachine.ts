@@ -24,7 +24,7 @@ import { validateCardPlay, validateBid } from './TurnValidator.js';
  * Configuration for game duration
  */
 export const TOTAL_ROUNDS_OPTIONS = [5, 7, 9, 11] as const;
-export const DEFAULT_TOTAL_ROUNDS = 1; // TEMP: 1 round for NFT mint testing (revert to 5)
+export const DEFAULT_TOTAL_ROUNDS = 5;
 
 /**
  * Game state machine for managing Batak game flow
