@@ -5,6 +5,8 @@
 
 import { createServer } from 'http';
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config.js';
 import { SocketServer } from './socket/SocketServer.js';
 import { DatabaseManager } from './database/DatabaseManager.js';
@@ -94,6 +96,19 @@ async function main() {
         websocket: 'Socket.IO on same port'
       }
     });
+  });
+
+  // NFT metadata static file serving
+  app.get('/nft/:filename', (req, res) => {
+    const filename = path.basename(req.params.filename); // path traversal prevention
+    const filePath = path.join(process.cwd(), 'data', 'nft_metadata', filename);
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.sendFile(path.resolve(filePath));
+    } else {
+      res.status(404).json({ error: 'Not found' });
+    }
   });
 
   // Create HTTP server

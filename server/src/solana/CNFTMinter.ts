@@ -4,6 +4,9 @@
  */
 
 import { PublicKey } from '@solana/web3.js';
+import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 // @ts-ignore - optional dependency
 import { createTree, mintV1 } from '@metaplex-foundation/mpl-bubblegum';
 // @ts-ignore - optional dependency
@@ -12,6 +15,7 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { keypairIdentity, generateSigner, publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 // @ts-ignore - optional dependency
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
+// @ts-ignore - no type declarations for bs58
 import bs58 from 'bs58';
 
 import { SolanaClient } from './SolanaClient.js';
@@ -151,12 +155,16 @@ export class CNFTMinter {
       }
     }
 
-    // Fallback: encode metadata as a data URI (works without any API key)
-    // Judges can verify the metadata is well-formed even without real IPFS
-    const jsonStr = JSON.stringify(metadata, null, 2);
-    const base64 = Buffer.from(jsonStr).toString('base64');
-    const uri = `data:application/json;base64,${base64}`;
-    console.log(`[cNFT] Metadata encoded as data URI (set NFT_STORAGE_KEY for real IPFS upload)`);
+    // Fallback: save metadata as a local JSON file and return a short HTTPS URL.
+    // Data URIs are too large and cause "transaction too large" errors on Solana.
+    const uuid = randomUUID();
+    const filename = `${uuid}.json`;
+    const metadataDir = path.join(process.cwd(), 'data', 'nft_metadata');
+    fs.mkdirSync(metadataDir, { recursive: true });
+    fs.writeFileSync(path.join(metadataDir, filename), JSON.stringify(metadata, null, 2));
+    const baseUrl = process.env.NFT_METADATA_BASE_URL || 'https://batakci.xyz';
+    const uri = `${baseUrl}/nft/${filename}`;
+    console.log(`[cNFT] Metadata saved locally: ${uri}`);
     return uri;
   }
 
