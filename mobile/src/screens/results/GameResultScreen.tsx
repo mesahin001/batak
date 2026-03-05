@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +41,8 @@ export const GameResultScreen = () => {
   const [gameState, setGameState] = useState<GameClientState | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRoundBreakdown, setShowRoundBreakdown] = useState(false);
+  const [claimingReward, setClaimingReward] = useState(false);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
 
   useEffect(() => {
     // If gameData was passed from GameRoomScreen, use it directly
@@ -80,6 +83,22 @@ export const GameResultScreen = () => {
     });
   }, [socket, roomId, route.params]);
 
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('reward_minted', (data: { signature?: string }) => {
+      setClaimingReward(false);
+      setRewardClaimed(true);
+      if (data.signature) {
+        Alert.alert(
+          '🏆 NFT Ödülü Mint Edildi!',
+          `Cüzdanına gönderildi!\n\nTx: ${data.signature.slice(0, 20)}...`,
+          [{ text: 'Tamam' }]
+        );
+      }
+    });
+    return () => { socket.off('reward_minted'); };
+  }, [socket]);
+
   /**
    * Sort players by total score (lowest first for Batak rules)
    */
@@ -105,8 +124,22 @@ export const GameResultScreen = () => {
    * Check if current player is winner
    */
   const isPlayerWinner = (): boolean => {
-    const winner = getWinner();
+    if (gameState?.winner) return gameState.winner === playerId;
+    const winner = getWinner(); // fallback
     return winner?.id === playerId;
+  };
+
+  const handleClaimReward = () => {
+    if (!socket || claimingReward || rewardClaimed || !playerId) return;
+    setClaimingReward(true);
+    socket.emit('claim_reward', { tournamentId: roomId, publicKey: playerId }, (response: any) => {
+      setClaimingReward(false);
+      if (response?.error) {
+        Alert.alert('Hata', response.error);
+      } else {
+        setRewardClaimed(true);
+      }
+    });
   };
 
   /**
@@ -300,6 +333,35 @@ export const GameResultScreen = () => {
             {showRoundBreakdown ? t('game_result.hideRoundDetails') : t('game_result.showRoundDetails')}
           </Text>
         </TouchableOpacity>
+
+        {/* NFT Reward Card (yalnızca kazanan insan oyuncuya göster) */}
+        {playerWon && gameState?.players?.find(p => p.id === playerId)?.type !== 'bot' && (
+          <View style={styles.rewardCard}>
+            <Text style={styles.rewardTitle}>🎁 NFT Ödülü</Text>
+            <Text style={styles.rewardDescription}>Turnuva kazananı cNFT ödülü kazandın!</Text>
+            {rewardClaimed ? (
+              <View style={styles.rewardClaimed}>
+                <Text style={styles.rewardClaimedText}>✅ Mint Edildi!</Text>
+                <Text style={styles.rewardClaimedSub}>Cüzdanını kontrol et</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.claimButton, claimingReward && styles.claimButtonDisabled]}
+                onPress={handleClaimReward}
+                disabled={claimingReward}
+              >
+                {claimingReward ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.claimButtonText}>NFT Ödülü Talep Et</Text>
+                    <Text style={styles.claimButtonSub}>Cüzdanına mint et</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Game Info */}
         <View style={styles.gameInfoCard}>
@@ -581,5 +643,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ef4444',
     textAlign: 'center',
+  },
+  rewardCard: {
+    backgroundColor: '#2a2a4e',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#d4af37',
+  },
+  rewardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  rewardDescription: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  claimButton: {
+    backgroundColor: '#d4af37',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  claimButtonDisabled: { opacity: 0.6 },
+  claimButtonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginBottom: 3,
+  },
+  claimButtonSub: {
+    fontSize: 11,
+    color: 'rgba(26, 26, 46, 0.7)',
+  },
+  rewardClaimed: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  rewardClaimedText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#22c55e',
+    marginBottom: 3,
+  },
+  rewardClaimedSub: {
+    fontSize: 11,
+    color: '#888',
   },
 });

@@ -233,6 +233,95 @@ export class SocketServer {
         }
       });
 
+      // API: Claim NFT reward — called after client signs the claim tx via MWA
+      socket.on(ClientEvent.CLAIM_REWARD, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
+        const { tournamentId, publicKey: pk, claimSignature } = payload;
+        console.log(`[Tournament] Claim reward request from ${pk?.slice(0, 8)} for tournament ${tournamentId}`);
+
+        if (!this.cnftMinter) {
+          // cNFT minting not configured — record pending reward and notify
+          if (this.db) {
+            try {
+              this.db.recordNftReward({
+                playerPk: pk,
+                tournamentId: 1,
+                gameId: tournamentId,
+                tier: 3,
+                metadataUri: '',
+                mintAddress: null,
+                signature: claimSignature || undefined,
+                onChainMinted: false,
+              });
+            } catch (_e) { /* ignore duplicate */ }
+          }
+          if (callback) callback({ success: true, mintAddress: null, message: 'Reward recorded, minting pending' });
+          socket.emit(ServerEvent.REWARD_MINTED, { tournamentId, mintAddress: 'pending', tier: 'gold' });
+          return;
+        }
+
+        try {
+          const result = await this.cnftMinter.mintTournamentReward(tournamentId, pk, 'gold');
+
+          if (this.db) {
+            this.db.recordNftReward({
+              playerPk: pk,
+              tournamentId: 1,
+              gameId: tournamentId,
+              tier: 3,
+              metadataUri: result.metadataUri,
+              mintAddress: result.assetId !== 'pending' ? result.assetId : null,
+              signature: result.signature,
+              onChainMinted: true,
+            });
+          }
+
+          socket.emit(ServerEvent.REWARD_MINTED, {
+            tournamentId,
+            mintAddress: result.assetId,
+            signature: result.signature,
+            metadataUri: result.metadataUri,
+            tier: 'gold',
+          });
+
+          if (callback) callback({ success: true, mintAddress: result.assetId, signature: result.signature });
+        } catch (error) {
+          console.error('[Tournament] Mint failed:', error);
+          if (callback) callback({ error: 'Minting failed: ' + (error as Error).message });
+        }
+      });
+
+      // SKR Tournament: create a room with SKR stake
+      socket.on('create_skr_room', (payload: {
+        publicKey: string;
+        username?: string;
+        botDifficulty?: string;
+        gameMode?: string;
+        skrStake: number;
+        claimSignature: string; // MWA-signed transaction as proof of stake approval
+      }, callback: (data: any) => void) => {
+        if (!payload.publicKey || !payload.claimSignature) {
+          return callback({ error: 'Wallet signature required to create SKR room' });
+        }
+
+        const code = this.matchmaker.createPrivateRoom({
+          hostPk: payload.publicKey,
+          hostSocket: socket,
+          username: payload.username,
+          botDifficulty: (payload.botDifficulty as any) || 'normal',
+          gameMode: (payload.gameMode as any) || 'koz_maca',
+          skrStake: payload.skrStake,
+        });
+
+        const room = this.matchmaker.getPrivateRoom(code);
+        console.log(`[SKR] Room created by ${payload.publicKey.slice(0, 8)} with ${payload.skrStake} SKR stake`);
+
+        callback({
+          code,
+          skrStake: payload.skrStake,
+          players: room?.players.map(p => ({ publicKey: p.publicKey, username: p.username })) || [],
+        });
+      });
+
       // =====================================================
       // AUTH HANDLERS
       // =====================================================
@@ -477,6 +566,7 @@ export class SocketServer {
       this.io.to(roomId).emit(ServerEvent.GAME_COMPLETE, {
         winner: winnerId,
         winnerName: winner?.name || 'Unknown',
+        gameMode: roomData.gameMode,
         players: roomData.players.map((p: any) => ({
           id: p.id,
           name: p.name,
@@ -797,13 +887,14 @@ export class SocketServer {
           const result = await this.cnftMinter.mintTournamentReward(roomId, winnerId, 'gold');
           console.log(`[cNFT] Minted reward for winner ${winnerId.slice(0, 8)}: ${result.signature}`);
 
-          // Record in DB
+          // Record in DB with actual metadata URI and mint address
           this.db.recordNftReward({
             playerPk: winnerId,
-            tournamentId: 0,
+            tournamentId: 1,
             gameId: roomId,
             tier: 3, // Gold
-            metadataUri: '',
+            metadataUri: result.metadataUri,
+            mintAddress: result.assetId !== 'pending' ? result.assetId : null,
             signature: result.signature,
             onChainMinted: true
           });
@@ -813,6 +904,8 @@ export class SocketServer {
           if (winnerSocket) {
             winnerSocket.emit(ServerEvent.REWARD_MINTED, {
               signature: result.signature,
+              assetId: result.assetId,
+              metadataUri: result.metadataUri,
               tier: 'gold'
             });
           }
@@ -884,19 +977,21 @@ export class SocketServer {
           const hasRealBid = newRoomData.bids.some((b: any) => b.amount > 0);
           const currentPlayerIsHuman = newRoomData.players[newRoomData.currentPlayerIndex]?.type === 'human';
 
-          // Check if everyone passed (all bids are 0)
-          const everyonePassed = newRoomData.bids.every((b: any) => b.amount === 0);
+          // Check if everyone passed (all bids are 0) - requires allPlayersHadChance to
+          // avoid false positive on empty array ([].every() = true in JS) or partial bids.
+          // Note: GameStateMachine.passBid() already calls redeal() internally when all 4
+          // players pass, resetting bids to []. So this block is a safety net only.
+          const everyonePassed = allPlayersHadChance && newRoomData.bids.every((b: any) => b.amount === 0);
 
-          // Everyone passed - redeal
+          // Everyone passed - GameStateMachine already handled the redeal internally
           if (everyonePassed) {
-            console.log('[BotBidding] Everyone passed, redealing...');
-            this.io.to(roomId).emit(ServerEvent.ERROR, {
+            console.log('[BotBidding] Everyone passed, redeal already handled by GameStateMachine');
+            this.io.to(roomId).emit('info', {
               message: 'Herkes pas geçti. Kartlar yeniden dağıtılıyor...'
             });
-            // Trigger redeal
-            setTimeout(() => {
-              this.startGame(roomId);
-            }, 2000);
+            this.broadcastGameState(roomId, room);
+            // Continue bot bidding with new hand
+            this.handleBotBidding(roomId, room);
             return;
           }
 
