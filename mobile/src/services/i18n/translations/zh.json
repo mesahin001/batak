@@ -279,7 +279,11 @@
     "wonWith": "以",
     "points": "分获胜",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 NFT 奖励已铸造！",
+    "nftSentToWallet": "已发送到您的钱包！\n\nTx: {{tx}}...",
+    "nftReward": "NFT 奖励",
+    "minted": "✅ 已铸造！"
   },
   "suits": {
     "spades": "黑桃",

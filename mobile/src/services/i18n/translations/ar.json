@@ -279,7 +279,11 @@
     "wonWith": "فاز بـ",
     "points": "نقاط",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 تم سك مكافأة NFT!",
+    "nftSentToWallet": "تم الإرسال إلى محفظتك!\n\nTx: {{tx}}...",
+    "nftReward": "مكافأة NFT",
+    "minted": "✅ تم السك!"
   },
   "suits": {
     "spades": "السبيد",

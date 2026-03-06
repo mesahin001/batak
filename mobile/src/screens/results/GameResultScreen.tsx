@@ -90,9 +90,9 @@ export const GameResultScreen = () => {
       setRewardClaimed(true);
       if (data.signature) {
         Alert.alert(
-          '🏆 NFT Ödülü Mint Edildi!',
-          `Cüzdanına gönderildi!\n\nTx: ${data.signature.slice(0, 20)}...`,
-          [{ text: 'Tamam' }]
+          t('common.nftMintedTitle'),
+          t('common.nftSentToWallet', { tx: data.signature.slice(0, 20) }),
+          [{ text: t('common.ok') }]
         );
       }
     });
@@ -135,7 +135,7 @@ export const GameResultScreen = () => {
     socket.emit('claim_reward', { tournamentId: roomId, publicKey: playerId }, (response: any) => {
       setClaimingReward(false);
       if (response?.error) {
-        Alert.alert('Hata', response.error);
+        Alert.alert(t('common.error'), response.error);
       } else {
         setRewardClaimed(true);
       }
@@ -337,12 +337,12 @@ export const GameResultScreen = () => {
         {/* NFT Reward Card (yalnızca kazanan insan oyuncuya göster) */}
         {playerWon && gameState?.players?.find(p => p.id === playerId)?.type !== 'bot' && (
           <View style={styles.rewardCard}>
-            <Text style={styles.rewardTitle}>🎁 NFT Ödülü</Text>
-            <Text style={styles.rewardDescription}>Turnuva kazananı cNFT ödülü kazandın!</Text>
+            <Text style={styles.rewardTitle}>🎁 {t('common.nftReward')}</Text>
+            <Text style={styles.rewardDescription}>{t('common.rewardDesc')}</Text>
             {rewardClaimed ? (
               <View style={styles.rewardClaimed}>
-                <Text style={styles.rewardClaimedText}>✅ Mint Edildi!</Text>
-                <Text style={styles.rewardClaimedSub}>Cüzdanını kontrol et</Text>
+                <Text style={styles.rewardClaimedText}>{t('common.minted')}</Text>
+                <Text style={styles.rewardClaimedSub}>{t('common.checkWallet')}</Text>
               </View>
             ) : (
               <TouchableOpacity
@@ -354,8 +354,8 @@ export const GameResultScreen = () => {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Text style={styles.claimButtonText}>NFT Ödülü Talep Et</Text>
-                    <Text style={styles.claimButtonSub}>Cüzdanına mint et</Text>
+                    <Text style={styles.claimButtonText}>{t('common.claimReward')}</Text>
+                    <Text style={styles.claimButtonSub}>{t('common.mintToWallet')}</Text>
                   </>
                 )}
               </TouchableOpacity>

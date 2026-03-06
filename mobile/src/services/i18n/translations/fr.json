@@ -280,7 +280,11 @@
     "wonWith": "a gagné avec",
     "points": "points",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 Récompense NFT frappée !",
+    "nftSentToWallet": "Envoyé à ton portefeuille !\n\nTx: {{tx}}...",
+    "nftReward": "Récompense NFT",
+    "minted": "✅ Frappé !"
   },
   "suits": {
     "spades": "Pique",

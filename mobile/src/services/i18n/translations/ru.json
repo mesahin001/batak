@@ -279,7 +279,11 @@
     "wonWith": "победил с",
     "points": "очков",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 NFT-награда создана!",
+    "nftSentToWallet": "Отправлено в ваш кошелёк!\n\nTx: {{tx}}...",
+    "nftReward": "NFT-награда",
+    "minted": "✅ Создано!"
   },
   "suits": {
     "spades": "Пики",

@@ -342,7 +342,11 @@
     "wonWith": "won with",
     "points": "points",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 NFT Reward Minted!",
+    "nftSentToWallet": "Sent to your wallet!\n\nTx: {{tx}}...",
+    "nftReward": "NFT Reward",
+    "minted": "✅ Minted!"
   },
   "suits": {
     "spades": "Spades",

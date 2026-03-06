@@ -279,7 +279,11 @@
     "wonWith": "で勝利",
     "points": "ポイント",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 NFT報酬がミントされました！",
+    "nftSentToWallet": "ウォレットに送信されました！\n\nTx: {{tx}}...",
+    "nftReward": "NFT報酬",
+    "minted": "✅ ミント済み！"
   },
   "suits": {
     "spades": "スペード",

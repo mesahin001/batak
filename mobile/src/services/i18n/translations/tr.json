@@ -342,7 +342,11 @@
     "wonWith": "kazandı",
     "points": "puan",
     "today": "Bugün",
-    "yesterday": "Dün"
+    "yesterday": "Dün",
+    "nftMintedTitle": "🏆 NFT Ödülü Mint Edildi!",
+    "nftSentToWallet": "Cüzdanına gönderildi!\n\nTx: {{tx}}...",
+    "nftReward": "NFT Ödülü",
+    "minted": "✅ Mint Edildi!"
   },
   "suits": {
     "spades": "Maça",

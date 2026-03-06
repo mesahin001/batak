@@ -122,11 +122,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
                     {section.key === 'gameModes' && (
                       <View style={styles.gameModesContent}>
                         <View style={styles.modeItem}>
-                          <Text style={styles.modeLabel}>Koz Maça:</Text>
+                          <Text style={styles.modeLabel}>{t('lobby.kozMaca')}:</Text>
                           <Text style={styles.modeText}>{t('help.gameModes.kozMaca')}</Text>
                         </View>
                         <View style={styles.modeItem}>
-                          <Text style={styles.modeLabel}>İhaleli Batak:</Text>
+                          <Text style={styles.modeLabel}>{t('lobby.ihaleliBatak')}:</Text>
                           <Text style={styles.modeText}>{t('help.gameModes.ihaleli')}</Text>
                         </View>
                       </View>

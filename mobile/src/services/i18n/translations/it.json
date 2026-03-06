@@ -280,7 +280,11 @@
     "wonWith": "vinto con",
     "points": "punti",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "nftMintedTitle": "🏆 Ricompensa NFT coniata!",
+    "nftSentToWallet": "Inviato al tuo wallet!\n\nTx: {{tx}}...",
+    "nftReward": "Ricompensa NFT",
+    "minted": "✅ Coniato!"
   },
   "suits": {
     "spades": "Picche",
