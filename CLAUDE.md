@@ -48,11 +48,18 @@ cd mobile && npx expo export:embed \
   --entry-file index.ts \
   --bundle-output android/app/src/main/assets/index.android.bundle \
   --assets-dest android/app/src/main/res
-# Step 2: build APK (android/app/build.gradle must have debuggableVariants = [])
+# Step 2a: build DEBUG APK
 cd android && ./gradlew assembleDebug
 # NOTE: mobile/android/app/build.gradle has debuggableVariants = [] so Gradle
 # embeds the bundle instead of expecting Metro. Without this, debug APK shows
 # "runtime not ready" when launched without USB.
+
+# Step 2b: build SIGNED RELEASE APK (requires keystore configured in gradle.properties)
+cd android && ./gradlew assembleRelease
+# Release APK: mobile/android/app/build/outputs/apk/release/app-release.apk
+# Keystore: mobile/android/app/batak-release.keystore (never commit — in .gitignore)
+# Signing credentials: mobile/android/gradle.properties (BATAK_UPLOAD_* keys)
+# Verify signing: cd android && ./gradlew signingReport
 
 # Type-check
 cd server && npx tsc --noEmit
@@ -176,9 +183,11 @@ JWT stored in localStorage (`batak_auth_token`), 7-day expiry. Player ID: wallet
 
 Always use `useAuth()` hook from `client/src/auth/AuthContext.tsx` — never `useWallet()` directly.
 
-### Solana Mobile (Seeker) Integration
+### Solana Mobile Wallet Integration (Multi-Wallet)
 
-**`mobile/src/services/wallet/SeekerWalletService.ts`** — all MWA operations:
+MWA (`transact()` from `@solana-mobile/mobile-wallet-adapter-protocol-web3js`) is **wallet-agnostic** — works with Phantom, Backpack, Seeker, and any MWA-compatible wallet. UI strings in `WalletAuthScreen.tsx` are generic (no hardcoded "Seeker"). Do not add wallet-specific branding to the auth flow.
+
+**`mobile/src/services/wallet/SeekerWalletService.ts`** — all MWA operations (file name retained for historical reasons, logic is generic):
 - `authorize()` / `reauthorize()` / `deauthorize()` — wallet session management
 - `claimNftReward(tournamentId)` — builds a Memo tx on devnet, signs via MWA, submits on-chain. Returns the devnet tx signature. This is the pattern for any future MWA transaction: build tx → `transact()` → `wallet.signTransactions()` → `sendRawTransaction()`.
 - `signTransaction(tx)` / `signMessage(msg)` — generic signing helpers
@@ -381,3 +390,4 @@ This pattern handles the three states of cNFT minting: pending, successful, and 
 - **cNFT Merkle Tree (Mainnet):** `EQPVVrkCnPh4FvzFxUwctCeDCi85bWRNBDjB7GvxUBo6`
 - **Docker:** `docker-compose.yml` — batak-server, postgres, redis, nginx
 - **VPS IP:** `91.99.218.37` (Hetzner); app lives at `~/app/`; env at `~/app/.env`
+- **GitHub Release:** v1.0.0 — signed APK at `mobile/android/app/build/outputs/apk/release/app-release.apk`
