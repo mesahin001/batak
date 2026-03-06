@@ -41,7 +41,7 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 | Lobby | Gameplay | NFT Trophy | SKR Stake |
 |-------|----------|------------|-----------|
-| _(screenshot)_ | _(screenshot)_ | _(screenshot)_ | _(screenshot)_ |
+| ![Lobby](demo/lobby.png) | ![Gameplay](demo/gameplay.png) | ![NFT Trophy](demo/nft.png) | ![SKR Stake](demo/skr.png) |
 
 ---
 
