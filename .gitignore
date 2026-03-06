@@ -82,3 +82,11 @@ mobile/QUICKSTART_HACKATHON.md
 mobile/README_HACKATHON.md
 mobile/DEMO_VIDEO_SCRIPT.md
 mobile/DAPP_STORE_SUBMISSION.md
+
+# AI tooling (Claude Code, BMAD, Serena) — local only
+.claude/
+.serena/
+.planning/
+_bmad/
+_bmad-output/
+CLAUDE.md
