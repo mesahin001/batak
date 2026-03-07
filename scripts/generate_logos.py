@@ -1,50 +1,57 @@
 #!/usr/bin/env python3
 """
-Batak Tournament — Logo Generator
-Generates all app icons for mobile (Expo) and web (PWA).
+Batak Tournament — Logo Generator (Medallion Style)
+Generates all app icons for mobile (Expo), web (PWA), and Android mipmaps.
 
-Design: Casino card with green felt background, gold border, spade symbol.
+Design: Gold medallion/coin with sunburst gear ring, dark center, gold spade,
+        "BATAK" + "TOURNAMENT" text.
 """
 
+import math
 import os
-import struct
-import zlib
+
 from PIL import Image, ImageDraw, ImageFont
 
-# ── Design tokens ────────────────────────────────────────────────────────────
-BG_GREEN     = (13, 40, 24, 255)       # #0d2818 felt dark
-CARD_WHITE   = (255, 252, 245, 255)    # warm white card
-GOLD         = (212, 175, 55, 255)     # #d4af37 gold
-SPADE_BLACK  = (15, 10, 10, 255)       # near-black spade
+# ── Design tokens ─────────────────────────────────────────────────────────────
+BG_GREEN   = (13, 40, 24, 255)    # #0d2818 feltDark casino green
+GOLD       = (212, 175, 55, 255)  # #d4af37 goldPrimary
+GOLD_DIM   = (168, 140, 42, 255)  # #a88c2a dimmer gold for "TOURNAMENT"
+INNER_DARK = (10, 31, 16, 255)    # #0a1f10 very dark green-black (coin interior)
 
-FONT_PATH    = "/System/Library/Fonts/Apple Symbols.ttf"
-FONT_PATH_HV = "/System/Library/Fonts/Helvetica.ttc"
-
-# ── Corner suit layout: (symbol, color) ──────────────────────────────────────
-CORNERS = [
-    ("\u2665", (220, 50, 50, 255)),    # ♥ top-left  red
-    ("\u2666", (220, 50, 50, 255)),    # ♦ top-right red
-    ("\u2663", GOLD),                  # ♣ bottom-left gold
-    ("\u2660", GOLD),                  # ♠ bottom-right gold
-]
+FONT_SYMBOL  = "/System/Library/Fonts/Apple Symbols.ttf"
+FONT_BOLD    = "/System/Library/Fonts/Helvetica.ttc"
+FONT_BOLD_IDX = 1  # index 1 = Helvetica Bold in the TTC collection
 
 
-def load_font(size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(FONT_PATH, size)
+def load_font(path: str, size: int, index: int = 0) -> ImageFont.FreeTypeFont:
+    try:
+        return ImageFont.truetype(path, size, index=index)
+    except OSError:
+        try:
+            return ImageFont.truetype(path, size, index=0)
+        except OSError:
+            return ImageFont.load_default()
 
 
-def draw_rounded_rect(draw, bbox, radius, fill, outline, outline_width):
-    """Draw a filled rounded rectangle with an outline."""
-    x0, y0, x1, y1 = bbox
-    # Fill
-    draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=fill)
-    # Outline (simulate thick border by drawing concentric rounded rects)
-    for i in range(outline_width):
-        draw.rounded_rectangle(
-            [x0 + i, y0 + i, x1 - i, y1 - i],
-            radius=max(radius - i, 1),
-            outline=outline,
-        )
+def draw_sunburst(
+    draw: ImageDraw.ImageDraw,
+    cx: float, cy: float,
+    spike_r: float, valley_r: float,
+    num_spikes: int,
+    color: tuple,
+) -> None:
+    """
+    Draw a sunburst / gear shape as a star polygon.
+    Points alternate between spike_r (tooth tips) and valley_r (tooth bases).
+    num_spikes=36 gives a 36-tooth gear, one tooth every 10 degrees.
+    """
+    points = []
+    step = math.pi / num_spikes  # angle between adjacent spike/valley
+    for i in range(num_spikes * 2):
+        angle = i * step - math.pi / 2  # start from 12 o'clock
+        r = spike_r if i % 2 == 0 else valley_r
+        points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    draw.polygon(points, fill=color)
 
 
 def draw_batak_logo(
@@ -53,181 +60,211 @@ def draw_batak_logo(
     adaptive: bool = False,
 ) -> Image.Image:
     """
-    Draw the Batak logo at the given square size.
+    Render the Batak medallion logo at `size` x `size` pixels.
 
-    transparent_bg — if True, background is transparent (splash / adaptive)
-    adaptive       — if True, shrink card into Android safe zone (66%)
+    transparent_bg  -- True for splash / adaptive foreground layers
+    adaptive        -- True to keep everything inside Android's 66% safe zone
     """
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    img  = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # ── Background ───────────────────────────────────────────────────────────
+    # Background
     if not transparent_bg:
         draw.rectangle([0, 0, size, size], fill=BG_GREEN)
 
-    # ── Card geometry ────────────────────────────────────────────────────────
-    # For adaptive icons, keep card within the 66% safe zone
-    scale = 0.55 if adaptive else 0.60
-    card_w = int(size * scale)
-    # Poker card aspect ratio ≈ 5∶7
-    card_h = int(card_w * 7 / 5)
-    # Cap height so card fits vertically
-    if card_h > int(size * 0.84):
-        card_h = int(size * 0.84)
-        card_w = int(card_h * 5 / 7)
+    cx = size / 2.0
 
-    card_x = (size - card_w) // 2
-    card_y = (size - card_h) // 2
-    radius  = max(int(card_w * 0.08), 4)
-    border  = max(int(size * 0.009), 2)
+    # Vertical layout: for adaptive icons the medallion is exactly centered;
+    # for standard icons it sits in the upper ~60% so text fits below.
+    if adaptive:
+        medal_cy = size * 0.5
+        scale    = 0.22   # well within 66% safe zone, no clipping
+    else:
+        medal_cy = size * 0.40
+        scale    = 0.28
 
-    draw_rounded_rect(
-        draw,
-        (card_x, card_y, card_x + card_w, card_y + card_h),
-        radius,
-        CARD_WHITE,
-        GOLD,
-        border,
+    spike_r  = size * scale          # sunburst spike tips (outermost radius)
+    valley_r = spike_r * 0.818       # sunburst valleys / coin edge
+    circle_r = spike_r * 0.645       # inner dark-circle radius
+
+    # ── Gold sunburst gear ────────────────────────────────────────────────────
+    draw_sunburst(draw, cx, medal_cy, spike_r, valley_r, num_spikes=36, color=GOLD)
+
+    # ── Inner dark circle (coin face) ─────────────────────────────────────────
+    draw.ellipse(
+        [cx - circle_r, medal_cy - circle_r,
+         cx + circle_r, medal_cy + circle_r],
+        fill=INNER_DARK,
     )
 
-    # ── Center spade ─────────────────────────────────────────────────────────
-    center_font_size = max(int(card_w * 0.52), 8)
+    # ── Gold spade symbol ─────────────────────────────────────────────────────
+    spade_fs   = max(int(circle_r * 1.12), 8)
+    spade_font = load_font(FONT_SYMBOL, spade_fs)
+    spade_char = "\u2660"  # spade
     try:
-        center_font = load_font(center_font_size)
-    except OSError:
-        center_font = ImageFont.load_default()
+        sb = draw.textbbox((0, 0), spade_char, font=spade_font)
+        sx = cx - (sb[2] - sb[0]) / 2 - sb[0]
+        sy = medal_cy - (sb[3] - sb[1]) / 2 - sb[1]
+        draw.text((sx, sy), spade_char, font=spade_font, fill=GOLD)
+    except Exception:
+        pass
 
-    spade_char = "\u2660"
-    bbox = draw.textbbox((0, 0), spade_char, font=center_font)
-    sw, sh = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    sx = card_x + (card_w - sw) // 2 - bbox[0]
-    sy = card_y + (card_h - sh) // 2 - bbox[1]
-    draw.text((sx, sy), spade_char, font=center_font, fill=SPADE_BLACK)
+    # ── Text (omit for adaptive icons and very small sizes) ───────────────────
+    if not adaptive and size >= 64:
+        text_top = medal_cy + spike_r + size * 0.022
 
-    # ── Corner suit symbols ───────────────────────────────────────────────────
-    corner_font_size = max(int(card_w * 0.145), 6)
-    try:
-        corner_font = load_font(corner_font_size)
-    except OSError:
-        corner_font = ImageFont.load_default()
+        # "BATAK" -- bold, gold
+        batak_fs   = max(int(size * 0.125), 8)
+        batak_font = load_font(FONT_BOLD, batak_fs, index=FONT_BOLD_IDX)
+        try:
+            bb = draw.textbbox((0, 0), "BATAK", font=batak_font)
+            bx = cx - (bb[2] - bb[0]) / 2 - bb[0]
+            by = text_top - bb[1]
+            draw.text((bx, by), "BATAK", font=batak_font, fill=GOLD)
+            text_top = by + (bb[3] - bb[1]) + bb[1] + size * 0.012
 
-    padding = max(int(card_w * 0.09), 4)
-    # (symbol, color, anchor_x, anchor_y, text_align)
-    corner_positions = [
-        (CORNERS[0], card_x + padding,            card_y + padding),             # top-left
-        (CORNERS[1], card_x + card_w - padding,   card_y + padding),             # top-right
-        (CORNERS[2], card_x + padding,            card_y + card_h - padding),    # bottom-left
-        (CORNERS[3], card_x + card_w - padding,   card_y + card_h - padding),    # bottom-right
-    ]
+            # "TOURNAMENT" -- smaller, dimmer gold, flanked by thin lines
+            tourn_fs   = max(int(batak_fs * 0.46), 6)
+            tourn_font = load_font(FONT_BOLD, tourn_fs, index=FONT_BOLD_IDX)
+            tb  = draw.textbbox((0, 0), "TOURNAMENT", font=tourn_font)
+            tw  = tb[2] - tb[0]
+            th  = tb[3] - tb[1]
+            tx  = cx - tw / 2 - tb[0]
+            ty  = text_top - tb[1]
 
-    for i, ((symbol, color), cx, cy) in enumerate(corner_positions):
-        cbbox = draw.textbbox((0, 0), symbol, font=corner_font)
-        cw = cbbox[2] - cbbox[0]
-        ch = cbbox[3] - cbbox[1]
-        # Adjust so the symbol is anchored at corner
-        if i in (1, 3):   # right-side corners
-            tx = cx - cw - cbbox[0]
-        else:
-            tx = cx - cbbox[0]
-        if i in (2, 3):   # bottom corners
-            ty = cy - ch - cbbox[1]
-        else:
-            ty = cy - cbbox[1]
-        draw.text((tx, ty), symbol, font=corner_font, fill=color)
+            # Flanking horizontal rules
+            line_y   = ty + th / 2
+            line_w   = max(1, int(size * 0.005))
+            pad      = size * 0.025
+            edge     = size * 0.045
+            lx_left  = cx - tw / 2 - pad
+            lx_right = cx + tw / 2 + pad
+            if lx_left > edge:
+                draw.line(
+                    [(edge, line_y), (lx_left, line_y)],
+                    fill=GOLD_DIM, width=line_w,
+                )
+                draw.line(
+                    [(lx_right, line_y), (size - edge, line_y)],
+                    fill=GOLD_DIM, width=line_w,
+                )
+
+            draw.text((tx, ty), "TOURNAMENT", font=tourn_font, fill=GOLD_DIM)
+        except Exception:
+            pass
 
     return img
 
 
-def make_ico(sizes=(16, 32, 48)):
-    """Create a multi-size .ico file from PIL images."""
-    images = []
-    for s in sizes:
-        img = draw_batak_logo(s, transparent_bg=False)
-        images.append(img.convert("RGBA"))
-    return images
+def make_round(img: Image.Image) -> Image.Image:
+    """Clip an image to a circle (for ic_launcher_round)."""
+    size = img.width
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).ellipse([0, 0, size, size], fill=255)
+    out  = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.paste(img, mask=mask)
+    return out
 
 
-def save_ico(images, path):
-    """
-    Write a minimal multi-size ICO file.
-    PIL's built-in ico writer supports single image; we build multi-size manually.
-    """
-    # Use PIL's save with sizes parameter (Pillow ≥ 9.1 supports sizes kwarg)
-    base = images[-1]  # largest
-    base.save(path, format="ICO", sizes=[(img.width, img.height) for img in images])
+def save_webp(img: Image.Image, path: str, size: int) -> None:
+    resized = img.resize((size, size), Image.LANCZOS)
+    resized.convert("RGBA").save(path, format="WEBP", lossless=True)
     print(f"  saved {path}")
 
 
-def generate_all():
-    base = "/Users/mesahin/batak"
+def generate_all() -> None:
+    base          = "/Users/mesahin/batak"
     mobile_assets = os.path.join(base, "mobile", "assets")
     web_images    = os.path.join(base, "client", "public", "images")
     web_public    = os.path.join(base, "client", "public")
+    android_res   = os.path.join(base, "mobile", "android", "app", "src", "main", "res")
 
     os.makedirs(mobile_assets, exist_ok=True)
     os.makedirs(web_images,    exist_ok=True)
 
-    # ── Mobile assets ────────────────────────────────────────────────────────
+    # ── Render source images at high resolution ───────────────────────────────
+    SRC = 1024
+    src_full     = draw_batak_logo(SRC, transparent_bg=False, adaptive=False)
+    src_adaptive = draw_batak_logo(SRC, transparent_bg=True,  adaptive=True)
+    src_splash   = draw_batak_logo(SRC, transparent_bg=True,  adaptive=False)
+    # Launcher icon: centered medallion on green bg — avoids top-clip in small sizes
+    src_launcher = draw_batak_logo(SRC, transparent_bg=False, adaptive=True)
+
+    # ── Mobile assets ──────────────────────────────────────────────────────────
     print("Generating mobile assets...")
 
-    # icon.png — full design with background, 1024×1024
-    img = draw_batak_logo(1024, transparent_bg=False, adaptive=False)
-    img.save(os.path.join(mobile_assets, "icon.png"))
+    src_full.save(os.path.join(mobile_assets, "icon.png"))
     print("  saved mobile/assets/icon.png")
 
-    # adaptive-icon.png — transparent bg, card in safe zone, 1024×1024
-    img = draw_batak_logo(1024, transparent_bg=True, adaptive=True)
-    img.save(os.path.join(mobile_assets, "adaptive-icon.png"))
+    src_adaptive.save(os.path.join(mobile_assets, "adaptive-icon.png"))
     print("  saved mobile/assets/adaptive-icon.png")
 
-    # splash-icon.png — transparent bg, standard card, 1024×1024
-    img = draw_batak_logo(1024, transparent_bg=True, adaptive=False)
-    img.save(os.path.join(mobile_assets, "splash-icon.png"))
+    src_splash.save(os.path.join(mobile_assets, "splash-icon.png"))
     print("  saved mobile/assets/splash-icon.png")
 
-    # favicon.png — full design, 196×196
-    img = draw_batak_logo(196, transparent_bg=False, adaptive=False)
-    img.save(os.path.join(mobile_assets, "favicon.png"))
+    draw_batak_logo(196, transparent_bg=False).save(
+        os.path.join(mobile_assets, "favicon.png")
+    )
     print("  saved mobile/assets/favicon.png")
 
-    # ── Web PWA icons ────────────────────────────────────────────────────────
+    # ── Web PWA icons ──────────────────────────────────────────────────────────
     print("Generating web PWA icons...")
 
-    web_sizes = [512, 384, 192, 152, 144, 128, 96, 72]
-    for s in web_sizes:
-        img = draw_batak_logo(s, transparent_bg=False, adaptive=False)
+    for s in (512, 384, 192, 152, 144, 128, 96, 72):
         out = os.path.join(web_images, f"icon-{s}x{s}.png")
-        img.save(out)
-        print(f"  saved {out}")
+        src_full.resize((s, s), Image.LANCZOS).save(out)
+        print(f"  saved client/public/images/icon-{s}x{s}.png")
 
-    # Maskable icons (safe-zone aware)
+    # Maskable variants (adaptive foreground composited onto filled background)
     for s in (512, 192):
-        img = draw_batak_logo(s, transparent_bg=False, adaptive=True)
-        out = os.path.join(web_images, f"icon-maskable-{s}x{s}.png")
-        img.save(out)
-        print(f"  saved {out}")
+        fg = src_adaptive.resize((s, s), Image.LANCZOS)
+        bg = Image.new("RGBA", (s, s), BG_GREEN)
+        bg.paste(fg, mask=fg.split()[3])
+        bg.save(os.path.join(web_images, f"icon-maskable-{s}x{s}.png"))
+        print(f"  saved client/public/images/icon-maskable-{s}x{s}.png")
 
-    # Favicon sizes
     for s in (48, 32, 16):
-        img = draw_batak_logo(s, transparent_bg=False, adaptive=False)
         out = os.path.join(web_images, f"favicon-{s}x{s}.png")
-        img.save(out)
-        print(f"  saved {out}")
+        src_full.resize((s, s), Image.LANCZOS).save(out)
+        print(f"  saved client/public/images/favicon-{s}x{s}.png")
 
-    # favicon.ico — multi-size
+    # favicon.ico
     print("Generating favicon.ico...")
-    ico_images = [
-        draw_batak_logo(16, transparent_bg=False).convert("RGBA"),
-        draw_batak_logo(32, transparent_bg=False).convert("RGBA"),
-        draw_batak_logo(48, transparent_bg=False).convert("RGBA"),
-    ]
-    ico_path = os.path.join(web_public, "favicon.ico")
-    ico_images[-1].save(
-        ico_path,
+    ico_imgs = [src_full.resize((s, s), Image.LANCZOS).convert("RGBA")
+                for s in (16, 32, 48)]
+    ico_imgs[-1].save(
+        os.path.join(web_public, "favicon.ico"),
         format="ICO",
-        sizes=[(img.width, img.height) for img in ico_images],
+        sizes=[(img.width, img.height) for img in ico_imgs],
     )
-    print(f"  saved {ico_path}")
+    print("  saved client/public/favicon.ico")
+
+    # ── Android mipmap WebP ────────────────────────────────────────────────────
+    # ic_launcher / ic_launcher_round: standard sized icon (dp -> px per density)
+    # ic_launcher_foreground: adaptive foreground at 108dp bounding box
+    DENSITIES = {
+        "mdpi":    {"launcher": 48,  "foreground": 108},
+        "hdpi":    {"launcher": 72,  "foreground": 162},
+        "xhdpi":   {"launcher": 96,  "foreground": 216},
+        "xxhdpi":  {"launcher": 144, "foreground": 324},
+        "xxxhdpi": {"launcher": 192, "foreground": 432},
+    }
+
+    print("Generating Android mipmap WebP files...")
+    for density, sizes in DENSITIES.items():
+        mipmap_dir = os.path.join(android_res, f"mipmap-{density}")
+        os.makedirs(mipmap_dir, exist_ok=True)
+
+        ls = sizes["launcher"]
+        launcher_img = src_launcher.resize((ls, ls), Image.LANCZOS)
+        save_webp(launcher_img,
+                  os.path.join(mipmap_dir, "ic_launcher.webp"), ls)
+        save_webp(make_round(launcher_img),
+                  os.path.join(mipmap_dir, "ic_launcher_round.webp"), ls)
+
+        fs = sizes["foreground"]
+        fg = src_adaptive.resize((fs, fs), Image.LANCZOS)
+        save_webp(fg, os.path.join(mipmap_dir, "ic_launcher_foreground.webp"), fs)
 
     print("\nDone! All logo files generated.")
 

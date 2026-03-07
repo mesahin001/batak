@@ -37,6 +37,12 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 ---
 
+## Demo Video
+
+[![Batak Tournament Demo](https://img.youtube.com/vi/frwOmIqUAug/maxresdefault.jpg)](https://youtu.be/frwOmIqUAug)
+
+---
+
 ## Screenshots
 
 | Lobby | Gameplay | NFT Trophy | SKR Stake |

@@ -7,6 +7,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { initI18n } from './src/services/i18n/I18nService';
 import { soundManager } from './src/utils/SoundManager';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { SplashScreen } from './src/screens/SplashScreen';
 
 // Socket server URL - configure based on environment
 // For development on mobile, use the actual IP of the development machine
@@ -14,6 +15,7 @@ const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'wss://batakci.xyz';
 
 export default function App() {
   const [isI18nReady, setIsI18nReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     // Initialize services before rendering
@@ -25,10 +27,13 @@ export default function App() {
     initServices();
   }, []);
 
-  if (!isI18nReady) {
+  if (!isI18nReady || showSplash) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar style="light" />
+        {isI18nReady && (
+          <SplashScreen onFinish={() => setShowSplash(false)} />
+        )}
       </View>
     );
   }
@@ -48,6 +53,6 @@ export default function App() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0d2818',
   },
 });
