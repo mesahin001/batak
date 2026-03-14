@@ -206,8 +206,6 @@ function AppContent() {
           <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           <span>·</span>
           <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
-          <span>·</span>
-          <a href="/legal/license" target="_blank" rel="noopener noreferrer">License</a>
         </footer>
       )}
     </div>
