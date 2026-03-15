@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -239,6 +240,18 @@ export const WalletAuthScreen = () => {
               <Text style={styles.stepText}>{t('auth.walletStep3')}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Terms and Privacy */}
+        <View style={styles.termsContainer}>
+          <Text style={styles.termsText}>By connecting your wallet, you agree to our{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/terms')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.termsText}>{' '}and{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/privacy')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Back to Login */}
@@ -487,6 +500,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#3a3a5e',
     marginLeft: 17,
     marginVertical: 4,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  termsText: {
+    fontSize: 12,
+    color: '#888',
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: '#6C63FF',
+    fontWeight: '600',
   },
   backContainer: {
     flexDirection: 'row',

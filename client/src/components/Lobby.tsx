@@ -199,23 +199,23 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
     return (
       <div className="lobby">
         <div className="lobby-header">
-          <h1>Ozel Oda</h1>
-          <p>Arkadaşlarını davet et!</p>
+          <h1>Private Room</h1>
+          <p>Invite your friends!</p>
         </div>
         <div className="lobby-content">
           <div className="lobby-card private-room-card">
             <div className="room-code-display">
-              <label>Oda Kodu</label>
+              <label>Room Code</label>
               <div className="room-code-value">
                 <span>{privateRoomCode}</span>
-                <button className="btn-copy" onClick={copyRoomCode} title="Kopyala">
-                  Kopyala
+                <button className="btn-copy" onClick={copyRoomCode} title="Copy">
+                  Copy
                 </button>
               </div>
             </div>
 
             <div className="room-players-list">
-              <label>Oyuncular ({privateRoomPlayers.length}/4)</label>
+              <label>Players ({privateRoomPlayers.length}/4)</label>
               {privateRoomPlayers.map((p, i) => (
                 <div key={p.publicKey} className="room-player-item">
                   <span className="room-player-icon">👤</span>
@@ -226,21 +226,21 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
               {Array.from({ length: 4 - privateRoomPlayers.length }).map((_, i) => (
                 <div key={`empty-${i}`} className="room-player-item empty">
                   <span className="room-player-icon">🤖</span>
-                  <span>Bot (bos slot)</span>
+                  <span>Bot (empty slot)</span>
                 </div>
               ))}
             </div>
 
             {isHost && (
               <button className="btn-primary w-full" onClick={handleStartPrivateRoom}>
-                Oyunu Baslat
+                Start Game
               </button>
             )}
             {!isHost && (
-              <p className="waiting-host">Host'un oyunu baslatmasini bekle...</p>
+              <p className="waiting-host">Waiting for host to start the game...</p>
             )}
             <button className="btn-secondary w-full" onClick={handleLeavePrivateRoom} style={{ marginTop: '0.5rem' }}>
-              Odadan Ayril
+              Leave Room
             </button>
           </div>
         </div>
@@ -252,7 +252,7 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
     <div className="lobby">
       <div className="lobby-header">
         <h1>Batak Tournament</h1>
-        {username && <p className="welcome-text">Hosgeldin, {username}!</p>}
+        {username && <p className="welcome-text">Welcome, {username}!</p>}
         {!username && <p>Find a match and compete for NFT rewards!</p>}
       </div>
 
@@ -260,10 +260,10 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
         {/* Left column: Settings */}
         <div className="lobby-col-left">
           <div className="lobby-card">
-            <h2>Oyun Ayarlari</h2>
+            <h2>Game Settings</h2>
 
             <div className="setting-group">
-              <label>Oyun Modu</label>
+              <label>Game Mode</label>
               <div className="gamemode-selector">
                 <button
                   className={`gamemode-btn ${gameMode === GameMode.KOZ_MACA ? 'active' : ''}`}
@@ -271,7 +271,7 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                   disabled={inQueue}
                 >
                   Koz Maca
-                  <span className="gamemode-desc">Maca koz, sadece el sayisi</span>
+                  <span className="gamemode-desc">Spades trump, bid only</span>
                 </button>
                 <button
                   className={`gamemode-btn ${gameMode === GameMode.IHALELI_BATAK ? 'active' : ''}`}
@@ -279,13 +279,13 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                   disabled={inQueue}
                 >
                   Ihaleli Batak
-                  <span className="gamemode-desc">Koz rengi ve el sayisi</span>
+                  <span className="gamemode-desc">Choose trump and bid</span>
                 </button>
               </div>
             </div>
 
             <div className="setting-group">
-              <label>Oyuncu Sayisi</label>
+              <label>Player Count</label>
               <div className="bot-selector">
                 {[0, 1, 2, 3].map((count) => (
                   <button
@@ -299,13 +299,13 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                 ))}
               </div>
               {botCount === 3 && (
-                <small className="text-green">Aninda baslar!</small>
+                <small className="text-green">Starts immediately!</small>
               )}
             </div>
 
             {botCount > 0 && (
               <div className="setting-group">
-                <label>Bot Zorlugu</label>
+                <label>Bot Difficulty</label>
                 <div className="difficulty-selector">
                   {(['easy', 'normal', 'hard'] as const).map((difficulty) => (
                     <button
@@ -323,8 +323,8 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
 
             <div className="setting-group">
               <div className="info-box">
-                <p>{botCount === 0 ? '4 Gercek Oyuncu' : `1 Gercek + ${botCount} Bot`}</p>
-                <p>Kazanan cNFT odul kazanir</p>
+                <p>{botCount === 0 ? '4 Real Players' : `1 Real + ${botCount} Bot`}</p>
+                <p>Winner earns a cNFT reward</p>
               </div>
             </div>
           </div>
@@ -344,7 +344,7 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
               onClick={handleJoinQueue}
               disabled={!isConnected}
             >
-              {isConnected ? 'Oyun Bul' : 'Baglaniyor...'}
+              {isConnected ? 'Find Game' : 'Connecting...'}
             </button>
           ) : (
             <div className="queue-status">
@@ -353,36 +353,36 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                   <div className="queue-info">
                     {queueStatus.status === 'matched_with_bots' ? (
                       <>
-                        <p>Botlarla eslesildi!</p>
+                        <p>Matched with bots!</p>
                         <p className="queue-subtext">{queueStatus.message}</p>
                       </>
                     ) : (
                       <>
                         <p>
-                          {selectedBotCount === 0 ? '🎮 PvP Modu' : '🤖 Karisik Mod'}
+                          {selectedBotCount === 0 ? '🎮 PvP Mode' : '🤖 Mixed Mode'}
                           {' - '}
-                          Oyuncu Bekleniyor...
+                          Waiting for Players...
                         </p>
                         <p className="queue-subtext">
-                          {queueStatus.playersInQueue}/{queueStatus.playersNeeded} oyuncu
+                          {queueStatus.playersInQueue}/{queueStatus.playersNeeded} players
                           {selectedBotCount === 0 && queueStartTime && (
-                            <> • Botlar {Math.max(0, 60 - Math.floor((Date.now() - queueStartTime) / 1000))}s sonra eklenecek</>
+                            <> • Bots added in {Math.max(0, 60 - Math.floor((Date.now() - queueStartTime) / 1000))}s</>
                           )}
                           {selectedBotCount > 0 && selectedBotCount < 3 && queueStartTime && (
-                            <> • {Math.max(0, 30 - Math.floor((Date.now() - queueStartTime) / 1000))}s kalan</>
+                            <> • {Math.max(0, 30 - Math.floor((Date.now() - queueStartTime) / 1000))}s left</>
                           )}
                         </p>
                       </>
                     )}
                   </div>
                   <button className="btn-secondary" onClick={handleLeaveQueue}>
-                    Iptal
+                    Cancel
                   </button>
                 </>
               ) : (
                 <>
                   <div className="spinner"></div>
-                  <p>Eslesme araniyor...</p>
+                  <p>Searching for match...</p>
                 </>
               )}
             </div>
@@ -391,11 +391,11 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
           {/* Private Room Buttons */}
           <div className="private-room-actions">
             <button className="btn-private-room" onClick={handleCreatePrivateRoom} disabled={!isConnected || inQueue}>
-              Oda Olustur
+              Create Room
             </button>
             {!showJoinInput ? (
               <button className="btn-private-room" onClick={() => setShowJoinInput(true)} disabled={!isConnected || inQueue}>
-                Odaya Katil
+                Join Room
               </button>
             ) : (
               <div className="join-room-input">
@@ -403,12 +403,12 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
                   type="text"
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                  placeholder="Oda kodu..."
+                  placeholder="Room code..."
                   maxLength={6}
                   className="room-code-input"
                 />
                 <button className="btn-join" onClick={handleJoinPrivateRoom} disabled={joinCodeInput.length !== 6}>
-                  Katil
+                  Join
                 </button>
                 <button className="btn-cancel-join" onClick={() => { setShowJoinInput(false); setJoinCodeInput(''); }}>
                   X
@@ -422,17 +422,17 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
               className="btn-primary w-full leaderboard-btn"
               onClick={onViewLeaderboard}
             >
-              Skor Tablosu
+              Leaderboard
             </button>
           )}
 
           <div className="lobby-info">
-            <h3>Nasil Oynanir</h3>
+            <h3>How to Play</h3>
             <ul>
-              <li>Ihale: Kac el alacagini soyle</li>
-              <li>Koz rengi sec veya Maca koz</li>
-              <li>Sira sende kart at</li>
-              <li>En dusuk skor kazanir!</li>
+              <li>Bid: Declare how many tricks you'll take</li>
+              <li>Choose trump suit or Spades trump</li>
+              <li>Play a card when it's your turn</li>
+              <li>Lowest score wins!</li>
             </ul>
           </div>
         </div>

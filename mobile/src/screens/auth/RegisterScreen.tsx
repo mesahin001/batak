@@ -14,6 +14,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -327,12 +328,14 @@ export const RegisterScreen = () => {
 
         {/* Terms and Privacy */}
         <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>
-            By creating an account, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms of Service</Text>
-            {' '}and{' '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
-          </Text>
+          <Text style={styles.termsText}>By creating an account, you agree to our{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/terms')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.termsText}>{' '}and{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/privacy')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Login Link */}
@@ -495,6 +498,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     marginTop: 8,
     paddingHorizontal: 8,
   },

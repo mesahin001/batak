@@ -112,6 +112,7 @@ function AppContent() {
   };
 
   const showNavbar = isAuthenticated && appState !== 'loading' && appState !== 'auth' && appState !== 'playing';
+  const showFooter = appState !== 'playing' && appState !== 'loading';
 
   const renderContent = () => {
     switch (appState) {
@@ -119,7 +120,7 @@ function AppContent() {
         return (
           <div className="loading-screen">
             <div className="spinner"></div>
-            <p>Baglaniyor...</p>
+            <p>Connecting...</p>
           </div>
         );
 
@@ -200,6 +201,13 @@ function AppContent() {
       <div className={`app-content ${showNavbar ? 'with-navbar' : ''}`}>
         {renderContent()}
       </div>
+      {showFooter && (
+        <footer className="app-footer">
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
+        </footer>
+      )}
     </div>
   );
 }

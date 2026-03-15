@@ -138,7 +138,7 @@ const TournamentResults: React.FC<TournamentResultsProps> = ({ results, onBackTo
             {/* Round History Button */}
             {results.roundHistory && results.roundHistory.length > 0 && (
               <button className="btn-round-history" onClick={() => setShowRoundHistory(true)}>
-                Round Detaylari
+                Round Details
               </button>
             )}
 
@@ -174,7 +174,7 @@ const TournamentResults: React.FC<TournamentResultsProps> = ({ results, onBackTo
                 ))}
               </div>
               <button className="btn-primary w-full" onClick={() => setShowRoundHistory(false)}>
-                Kapat
+                Close
               </button>
             </div>
           </div>

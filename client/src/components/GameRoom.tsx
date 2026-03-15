@@ -188,7 +188,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
   // --- Handlers ---
 
   const handleLeaveGame = () => {
-    if (confirm('Oyundan ayrılmak istediğine emin misin?')) {
+    if (confirm('Are you sure you want to leave the game?')) {
       onLeave();
     }
   };
@@ -342,7 +342,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       <div className="game-room">
         <div className="loading-screen">
           <div className="spinner"></div>
-          <p>Oyun yükleniyor...</p>
+          <p>Loading game...</p>
         </div>
       </div>
     );
@@ -369,7 +369,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
       <div className={`opponent-slot ${isActive ? 'active' : ''}`}>
         <span className="opp-icon">{player.type === 'bot' ? '🤖' : '👤'}</span>
         <span className="opp-name">{player.name}</span>
-        <span className="opp-tricks">{player.tricksWon} el</span>
+        <span className="opp-tricks">{player.tricksWon} tricks</span>
         {formatPlayerBid(player.id) && (
           <span className="opp-bid">{formatPlayerBid(player.id)}</span>
         )}
@@ -393,10 +393,10 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
               <span className="trump-sym" style={{ color: getSuitColor(currentGameState.trumpSuit) }}>
                 {getSuitSymbol(currentGameState.trumpSuit)}
               </span>
-              Koz
+              Trump
             </span>
           )}
-          <span className="header-trick-count">{currentGameState.tricks ?? 0}.el</span>
+          <span className="header-trick-count">{currentGameState.tricks ?? 0}.trick</span>
           <span className="header-state">{currentGameState.state}</span>
         </div>
         <SoundToggle />
@@ -420,17 +420,17 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
           {isScoring ? (
             <div className="trick-scoring">
               <div className="spinner"></div>
-              <p>Skor hesaplanıyor...</p>
+              <p>Calculating scores...</p>
             </div>
           ) : isBidding ? (
             <div className="bidding-overlay">
-              <div className="bid-header">İhale - Kaç El?</div>
+              <div className="bid-header">Bid — How many tricks?</div>
               <div className="bid-info">
                 {currentGameState.gameMode === 'koz_maca'
-                  ? 'Koz Maça: ♠ koz, sadece el sayısı'
+                  ? 'Koz Maça: ♠ trump, bid only'
                   : selectedSuit
-                    ? `${getSuitSymbol(selectedSuit)} koz — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
-                    : 'Önce koz rengi seç'
+                    ? `${getSuitSymbol(selectedSuit)} trump — Min: ${getHighestBidForSuit(selectedSuit) + 1}`
+                    : 'Select trump suit first'
                 }
               </div>
 
@@ -469,17 +469,17 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                   </div>
                   <div className="bid-actions-row">
                     <button className="btn-pass" onClick={() => handleBid(selectedSuit || 'spades', 0)} disabled={!isMyTurn}>
-                      Pas Geç
+                      Pass
                     </button>
                     {currentGameState.gameMode === 'ihaleli_batak' && selectedSuit && (
                       <button className="btn-change-suit" onClick={() => setSelectedSuit(null)} disabled={!isMyTurn}>
-                        Rengi Değiştir
+                        Change Suit
                       </button>
                     )}
                   </div>
                   {currentGameState.bids && currentGameState.bids.length > 0 && getHighestBid() > 0 && (
                     <div className="current-highest-bid">
-                      En Yüksek: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
+                      Highest: {getHighestBid()}{selectedSuit ? getSuitSymbol(selectedSuit) : '♠'}
                     </div>
                   )}
                 </>
@@ -504,12 +504,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
           ) : (
             <div className={`trick-status ${isMyTurn ? 'my-turn' : ''}`}>
               {isMyTurn ? (
-                <span>Sıra sende</span>
+                <span>Your turn</span>
               ) : (
                 <span>
                   <span className="waiting-name">
-                    {currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || 'Rakip'}
-                  </span> oynuyor
+                    {currentGameState.players?.[currentGameState.currentPlayerIndex]?.name || 'Opponent'}
+                  </span> playing
                 </span>
               )}
             </div>
@@ -712,7 +712,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                       <span className="sb-total">Total: {player.totalScore}</span>
                     )}
                   </div>
-                  <span className="sb-tricks">{player.tricksWon} el kazandı</span>
+                  <span className="sb-tricks">{player.tricksWon} tricks won</span>
                 </motion.div>
               ))}
               <motion.button
@@ -724,7 +724,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                 whileHover={{ scale: 1.05, backgroundColor: '#c53358' }}
                 whileTap={{ scale: 0.95 }}
               >
-                Oyundan Çık
+                Leave Game
               </motion.button>
             </motion.div>
           </>
@@ -753,12 +753,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                Round {roundCompleteData.roundNumber} Bitti!
+                Round {roundCompleteData.roundNumber} Over!
               </motion.h2>
               <p className="round-sub">Round {roundCompleteData.roundNumber} / {roundCompleteData.totalRounds}</p>
 
               <div className="round-scores">
-                <h3>Skorlar</h3>
+                <h3>Scores</h3>
                 {roundCompleteData.players.map((player, index) => (
                   <motion.div
                     key={player.id}
@@ -783,11 +783,11 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameState, onRoundEnd, onGameEnd, o
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Round {currentRound + 1} Başlat
+                  Start Round {currentRound + 1}
                 </motion.button>
               ) : (
                 <div className="round-final-message">
-                  <p>Oyun bitti — Skorlar hesaplanıyor...</p>
+                  <p>Game over — Calculating scores...</p>
                 </div>
               )}
             </motion.div>
