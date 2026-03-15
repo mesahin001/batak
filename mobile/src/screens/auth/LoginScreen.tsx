@@ -15,6 +15,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -281,6 +282,18 @@ export const LoginScreen = () => {
           </>
         )}
 
+        {/* Terms and Privacy */}
+        <View style={styles.termsContainer}>
+          <Text style={styles.termsText}>By continuing, you agree to our{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/terms')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.termsText}>{' '}and{' '}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/privacy')}>
+            <Text style={[styles.termsText, styles.termsLink]}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Register Link */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>{t('common.back')} </Text>
@@ -436,6 +449,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 12,
     color: '#888',
+    fontWeight: '600',
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
+  termsText: {
+    fontSize: 12,
+    color: '#888',
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: '#6C63FF',
     fontWeight: '600',
   },
   registerContainer: {

@@ -74,12 +74,12 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
     return (
       <div className="player-profile">
         <div className="profile-header">
-          <button className="btn-back" onClick={onBack}>Geri</button>
-          <h1>Oyuncu Profili</h1>
+          <button className="btn-back" onClick={onBack}>Back</button>
+          <h1>Player Profile</h1>
         </div>
         <div className="profile-loading">
           <div className="spinner"></div>
-          <p>Yukleniyor...</p>
+          <p>Loading...</p>
         </div>
       </div>
     );
@@ -89,11 +89,11 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
     return (
       <div className="player-profile">
         <div className="profile-header">
-          <button className="btn-back" onClick={onBack}>Geri</button>
-          <h1>Oyuncu Profili</h1>
+          <button className="btn-back" onClick={onBack}>Back</button>
+          <h1>Player Profile</h1>
         </div>
         <div className="profile-loading">
-          <p>Oyuncu bulunamadi.</p>
+          <p>Player not found.</p>
         </div>
       </div>
     );
@@ -106,7 +106,7 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
     <div className="player-profile">
       <div className="profile-header">
         <button className="btn-back" onClick={onBack}>Geri</button>
-        <h1>{isMyProfile ? 'Profilim' : 'Oyuncu Profili'}</h1>
+        <h1>{isMyProfile ? 'My Profile' : 'Player Profile'}</h1>
       </div>
 
       <div className="profile-content">
@@ -115,22 +115,22 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
           <div className={`profile-rank-badge ${rankClass}`}>{rankLabel}</div>
           <h2 className="profile-name">{player.username}</h2>
           <p className="profile-pk">{publicKey.slice(0, 8)}...{publicKey.slice(-4)}</p>
-          <p className="profile-season-points">{player.currentSeasonPoints} Sezon Puani</p>
+          <p className="profile-season-points">{player.currentSeasonPoints} Season Points</p>
         </div>
 
         {/* Stats Grid */}
         <div className="stats-grid">
           <div className="stat-card">
             <span className="stat-value">{player.gamesPlayed}</span>
-            <span className="stat-label">Oyun</span>
+            <span className="stat-label">Games</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">{player.gamesWon}</span>
-            <span className="stat-label">Galibiyet</span>
+            <span className="stat-label">Wins</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">%{getWinRate()}</span>
-            <span className="stat-label">Oran</span>
+            <span className="stat-label">Win Rate</span>
           </div>
           <div className="stat-card">
             <span className="stat-value">{player.nftsEarned}</span>
@@ -142,24 +142,24 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
           </div>
           <div className="stat-card">
             <span className="stat-value">%{getBidSuccessRate()}</span>
-            <span className="stat-label">Ihale Basari</span>
+            <span className="stat-label">Bid Success</span>
           </div>
         </div>
 
         {/* Score Range */}
         <div className="profile-card">
-          <h3>Skor Araligi</h3>
+          <h3>Score Range</h3>
           <div className="score-range">
             <div className="score-range-item">
-              <span className="score-range-label">En Iyi</span>
+              <span className="score-range-label">Best</span>
               <span className="score-range-value good">{player.bestScore}</span>
             </div>
             <div className="score-range-item">
-              <span className="score-range-label">Toplam</span>
+              <span className="score-range-label">Total</span>
               <span className="score-range-value">{player.totalScore}</span>
             </div>
             <div className="score-range-item">
-              <span className="score-range-label">En Kotu</span>
+              <span className="score-range-label">Worst</span>
               <span className="score-range-value bad">{player.worstScore}</span>
             </div>
           </div>
@@ -168,7 +168,7 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
         {/* Recent Games */}
         {games.length > 0 && (
           <div className="profile-card">
-            <h3>Son Oyunlar</h3>
+            <h3>Recent Games</h3>
             <div className="games-list">
               {games.map((game) => {
                 const isWinner = game.winnerPk === publicKey;
@@ -176,10 +176,10 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
                   <div key={game.id} className={`game-item ${isWinner ? 'win' : 'loss'}`}>
                     <span className="game-result">{isWinner ? 'W' : 'L'}</span>
                     <span className="game-mode">{game.gameMode === 'koz_maca' ? 'Koz Maca' : 'Ihaleli'}</span>
-                    <span className="game-rounds">{game.totalRounds} tur</span>
+                    <span className="game-rounds">{game.totalRounds} rounds</span>
                     {game.completedAt && (
                       <span className="game-date">
-                        {new Date(game.completedAt).toLocaleDateString('tr-TR')}
+                        {new Date(game.completedAt).toLocaleDateString('en-US')}
                       </span>
                     )}
                   </div>
@@ -192,7 +192,7 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({ publicKey, onBack }) => {
         {/* NFT Rewards */}
         {nfts.length > 0 && (
           <div className="profile-card">
-            <h3>NFT Oduller</h3>
+            <h3>NFT Rewards</h3>
             <div className="nft-list">
               {nfts.map((nft, index) => (
                 <div key={index} className="nft-item">

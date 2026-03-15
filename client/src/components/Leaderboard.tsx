@@ -47,12 +47,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectPlayer, onBack }) => 
     return (
       <div className="leaderboard">
         <div className="leaderboard-header">
-          <button className="btn-back" onClick={onBack}>Geri</button>
-          <h1>Skor Tablosu</h1>
+          <button className="btn-back" onClick={onBack}>Back</button>
+          <h1>Leaderboard</h1>
         </div>
         <div className="leaderboard-loading">
           <div className="spinner"></div>
-          <p>Yukleniyor...</p>
+          <p>Loading...</p>
         </div>
       </div>
     );
@@ -77,10 +77,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onSelectPlayer, onBack }) => 
           <div className="leaderboard-list">
             <div className="leaderboard-list-header">
               <span className="col-rank">#</span>
-              <span className="col-name">Oyuncu</span>
-              <span className="col-wins">Galibiyet</span>
-              <span className="col-rate">Oran</span>
-              <span className="col-score">Puan</span>
+              <span className="col-name">Player</span>
+              <span className="col-wins">Wins</span>
+              <span className="col-rate">Win Rate</span>
+              <span className="col-score">Points</span>
             </div>
             {entries.map((entry, index) => {
               const rank = RANK_LABELS[entry.rankTier] || RANK_LABELS[3];

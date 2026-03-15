@@ -38,22 +38,22 @@ const UsernameInput: React.FC<UsernameInputProps> = ({ onComplete }) => {
   return (
     <div className="username-screen">
       <div className="username-card">
-        <h2>Kullanici Adi Sec</h2>
-        <p className="username-desc">Oyun icinde gorulecek ismin</p>
+        <h2>Choose Username</h2>
+        <p className="username-desc">Your in-game display name</p>
 
         <input
           type="text"
           className={`username-input ${username.length > 0 && !isValid ? 'invalid' : ''}`}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Kullanici adi..."
+          placeholder="Username..."
           maxLength={20}
           autoFocus
         />
 
         <div className="username-rules">
-          <span className={username.length >= 3 ? 'valid' : ''}>3-20 karakter</span>
-          <span className={/^[a-zA-Z0-9_]*$/.test(username) || username.length === 0 ? 'valid' : ''}>Harf, rakam, alt cizgi</span>
+          <span className={username.length >= 3 ? 'valid' : ''}>3-20 characters</span>
+          <span className={/^[a-zA-Z0-9_]*$/.test(username) || username.length === 0 ? 'valid' : ''}>Letters, numbers, underscore</span>
         </div>
 
         {error && <div className="username-error">{error}</div>}
@@ -63,11 +63,11 @@ const UsernameInput: React.FC<UsernameInputProps> = ({ onComplete }) => {
           onClick={handleSave}
           disabled={!isValid || saving}
         >
-          {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          {saving ? 'Saving...' : 'Save'}
         </button>
 
         <button className="btn-skip" onClick={handleSkip}>
-          Atla
+          Skip
         </button>
       </div>
     </div>

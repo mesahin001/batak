@@ -18,6 +18,7 @@ import {
   TextInput,
 } from 'react-native';
 // ActionSheetIOS import removed - causing Android import issues
+import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWallet } from '../../contexts/WalletContext';
@@ -301,7 +302,7 @@ export const SettingsScreen = () => {
 
           <View style={styles.aboutCard}>
             <Text style={styles.appName}>{t('app.name')}</Text>
-            <Text style={styles.appVersion}>Version 1.0.0</Text>
+            <Text style={styles.appVersion}>Version {Constants.expoConfig?.version ?? '1.0.1'}</Text>
             <Text style={styles.appDescription}>
               {t('settings.appDescription')}
             </Text>

@@ -44,7 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({ username, playerId, authType, onLogout,
                 {authIcon} {shortId}
               </div>
               <button className="navbar-dropdown-item navbar-dropdown-logout" onClick={onLogout}>
-                Cikis
+                Logout
               </button>
             </div>
           )}

@@ -31,7 +31,7 @@ const AuthScreen: React.FC = () => {
       await connectWallet();
     } catch (err: any) {
       console.error('[AuthScreen] Wallet connection error:', err);
-      setError(err.message || 'Cüzdan bağlanamadı. Lütfen tekrar deneyin.');
+      setError(err.message || 'Wallet connection failed. Please try again.');
     }
   };
 
@@ -40,7 +40,7 @@ const AuthScreen: React.FC = () => {
     setError(null);
 
     if (emailMode === 'register' && password !== passwordConfirm) {
-      setError('Sifreler eslesmiyor');
+      setError('Passwords do not match');
       return;
     }
 
@@ -51,7 +51,7 @@ const AuthScreen: React.FC = () => {
         : await registerWithEmail(email, password);
 
       if (!result.success) {
-        setError(result.error || 'Islem basarisiz');
+        setError(result.error || 'Operation failed');
       }
     } catch (err: any) {
       setError(err.message || 'Beklenmeyen hata');
@@ -72,13 +72,13 @@ const AuthScreen: React.FC = () => {
             className={`auth-tab ${activeTab === 'wallet' ? 'active' : ''}`}
             onClick={() => { setActiveTab('wallet'); setError(null); }}
           >
-            Cuzdan Bagla
+            Connect Wallet
           </button>
           <button
             className={`auth-tab ${activeTab === 'email' ? 'active' : ''}`}
             onClick={() => { setActiveTab('email'); setError(null); }}
           >
-            Email ile Giris
+            Login with Email
           </button>
         </div>
 
@@ -86,13 +86,13 @@ const AuthScreen: React.FC = () => {
           {activeTab === 'wallet' && (
             <div className="auth-wallet-tab">
               <p className="auth-desc">
-                Solana cüzdanınızı bağlayarak giriş yapın.
-                Phantom, Backpack veya Seeker desteklenir.
+                Sign in with your Solana wallet.
+                Phantom, Backpack or Seeker supported.
               </p>
 
               {availableWallets.length > 0 && (
                 <div className="detected-wallets">
-                  <p className="detected-wallets-label">Kullanılabilir seçenekler:</p>
+                  <p className="detected-wallets-label">Available options:</p>
                   {availableWallets.map((wallet, index) => (
                     <span key={index} className="detected-wallet-badge">{wallet}</span>
                   ))}
@@ -104,16 +104,16 @@ const AuthScreen: React.FC = () => {
                 onClick={handleWalletConnect}
                 disabled={connecting}
               >
-                {connecting ? 'Bağlanıyor...' : connected ? 'Bağlı ✓' : 'Giriş Yap'}
+                {connecting ? 'Connecting...' : connected ? 'Connected ✓' : 'Sign In'}
               </button>
 
               <p className="auth-hint">
-                {!connected && 'Mobilde test modu, masaüstünde cüzdan bağlantısı'}
-                {connected && 'Bağlantı başarılı! Yönlendiriliyorsunuz...'}
+                {!connected && 'Test mode on mobile, wallet connection on desktop'}
+                {connected && 'Connected! Redirecting...'}
               </p>
 
               <p className="auth-hint" style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.8, color: '#fbbf24' }}>
-                💡 Mobilde daha kolay giriş için "Email ile Giriş" kullanın
+                💡 On mobile, use "Login with Email" for easier access
               </p>
             </div>
           )}
@@ -125,13 +125,13 @@ const AuthScreen: React.FC = () => {
                   className={`email-mode-btn ${emailMode === 'login' ? 'active' : ''}`}
                   onClick={() => { setEmailMode('login'); setError(null); }}
                 >
-                  Giris Yap
+                  Sign In
                 </button>
                 <button
                   className={`email-mode-btn ${emailMode === 'register' ? 'active' : ''}`}
                   onClick={() => { setEmailMode('register'); setError(null); }}
                 >
-                  Kayit Ol
+                  Register
                 </button>
               </div>
 
@@ -142,19 +142,19 @@ const AuthScreen: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ornek@email.com"
+                    placeholder="example@email.com"
                     required
                     autoComplete="email"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Sifre</label>
+                  <label>Password</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="En az 6 karakter"
+                    placeholder="At least 6 characters"
                     required
                     minLength={6}
                     autoComplete={emailMode === 'login' ? 'current-password' : 'new-password'}
@@ -163,12 +163,12 @@ const AuthScreen: React.FC = () => {
 
                 {emailMode === 'register' && (
                   <div className="form-group">
-                    <label>Sifre Tekrar</label>
+                    <label>Confirm Password</label>
                     <input
                       type="password"
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
-                      placeholder="Sifrenizi tekrarlayin"
+                      placeholder="Repeat your password"
                       required
                       minLength={6}
                       autoComplete="new-password"
@@ -181,14 +181,14 @@ const AuthScreen: React.FC = () => {
                   className="btn-primary w-full"
                   disabled={loading}
                 >
-                  {loading ? 'Isleniyor...' : emailMode === 'login' ? 'Giris Yap' : 'Kayit Ol'}
+                  {loading ? 'Processing...' : emailMode === 'login' ? 'Sign In' : 'Register'}
                 </button>
               </form>
 
               <p className="auth-hint">
                 {emailMode === 'login'
-                  ? 'Hesabiniz yok mu? Kayit Ol butonuna basin.'
-                  : 'Zaten hesabiniz var mi? Giris Yap butonuna basin.'
+                  ? 'No account? Click Register.'
+                  : 'Already have an account? Click Sign In.'
                 }
               </p>
             </div>
