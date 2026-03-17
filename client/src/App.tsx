@@ -203,9 +203,9 @@ function AppContent() {
       </div>
       {showFooter && (
         <footer className="app-footer">
-          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <a href="/legal/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           <span>·</span>
-          <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
+          <a href="/legal/terms/" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
         </footer>
       )}
     </div>
