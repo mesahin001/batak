@@ -30,6 +30,7 @@ export const WalletAuthScreen = () => {
 
   const [connectionError, setConnectionError] = useState('');
   const [connectionStep, setConnectionStep] = useState<'idle' | 'connecting' | 'authorizing' | 'authenticating' | 'success'>('idle');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   /**
    * Handle wallet connection with step-by-step feedback
@@ -77,6 +78,7 @@ export const WalletAuthScreen = () => {
   }, [isConnected, isAuthenticated, connectionStep]);
 
   const isLoading = isConnecting || authLoading || connectionStep !== 'idle';
+  const canConnect = termsAccepted && !isLoading;
   const showSuccess = isConnected && isAuthenticated;
 
   return (
@@ -152,9 +154,9 @@ export const WalletAuthScreen = () => {
         {/* Connect Button */}
         {!showSuccess && (
           <TouchableOpacity
-            style={[styles.connectButton, isLoading ? styles.buttonDisabled : null]}
+            style={[styles.connectButton, !canConnect ? styles.buttonDisabled : null]}
             onPress={handleWalletConnect}
-            disabled={isLoading}
+            disabled={!canConnect}
           >
             {isLoading ? (
               <>
@@ -243,16 +245,28 @@ export const WalletAuthScreen = () => {
         </View>
 
         {/* Terms and Privacy */}
-        <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>By connecting your wallet, you agree to our{' '}</Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/terms')}>
-            <Text style={[styles.termsText, styles.termsLink]}>Terms of Service</Text>
-          </TouchableOpacity>
-          <Text style={styles.termsText}>{' '}and{' '}</Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://batakci.xyz/legal/privacy')}>
-            <Text style={[styles.termsText, styles.termsLink]}>Privacy Policy</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.termsContainer}
+          onPress={() => setTermsAccepted(!termsAccepted)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+            {termsAccepted && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <View style={styles.termsTextContainer}>
+            <Text style={styles.termsText}>I have read and agree to the{' '}
+              <Text
+                style={styles.termsLink}
+                onPress={(e) => { e.stopPropagation?.(); Linking.openURL('https://batakci.xyz/legal/terms'); }}
+              >Terms & Conditions</Text>
+              {' '}and{' '}
+              <Text
+                style={styles.termsLink}
+                onPress={(e) => { e.stopPropagation?.(); Linking.openURL('https://batakci.xyz/legal/privacy'); }}
+              >Privacy Policy</Text>
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Back to Login */}
         <View style={styles.backContainer}>
@@ -503,10 +517,33 @@ const styles = StyleSheet.create({
   },
   termsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
     marginBottom: 20,
     paddingHorizontal: 8,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#6C63FF',
+    marginRight: 10,
+    marginTop: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: '#6C63FF',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  termsTextContainer: {
+    flex: 1,
   },
   termsText: {
     fontSize: 12,

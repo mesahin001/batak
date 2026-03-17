@@ -10,7 +10,7 @@ app:
     license_url: "https://batakci.xyz/legal/license/"
     copyright_url: "https://batakci.xyz"
     privacy_policy_url: "https://batakci.xyz/privacy.html"
-    terms_url: "https://batakci.xyz/terms.html"
+    terms_url: "https://batakci.xyz/legal/terms/"
     website: "https://batakci.xyz"
 
 release:
