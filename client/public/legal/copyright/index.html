@@ -4,19 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Copyright — Batak Tournament</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
   <style>
     :root {
-      --bg: #0a1f12;
-      --bg2: #0d2818;
-      --gold: #d4af37;
-      --gold-dim: rgba(212,175,55,0.7);
-      --text: rgba(255,255,255,0.88);
-      --text-dim: rgba(255,255,255,0.55);
-      --border: rgba(212,175,55,0.25);
+      --bg: #0f1923;
+      --bg2: #1e293b;
+      --accent: #38bdf8;
+      --accent-dim: rgba(56,189,248,0.65);
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --border: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: var(--bg);
+      background: linear-gradient(135deg, #0f1923 0%, #1a2a3a 50%, #0f1923 100%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 16px;
@@ -24,14 +26,14 @@
       min-height: 100vh;
     }
     header {
-      background: linear-gradient(135deg, #061509, var(--bg2));
-      border-bottom: 1px solid var(--border);
+      background: #0f172a;
+      border-bottom: 2px solid var(--accent);
       padding: 24px 0;
       text-align: center;
     }
     header a {
       display: inline-block;
-      color: var(--gold);
+      color: var(--accent);
       text-decoration: none;
       font-size: 22px;
       font-weight: 700;
@@ -44,7 +46,7 @@
       padding: 48px 24px 80px;
     }
     h1 {
-      color: var(--gold);
+      color: var(--accent);
       font-size: 32px;
       font-weight: 700;
       margin-bottom: 8px;
@@ -55,7 +57,7 @@
       margin-bottom: 40px;
     }
     h2 {
-      color: var(--gold);
+      color: var(--accent);
       font-size: 18px;
       font-weight: 600;
       margin: 36px 0 12px;
@@ -65,10 +67,10 @@
     p { margin-bottom: 14px; color: var(--text); }
     ul { margin: 0 0 14px 24px; }
     ul li { margin-bottom: 6px; color: var(--text); }
-    a { color: var(--gold); text-decoration: none; }
+    a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .copyright-banner {
-      background: rgba(212,175,55,0.07);
+      background: rgba(56,189,248,0.06);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 32px;
@@ -76,14 +78,14 @@
       margin: 28px 0;
     }
     .copyright-banner .year {
-      color: var(--gold);
+      color: var(--accent);
       font-size: 48px;
       font-weight: 700;
       display: block;
       margin-bottom: 8px;
     }
     .copyright-banner .name {
-      color: var(--gold-dim);
+      color: var(--accent-dim);
       font-size: 22px;
       font-weight: 600;
     }
@@ -93,8 +95,8 @@
       margin-top: 12px;
     }
     .highlight {
-      background: rgba(212,175,55,0.07);
-      border-left: 3px solid var(--gold);
+      background: rgba(56,189,248,0.06);
+      border-left: 3px solid var(--accent);
       padding: 14px 18px;
       border-radius: 0 6px 6px 0;
       margin: 20px 0;
@@ -107,7 +109,7 @@
       border-top: 1px solid var(--border);
       margin-top: 60px;
     }
-    footer a { color: var(--gold-dim); }
+    footer a { color: var(--accent-dim); }
   </style>
 </head>
 <body>
@@ -117,10 +119,10 @@
 
   <main>
     <h1>Copyright Notice</h1>
-    <p class="updated">Effective: March 2025</p>
+    <p class="updated">Effective: March 2026</p>
 
     <div class="copyright-banner">
-      <span class="year">&copy; 2025</span>
+      <span class="year">&copy; 2026</span>
       <div class="name">Batak Tournament</div>
       <div class="notice">All Rights Reserved</div>
     </div>
@@ -147,21 +149,29 @@
     </ul>
     <p>...are copyright protected. cNFT trophy artwork minted to player wallets carries a personal, non-commercial display license; redistribution or commercial use of the artwork is not permitted.</p>
 
+    <h2>Third-Party Credits</h2>
+    <p>Batak Tournament is built using open-source libraries and tools. We gratefully acknowledge their respective authors. Key dependencies include:</p>
+    <ul>
+      <li>React Native &amp; Expo — MIT License</li>
+      <li>Socket.IO — MIT License</li>
+      <li>Solana Web3.js — Apache 2.0 License</li>
+      <li>Metaplex Bubblegum — Apache 2.0 License</li>
+      <li>React &amp; Vite — MIT License</li>
+    </ul>
+    <p>Third-party components remain under their original licenses, which are unaffected by this copyright notice.</p>
+
     <h2>NFT Minting Wallet</h2>
     <p>Tournament cNFT rewards are minted on Solana Mainnet by the authorized minting wallet:</p>
-    <p><code style="background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:4px;font-size:13px;color:var(--gold);">4DMw65TNX7FYwhmQg3SDESWFJffdCCvqbKoixD9GLijM</code></p>
+    <p><code style="background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:4px;font-size:13px;color:var(--accent);">4DMw65TNX7FYwhmQg3SDESWFJffdCCvqbKoixD9GLijM</code></p>
     <p>Transactions originating from this address represent legitimate Batak Tournament rewards.</p>
 
     <h2>Reporting Infringement</h2>
     <p>If you believe your copyright has been infringed by content in Batak Tournament, or if you have discovered unauthorized use of our copyrighted materials, please contact us at: <a href="mailto:info@batakci.xyz">info@batakci.xyz</a></p>
-
-    <h2>Third-Party Credits</h2>
-    <p>Batak Tournament is built using open-source libraries and tools. We gratefully acknowledge their respective authors. Third-party components remain under their original licenses, which are unaffected by this copyright notice.</p>
   </main>
 
   <footer>
-    <p>&copy; 2025 Batak Tournament. All Rights Reserved.</p>
-    <p><a href="/legal/privacy">Privacy Policy</a> &nbsp;&bull;&nbsp; <a href="/legal/license">License</a></p>
+    <p>&copy; 2026 Batak Tournament. All Rights Reserved.</p>
+    <p><a href="/legal/terms">Terms &amp; Conditions</a> &nbsp;&bull;&nbsp; <a href="/legal/privacy">Privacy Policy</a> &nbsp;&bull;&nbsp; <a href="/legal/copyright">Copyright</a></p>
   </footer>
 </body>
 </html>

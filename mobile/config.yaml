@@ -7,16 +7,15 @@ app:
   name: "Batak Tournament"
   android_package: "com.bataktournament.mobile"
   urls:
-    license_url: "https://batakci.xyz/legal/license/"
-    copyright_url: "https://batakci.xyz"
+    license_url: "https://batakci.xyz/legal/terms/"
+    copyright_url: "https://batakci.xyz/legal/copyright/"
     privacy_policy_url: "https://batakci.xyz/privacy.html"
-    terms_url: "https://batakci.xyz/legal/terms/"
     website: "https://batakci.xyz"
 
 release:
   catalog_name: "Batak Tournament"
-  version_code: 4
-  version_name: "1.0.3"
+  version_code: 5
+  version_name: "1.0.4"
   new_in_version: "Privacy and Terms pages updated. Bug fixes and UI improvements."
   testing_instructions: "Login with a Solana wallet (Phantom, Backpack, or any MWA-compatible wallet), join the queue to play a game of Koz Maça or İhaleli Batak against other players or bots."
   apk_paths:
