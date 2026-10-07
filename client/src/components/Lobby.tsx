@@ -432,7 +432,7 @@ const Lobby: React.FC<LobbyProps> = ({ username, onJoinGame, onViewLeaderboard }
               <li>Bid: Declare how many tricks you'll take</li>
               <li>Choose trump suit or Spades trump</li>
               <li>Play a card when it's your turn</li>
-              <li>Lowest score wins!</li>
+              <li>Highest score wins!</li>
             </ul>
           </div>
         </div>

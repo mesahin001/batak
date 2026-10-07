@@ -432,7 +432,7 @@ describe('Scoring Module', () => {
   });
 
   describe('calculateRankings', () => {
-    it('should rank players by lowest score first', () => {
+    it('should rank players by highest score first', () => {
       const players = [
         createPlayer('p1', 'Player 1', 0, 100),
         createPlayer('p2', 'Player 2', 0, 10),
@@ -442,10 +442,10 @@ describe('Scoring Module', () => {
 
       const rankings = calculateRankings(players);
 
-      expect(rankings[0]).toEqual({ playerId: 'p2', playerName: 'Player 2', rank: 1, score: 10 });
-      expect(rankings[1]).toEqual({ playerId: 'p3', playerName: 'Player 3', rank: 2, score: 50 });
-      expect(rankings[2]).toEqual({ playerId: 'p4', playerName: 'Player 4', rank: 3, score: 75 });
-      expect(rankings[3]).toEqual({ playerId: 'p1', playerName: 'Player 1', rank: 4, score: 100 });
+      expect(rankings[0]).toEqual({ playerId: 'p1', playerName: 'Player 1', rank: 1, score: 100 });
+      expect(rankings[1]).toEqual({ playerId: 'p4', playerName: 'Player 4', rank: 2, score: 75 });
+      expect(rankings[2]).toEqual({ playerId: 'p3', playerName: 'Player 3', rank: 3, score: 50 });
+      expect(rankings[3]).toEqual({ playerId: 'p2', playerName: 'Player 2', rank: 4, score: 10 });
     });
 
     it('should handle negative scores', () => {
@@ -456,9 +456,9 @@ describe('Scoring Module', () => {
 
       const rankings = calculateRankings(players);
 
-      expect(rankings[0].playerId).toBe('p2');
+      expect(rankings[0].playerId).toBe('p1');
       expect(rankings[0].rank).toBe(1);
-      expect(rankings[1].playerId).toBe('p1');
+      expect(rankings[1].playerId).toBe('p2');
       expect(rankings[1].rank).toBe(2);
     });
 

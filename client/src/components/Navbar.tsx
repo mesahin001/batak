@@ -62,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ username, playerId, authType, onLogout,
       <div className="navbar-right">
         <span className="navbar-id">ID: {shortId}</span>
         <button className="navbar-logout-btn" onClick={onLogout}>
-          Cikis
+          Logout
         </button>
       </div>
     </div>

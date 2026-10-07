@@ -72,7 +72,7 @@ const TournamentResults: React.FC<TournamentResultsProps> = ({ results, onBackTo
           <div className="results-col-left">
             <div className="score-card">
               <h2>Final Rankings</h2>
-              <p className="ranking-note">Lowest score wins in Batak!</p>
+              <p className="ranking-note">Highest score wins in Batak!</p>
               <div className="scores-list">
                 {sortedPlayers.map((player, index) => (
                   <div

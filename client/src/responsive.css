@@ -1,0 +1,241 @@
+/* ===========================================
+   Responsive layer — loaded after every component stylesheet.
+
+   The component CSS was written for a landscape phone (~844x390) with
+   micro font sizes. This file keeps that compact layout for short
+   landscape screens and scales everything up for portrait phones,
+   tablets and desktops. Do not edit the component CSS for sizing;
+   put breakpoints here.
+
+   Breakpoint model
+   - compact : max-height 500px (landscape phones)  -> original layout
+   - portrait: orientation portrait, width <= 767px -> stacked, scrollable
+   - desktop : min-width 900px and min-height 600px -> larger, centered
+   =========================================== */
+
+/* ---------- Auth screen ---------- */
+
+.auth-screen {
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem;
+  height: 100dvh;
+  overflow-y: auto;
+}
+
+.auth-card {
+  max-width: 400px;
+  flex-shrink: 0;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .auth-screen {
+    flex-direction: row;
+    gap: 2rem;
+    padding: 1rem 2rem;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 600px) {
+  .auth-logo h1 { font-size: 2.4rem; }
+  .auth-logo p { font-size: 1.05rem; }
+  .auth-card { max-width: 440px; zoom: 1.15; }
+}
+
+/* ---------- Lobby, leaderboard, profile, results ---------- */
+
+.lobby,
+.leaderboard,
+.player-profile,
+.tournament-results {
+  overflow-y: auto;
+}
+
+@media (min-height: 501px) {
+  .lobby {
+    height: auto;
+    min-height: 0;
+    padding: 0.5rem;
+  }
+
+  .lobby-content {
+    flex: 0 0 auto;
+    overflow: visible;
+    max-width: 760px;
+    margin: 0 auto;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    align-items: start;
+  }
+
+  .lobby-header { padding: 0.75rem 0.5rem 0.25rem; margin-top: auto; }
+  .lobby-content { margin-bottom: auto; }
+  .lobby-content { margin-top: 0; }
+  .lobby-header h1 { font-size: 1.4rem; }
+  .lobby-header p { font-size: 0.85rem; }
+}
+
+/* Phones in portrait: single column, readable sizes */
+@media (orientation: portrait) and (max-width: 767px) {
+  .lobby-content {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
+
+  .lobby-content,
+  .lobby-header {
+    zoom: 1.3;
+  }
+}
+
+/* Desktop and large tablets */
+@media (min-width: 900px) and (min-height: 600px) {
+  .lobby-content,
+  .lobby-header {
+    zoom: 1.45;
+  }
+
+  .lobby-content { max-width: 800px; }
+}
+
+/* ---------- Game room ---------- */
+
+.game-room {
+  /* Card width follows the smaller viewport side so 13 cards always fit. */
+  --card-w: clamp(40px, min(6vw, 11vh), 96px);
+  --card-h: calc(var(--card-w) * 1.38);
+  --gr-fs: clamp(9px, calc(0.9vmin + 4px), 15px);
+  --side-col: clamp(54px, 9vw, 150px);
+}
+
+.game-room .game-table {
+  grid-template-columns: var(--side-col) 1fr var(--side-col);
+}
+
+.game-room .my-hand-strip {
+  height: calc(var(--card-h) + 36px);
+  min-height: 0;
+  max-height: none;
+  padding-top: 12px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  gap: clamp(3px, 0.5vw, 10px);
+}
+
+.game-room .hand-card {
+  width: var(--card-w);
+  height: var(--card-h);
+}
+
+.game-room .hand-card .hc-rank { font-size: calc(var(--card-w) * 0.27); }
+.game-room .hand-card .hc-suit { font-size: calc(var(--card-w) * 0.42); }
+
+.game-room .trick-slots {
+  width: calc(var(--card-w) * 3.3);
+  height: calc(var(--card-h) * 2.1);
+}
+
+.game-room .trick-card {
+  width: calc(var(--card-w) * 0.85);
+  height: calc(var(--card-h) * 0.85);
+}
+
+.game-room .trick-card .tc-rank { font-size: calc(var(--card-w) * 0.23); }
+.game-room .trick-card .tc-suit { font-size: calc(var(--card-w) * 0.32); }
+
+.game-room .opponent-slot { padding: 0.35em 0.7em; }
+
+.game-room .opponent-slot .opp-name {
+  font-size: var(--gr-fs);
+  max-width: calc(var(--side-col) - 12px);
+}
+
+.game-room .opponent-left .opponent-slot,
+.game-room .opponent-right .opponent-slot {
+  max-width: calc(var(--side-col) - 4px);
+}
+
+.game-room .opponent-left .opp-name,
+.game-room .opponent-right .opp-name {
+  font-size: var(--gr-fs);
+  max-width: calc(var(--side-col) - 14px);
+}
+
+.game-room .opponent-slot .opp-icon,
+.game-room .opponent-slot .opp-tricks,
+.game-room .opponent-slot .opp-bid,
+.game-room .opponent-slot .opp-score {
+  font-size: calc(var(--gr-fs) * 0.92);
+}
+
+.game-room .my-info-bar {
+  height: calc(var(--gr-fs) * 2.1);
+  min-height: calc(var(--gr-fs) * 2.1);
+  font-size: var(--gr-fs);
+}
+
+.game-room .game-header-mini {
+  height: calc(var(--gr-fs) * 3);
+  min-height: calc(var(--gr-fs) * 3);
+  font-size: var(--gr-fs);
+}
+
+.game-room .header-round,
+.game-room .header-trump,
+.game-room .header-trick-count,
+.game-room .header-state {
+  font-size: var(--gr-fs);
+}
+
+/* Compact landscape phones: reclaim vertical space */
+@media (orientation: landscape) and (max-height: 500px) {
+  .game-room .my-hand-strip {
+    height: calc(var(--card-h) + 20px);
+    padding-top: 8px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Overlays and modals scale as a unit */
+@media (min-width: 900px) and (min-height: 600px) {
+  .game-room .bidding-overlay,
+  .game-room .scoreboard-panel,
+  .game-room .round-complete-modal,
+  .game-room .trick-status {
+    zoom: 1.45;
+  }
+}
+
+/* Portrait phones: cards overlap so the whole hand fits */
+@media (orientation: portrait) {
+  .game-room {
+    --card-w: clamp(40px, calc((100vw - 24px) / 7), 64px);
+    --side-col: clamp(54px, 17vw, 90px);
+  }
+
+  .game-room .my-hand-strip {
+    gap: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .game-room .hand-card + .hand-card {
+    margin-left: calc(var(--card-w) * -0.5);
+  }
+
+  /* Overlapped cards: keep rank and suit on the visible left edge */
+  .game-room .hand-card {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: calc(var(--card-w) * 0.1) 0 0 calc(var(--card-w) * 0.12);
+  }
+
+  .game-room .hand-card.selected,
+  .game-room .hand-card:active:not(.disabled) {
+    z-index: 2;
+  }
+
+  .game-room .trick-slots {
+    width: calc(var(--card-w) * 3);
+    height: calc(var(--card-h) * 2);
+  }
+}
