@@ -22,6 +22,11 @@ services:
       - server-data:/app/data
     expose:
       - "3001"
+    # web-proxy is the shared nginx-proxy network (Batak, Dershane, sinav).
+    # Without it the proxy cannot resolve batak-server after a recreate.
+    networks:
+      - default
+      - web-proxy
     depends_on: []
 
   redis:
@@ -65,6 +70,10 @@ services:
       - ./downloads:/downloads:ro
     depends_on:
       - batak-server
+
+networks:
+  web-proxy:
+    external: true
 
 volumes:
   server-data:
