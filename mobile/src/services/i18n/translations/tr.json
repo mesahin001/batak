@@ -120,7 +120,7 @@
     "authErrorMsg": "Lütfen tekrar giriş yapın",
     "enterCode": "Lütfen oda kodu girin",
     "kozMacaDesc": "Maça her zaman koz. En fazla eli al!",
-    "ihaleliBatakDesc": "Koz ve el sayısı için ihale ver. En düşük skor kazanır!",
+    "ihaleliBatakDesc": "Koz ve el sayısı için ihale ver. En yüksek skor kazanır!",
     "pvp": "PvP",
     "skrTournament": "SKR Turnuvası",
     "skrTournamentSub": "SKR stake et · Kazanan tüm potayı alır",
@@ -382,7 +382,7 @@
     "gameModes": {
       "title": "Oyun Modları",
       "kozMaca": "Maça her zaman kozdur. Sadece alabileceğin eli sayısı kadar ihale ver (5-13). En yüksek puan kazanır!",
-      "ihaleli": "İhaleyi kazanan koz rengini seçer. Aynı renk için önceki ihaleyi geçmelisin. En düşük puan kazanır!"
+      "ihaleli": "İhaleyi kazanan koz rengini seçer. Aynı renk için önceki ihaleyi geçmelisin. En yüksek puan kazanır!"
     },
     "bidding": {
       "title": "İhale",

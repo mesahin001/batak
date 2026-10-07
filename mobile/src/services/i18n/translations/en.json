@@ -120,7 +120,7 @@
     "authErrorMsg": "Please log in again",
     "enterCode": "Please enter a room code",
     "kozMacaDesc": "Spades are always trump. Win the most tricks!",
-    "ihaleliBatakDesc": "Bid your suit and tricks. Lowest score wins!",
+    "ihaleliBatakDesc": "Bid your suit and tricks. Highest score wins!",
     "pvp": "PvP",
     "skrTournament": "SKR Tournament",
     "skrTournamentSub": "Stake SKR · Winner takes the pot",
@@ -382,7 +382,7 @@
     "gameModes": {
       "title": "Game Modes",
       "kozMaca": "Spades are always trump. Bid only the number of tricks you think you can win (5-13). Highest score wins!",
-      "ihaleli": "Bid winner chooses trump suit. Must exceed previous bid for that suit. Lowest score wins!"
+      "ihaleli": "Bid winner chooses trump suit. Must exceed previous bid for that suit. Highest score wins!"
     },
     "bidding": {
       "title": "Bidding",

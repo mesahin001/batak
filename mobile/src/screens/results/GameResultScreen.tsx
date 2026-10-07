@@ -17,7 +17,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { GameClientState, PlayerState } from '../../types/game';
+import { GameClientState, GameState, PlayerState, Suit } from '../../types/game';
 
 interface RouteParams {
   roomId: string;
@@ -51,21 +51,19 @@ export const GameResultScreen = () => {
       // Convert game completion data to GameClientState format
       const completionData = params.gameData;
       const gameState: GameClientState = {
-        state: 'finished',
+        state: GameState.FINISHED,
         gameMode: completionData.gameMode || 'koz_maca',
         players: completionData.players || [],
         currentRound: completionData.roundsPlayed || 0,
         totalRounds: completionData.totalRounds || 5,
         winner: completionData.winner,
         roundHistory: completionData.roundHistory || [],
-        // Add other required fields for compatibility
-        deck: [],
-        hands: [],
-        currentTrick: null,
+        // Fields the result screen does not use, filled to satisfy GameClientState
+        currentPlayerIndex: 0,
+        trumpSuit: null,
+        currentTrick: { cards: [], leadSuit: Suit.NONE },
+        tricks: 0,
         bids: [],
-        trump: null,
-        leadSuit: null,
-        currentTurn: null,
       };
       setGameState(gameState);
       setLoading(false);

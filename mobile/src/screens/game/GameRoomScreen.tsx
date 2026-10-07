@@ -227,7 +227,7 @@ export const GameRoomScreen = () => {
       clearPlayingState();
       soundManager.play('game-complete'); // Sound effect (haptic feedback)
       // Navigate to result screen with game completion data
-      navigation.navigate('GameResult' as never, { roomId, gameData: data } as never);
+      (navigation as any).navigate('GameResult', { roomId, gameData: data });
     };
 
     const handleError = (error: any) => {
@@ -263,9 +263,18 @@ export const GameRoomScreen = () => {
     };
   }, [socket, roomId, playerId]);
 
+  // Computed here (above the early returns) so the effect below sees the real value.
+  const turnGlowActive = (() => {
+    const players = currentGameState?.players;
+    if (!currentGameState || !players) return false;
+    let idx = players.findIndex((p) => p.id === playerId);
+    if (idx === -1) idx = players.findIndex((p) => p.type === 'human');
+    return currentGameState.currentPlayerIndex === idx && currentGameState.state !== 'bidding';
+  })();
+
   // Turn glow animation (visual only - doesn't affect gameplay)
   useEffect(() => {
-    if (isMyTurn && !isBidding) {
+    if (turnGlowActive) {
       // Pulse the glow between 8 and 12 shadowRadius
       Animated.loop(
         Animated.sequence([
@@ -287,7 +296,7 @@ export const GameRoomScreen = () => {
       // Reset when not my turn
       turnGlowAnim.setValue(8);
     }
-  }, [isMyTurn, isBidding, turnGlowAnim]);
+  }, [turnGlowActive, turnGlowAnim]);
 
   // --- Handlers ---
 
@@ -437,7 +446,7 @@ export const GameRoomScreen = () => {
 
   const isValidBid = (amount: number): boolean => {
     if (amount === 0) return true;
-    if (currentGameState.gameMode === 'koz_maca') {
+    if (currentGameState?.gameMode === 'koz_maca') {
       return amount >= 1 && amount <= 13;
     }
     const suit = selectedSuit;
@@ -446,13 +455,15 @@ export const GameRoomScreen = () => {
   };
 
   const getHighestBid = (): number => {
-    if (!currentGameState.bids || currentGameState.bids.length === 0) return 0;
-    return Math.max(...currentGameState.bids.map((b) => b.amount));
+    const bids = currentGameState?.bids;
+    if (!bids || bids.length === 0) return 0;
+    return Math.max(...bids.map((b) => b.amount));
   };
 
   const getHighestBidForSuit = (suit: string): number => {
-    if (!currentGameState.bids || currentGameState.bids.length === 0) return 0;
-    const suitBids = currentGameState.bids.filter((b) => b.suit === suit);
+    const bids = currentGameState?.bids;
+    if (!bids || bids.length === 0) return 0;
+    const suitBids = bids.filter((b) => b.suit === suit);
     if (suitBids.length === 0) return 0;
     return Math.max(...suitBids.map((b) => b.amount));
   };
@@ -477,15 +488,14 @@ export const GameRoomScreen = () => {
   };
 
   const getPlayerBid = (pid: string) => {
-    if (!currentGameState.bids) return null;
-    return currentGameState.bids.find((b: any) => b.playerId === pid);
+    return currentGameState?.bids?.find((b: any) => b.playerId === pid) ?? null;
   };
 
   const formatPlayerBid = (pid: string) => {
     const bid = getPlayerBid(pid);
     if (!bid) return null;
     if (bid.amount === 0) return t('game.pass');
-    if (currentGameState.gameMode === 'ihaleli_batak' && bid.suit && bid.suit !== 'spades') {
+    if (currentGameState?.gameMode === 'ihaleli_batak' && bid.suit && bid.suit !== 'spades') {
       return `${bid.amount}${getSuitSymbol(bid.suit)}`;
     }
     return `${bid.amount}`;
@@ -1229,8 +1239,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
-    elevation: 9999,
     ...SHADOWS.lg,
+    elevation: 9999, // after the spread so the shadow preset can't lower it
   },
   bidHeader: {
     color: '#fff',
@@ -1353,8 +1363,8 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'space-around',
     zIndex: 9999,
-    elevation: 9999,
     ...SHADOWS.md,
+    elevation: 9999, // after the spread so the shadow preset can't lower it
   },
   infoItem: {
     flexDirection: 'row',
