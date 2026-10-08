@@ -32,7 +32,7 @@ const TOKEN_KEY = 'batak_auth_token';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { socket, isConnected } = useSocket();
-  const { publicKey, connected: walletConnected, connect: walletConnect, disconnect: walletDisconnect } = useWallet();
+  const { publicKey, connected: walletConnected, connect: walletConnect, disconnect: walletDisconnect, signMessage } = useWallet();
 
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [username, setUsernameState] = useState<string | null>(null);
@@ -71,15 +71,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Only generate wallet token if not already authenticated
     if (playerId) return;
 
-    socket.emit('auth_wallet', { publicKey: publicKey.toString() }, (response: any) => {
-      if (response.success && response.token) {
-        localStorage.setItem(TOKEN_KEY, response.token);
-        setPlayerId(response.playerId);
-        setAuthType('wallet');
-        setUsernameState(response.username || null);
+    const pk = publicKey.toString();
+    // Prove wallet ownership: server sends a one-time challenge, we sign it.
+    socket.emit('auth_wallet_challenge', { publicKey: pk }, async (challenge: any) => {
+      if (!challenge?.success) {
+        console.error('[Auth] Wallet challenge failed:', challenge?.error);
+        return;
+      }
+      try {
+        const signature = await signMessage(challenge.message);
+        socket.emit('auth_wallet', { publicKey: pk, signature }, (response: any) => {
+          if (response.success && response.token) {
+            localStorage.setItem(TOKEN_KEY, response.token);
+            setPlayerId(response.playerId);
+            setAuthType('wallet');
+            setUsernameState(response.username || null);
+          } else {
+            console.error('[Auth] Wallet login rejected:', response?.error);
+          }
+        });
+      } catch (err) {
+        console.error('[Auth] Wallet signing failed:', err);
       }
     });
-  }, [socket, isConnected, walletConnected, publicKey, playerId]);
+  }, [socket, isConnected, walletConnected, publicKey, playerId, signMessage]);
 
   const loginWithEmail = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     if (!socket) return { success: false, error: 'Baglanti yok' };

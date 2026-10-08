@@ -33,9 +33,19 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+function utf8Bytes(text: string): Uint8Array {
+  return new TextEncoder().encode(text);
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { socket, isConnected } = useSocket();
-  const { publicKey: walletPublicKey, connect: walletConnect, disconnect: walletDisconnect } = useWallet();
+  const { publicKey: walletPublicKey, connect: walletConnect, disconnect: walletDisconnect, signMessage } = useWallet();
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [username, setUsernameState] = useState<string | null>(null);
   const [authType, setAuthType] = useState<'wallet' | 'email' | null>(null);
@@ -89,15 +99,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Only generate wallet token if not already authenticated
     if (playerId) return;
 
-    socket.emit('auth_wallet', { publicKey: walletPublicKey }, async (response: any) => {
-      if (response.success && response.token) {
-        await AsyncStorageService.setAuthToken(response.token);
-        setPlayerId(response.playerId);
-        setAuthType('wallet');
-        setUsernameState(response.username || null);
+    // Prove wallet ownership: server sends a one-time challenge, the wallet signs it.
+    socket.emit('auth_wallet_challenge', { publicKey: walletPublicKey }, async (challenge: any) => {
+      if (!challenge?.success) {
+        console.error('[Auth] Wallet challenge failed:', challenge?.error);
+        return;
+      }
+      try {
+        const message = utf8Bytes(challenge.message);
+        const signed = await signMessage(message);
+        // MWA returns the signed payload (message followed by the 64-byte signature)
+        const signature = signed.length > 64 ? signed.slice(signed.length - 64) : signed;
+        socket.emit('auth_wallet', { publicKey: walletPublicKey, signature: bytesToBase64(signature) }, async (response: any) => {
+          if (response.success && response.token) {
+            await AsyncStorageService.setAuthToken(response.token);
+            setPlayerId(response.playerId);
+            setAuthType('wallet');
+            setUsernameState(response.username || null);
+          } else {
+            console.error('[Auth] Wallet login rejected:', response?.error);
+          }
+        });
+      } catch (err) {
+        console.error('[Auth] Wallet signing failed:', err);
       }
     });
-  }, [socket, isConnected, walletPublicKey, playerId]);
+  }, [socket, isConnected, walletPublicKey, playerId, signMessage]);
 
   const loginWithEmail = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     if (!socket || !isConnected) {

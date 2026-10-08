@@ -69,6 +69,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ url, children, a
 
     const socketInstance = io(url, {
       transports: ['websocket', 'polling'],
+      // Sent on every (re)connect so the server knows who we are before any event
+      auth: (cb) => {
+        AsyncStorageService.getAuthToken()
+          .then((token) => cb({ token }))
+          .catch(() => cb({ token: null }));
+      },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,

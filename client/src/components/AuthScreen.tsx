@@ -108,7 +108,7 @@ const AuthScreen: React.FC = () => {
               </button>
 
               <p className="auth-hint">
-                {!connected && 'Test mode on mobile, wallet connection on desktop'}
+                {!connected && 'Requires a Solana wallet (Phantom or Backpack). Signing a message proves you own it.'}
                 {connected && 'Connected! Redirecting...'}
               </p>
 

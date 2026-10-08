@@ -33,6 +33,20 @@ export class SocketServer {
     this.cnftMinter = cnftMinter || null;
     this.authService = authService || null;
 
+    // Authenticate from the handshake token so reconnects are authenticated
+    // before the first event (no race with auth_validate).
+    this.io.use((socket, next) => {
+      const token = socket.handshake.auth?.token;
+      if (typeof token === 'string' && token && this.authService) {
+        const decoded = this.authService.verifyToken(token);
+        if (decoded) {
+          socket.data.playerId = decoded.playerId;
+          socket.data.authType = decoded.authType;
+        }
+      }
+      next();
+    });
+
     // Setup Redis adapter if configured
     const redisConfig = getRedisConfig();
     setupRedisAdapter(this.io, redisConfig).then(() => {
@@ -47,8 +61,25 @@ export class SocketServer {
     this.io.on('connection', (socket) => {
       console.log(`Client connected: ${socket.id}`);
 
+      // Identity comes only from the authenticated socket (JWT or signed wallet
+      // challenge), never from the payload. Any client-sent publicKey is overwritten.
+      const onAuthed = <P extends { publicKey?: string }>(
+        event: string,
+        handler: (payload: P, callback: any) => void
+      ) => {
+        socket.on(event, (payload: P, callback?: (data: any) => void) => {
+          const playerId = socket.data.playerId as string | undefined;
+          if (!playerId) {
+            if (typeof callback === 'function') callback({ error: 'not_authenticated' });
+            else socket.emit(ServerEvent.ERROR, { message: 'not_authenticated' });
+            return;
+          }
+          handler({ ...(payload || {}), publicKey: playerId } as P, callback as any);
+        });
+      };
+
       // Handle join queue
-      socket.on(ClientEvent.JOIN_QUEUE, (payload: JoinQueuePayload) => {
+      onAuthed(ClientEvent.JOIN_QUEUE, (payload: JoinQueuePayload) => {
         this.handleJoinQueue(socket, payload);
       });
 
@@ -78,7 +109,7 @@ export class SocketServer {
       });
 
       // Handle leave game (player wants to abandon current game)
-      socket.on('leave_game', (payload: { publicKey: string }) => {
+      onAuthed('leave_game', (payload: { publicKey: string }) => {
         this.handleLeaveGame(socket, payload);
       });
 
@@ -88,12 +119,12 @@ export class SocketServer {
       });
 
       // Handle rejoin game (reconnect)
-      socket.on(ClientEvent.REJOIN_GAME, (payload: { publicKey: string }) => {
+      onAuthed(ClientEvent.REJOIN_GAME, (payload: { publicKey: string }) => {
         this.handleRejoinGame(socket, payload);
       });
 
       // Handle create_private_room
-      socket.on('create_private_room', (payload: { publicKey: string; username?: string; botDifficulty?: string; gameMode?: string }, callback: (data: any) => void) => {
+      onAuthed('create_private_room', (payload: { publicKey: string; username?: string; botDifficulty?: string; gameMode?: string }, callback: (data: any) => void) => {
         const code = this.matchmaker.createPrivateRoom({
           hostPk: payload.publicKey,
           hostSocket: socket,
@@ -109,7 +140,7 @@ export class SocketServer {
       });
 
       // Handle join_private_room
-      socket.on('join_private_room', (payload: { code: string; publicKey: string; username?: string }, callback: (data: any) => void) => {
+      onAuthed('join_private_room', (payload: { code: string; publicKey: string; username?: string }, callback: (data: any) => void) => {
         const room = this.matchmaker.joinPrivateRoom(payload.code, {
           publicKey: payload.publicKey,
           socket,
@@ -134,7 +165,7 @@ export class SocketServer {
       });
 
       // Handle start_private_room
-      socket.on('start_private_room', (payload: { code: string; publicKey: string }) => {
+      onAuthed('start_private_room', (payload: { code: string; publicKey: string }) => {
         const result = this.matchmaker.startPrivateRoom(payload.code, payload.publicKey);
         if (!result) {
           socket.emit(ServerEvent.ERROR, { message: 'Oda baslatilamadi' });
@@ -151,7 +182,7 @@ export class SocketServer {
       });
 
       // Handle leave_private_room
-      socket.on('leave_private_room', (payload: { code: string; publicKey: string }) => {
+      onAuthed('leave_private_room', (payload: { code: string; publicKey: string }) => {
         const privateRoom = this.matchmaker.getPrivateRoom(payload.code);
         const { closed } = this.matchmaker.leavePrivateRoom(payload.code, payload.publicKey);
         if (closed && privateRoom) {
@@ -177,7 +208,7 @@ export class SocketServer {
       });
 
       // Handle set_username
-      socket.on('set_username', (payload: { publicKey: string; username: string }, callback: (data: any) => void) => {
+      onAuthed('set_username', (payload: { publicKey: string; username: string }, callback: (data: any) => void) => {
         if (!this.db) return callback({ error: 'Database not available' });
         const { publicKey: pk, username } = payload;
         if (!pk || !username) return callback({ error: 'Missing fields' });
@@ -234,7 +265,7 @@ export class SocketServer {
       });
 
       // API: Claim NFT reward — called after client signs the claim tx via MWA
-      socket.on(ClientEvent.CLAIM_REWARD, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
+      onAuthed(ClientEvent.CLAIM_REWARD, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
         const { tournamentId, publicKey: pk, claimSignature } = payload;
         console.log(`[Tournament] Claim reward request from ${pk?.slice(0, 8)} for tournament ${tournamentId}`);
 
@@ -291,7 +322,7 @@ export class SocketServer {
       });
 
       // SKR Tournament: create a room with SKR stake
-      socket.on('create_skr_room', (payload: {
+      onAuthed('create_skr_room', (payload: {
         publicKey: string;
         username?: string;
         botDifficulty?: string;
@@ -367,9 +398,34 @@ export class SocketServer {
         });
       });
 
-      // Auth: Generate token for wallet user
-      socket.on(ClientEvent.AUTH_WALLET, (payload: { publicKey: string }, callback: (data: any) => void) => {
+      // Auth step 1 for wallets: ask for a one-time challenge to sign
+      socket.on(ClientEvent.AUTH_WALLET_CHALLENGE, (payload: { publicKey: string }, callback: (data: any) => void) => {
+        if (typeof callback !== 'function') return;
         if (!this.authService) return callback({ error: 'Auth not available' });
+        const now = Date.now();
+        const recent = ((socket.data.challengeTimes as number[]) || []).filter((t) => now - t < 60_000);
+        if (recent.length >= 10) return callback({ error: 'rate_limited' });
+        recent.push(now);
+        socket.data.challengeTimes = recent;
+
+        const challenge = this.authService.createWalletChallenge(payload?.publicKey);
+        if (!challenge) return callback({ error: 'invalid_public_key' });
+        socket.data.walletChallenge = challenge;
+        callback({ success: true, message: challenge.message });
+      });
+
+      // Auth step 2 for wallets: verify the signature, then issue the token
+      socket.on(ClientEvent.AUTH_WALLET, (payload: { publicKey: string; signature?: string }, callback: (data: any) => void) => {
+        if (typeof callback !== 'function') return;
+        if (!this.authService) return callback({ error: 'Auth not available' });
+        const challenge = socket.data.walletChallenge;
+        socket.data.walletChallenge = undefined; // single use
+        if (!challenge || !payload?.signature || typeof payload.signature !== 'string') {
+          return callback({ success: false, error: 'signature_required' });
+        }
+        if (!this.authService.verifyWalletSignature(challenge, payload.publicKey, payload.signature)) {
+          return callback({ success: false, error: 'invalid_signature' });
+        }
         const result = this.authService.generateWalletToken(payload.publicKey);
         if (result.success) {
           socket.data.playerId = result.playerId;

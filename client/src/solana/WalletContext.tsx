@@ -13,6 +13,8 @@ interface WalletContextType {
   connect: () => Promise<void>;
   disconnect: () => void;
   signTransaction: (transaction: any) => Promise<any>;
+  /** Sign a UTF-8 message with the connected wallet; returns the signature as base64. */
+  signMessage: (message: string) => Promise<string>;
   availableWallets: string[];
 }
 
@@ -72,9 +74,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       console.log('[Wallet] Attempting to connect wallet...');
       console.log('[Wallet] User agent:', navigator.userAgent);
 
-      // Detect mobile
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-
       // 1. Check for Phantom wallet (works in browser)
       const solana = (window as any).solana;
       if (solana?.isPhantom) {
@@ -107,25 +106,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         return;
       }
 
-      // 4. No wallet found - on mobile, provide helpful info and use mock
+      // 4. No wallet found. There is no mock fallback: the server only accepts
+      // wallets that can sign a challenge, so use email login instead.
       console.warn('[Wallet] No Solana wallet detected');
-
-      if (isMobile) {
-        // For mobile, just use mock wallet directly
-        console.log('[Wallet] Mobile detected - using mock wallet');
-        const mockKey = 'Mobile_' + Math.random().toString(36).substring(2, 10) + 'User';
-        setPublicKey(mockKey);
-        setConnected(true);
-        console.log('[Wallet] Using mobile mock wallet:', mockKey);
-        return;
-      }
-
-      // Desktop fallback
-      console.warn('[Wallet] Using mock wallet for testing');
-      const mockKey = 'Mock' + Math.random().toString(36).substring(2, 12) + 'Wallet';
-      setPublicKey(mockKey);
-      setConnected(true);
-      console.log('[Wallet] Using mock wallet:', mockKey);
+      throw new Error('Solana cüzdanı bulunamadı. E-posta ile giriş yapabilirsiniz.');
     } catch (error) {
       console.error('[Wallet] Failed to connect wallet:', error);
       setConnecting(false);
@@ -162,6 +146,21 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Sign a message with the injected wallet (Phantom, Backpack or generic provider)
+  const signMessage = useCallback(async (message: string): Promise<string> => {
+    const w = window as any;
+    const provider = w.solana?.isPhantom ? w.solana : (w.backpack || w.solana);
+    if (!provider?.signMessage) {
+      throw new Error('Cüzdan mesaj imzalamayı desteklemiyor');
+    }
+    const encoded = new TextEncoder().encode(message);
+    const result = await provider.signMessage(encoded, 'utf8');
+    const bytes: Uint8Array = result?.signature ?? result;
+    let binary = '';
+    bytes.forEach((b) => { binary += String.fromCharCode(b); });
+    return btoa(binary);
+  }, []);
+
   const value: WalletContextType = {
     publicKey,
     connecting,
@@ -169,6 +168,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     connect,
     disconnect,
     signTransaction,
+    signMessage,
     availableWallets,
   };
 

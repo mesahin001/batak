@@ -32,6 +32,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ url, children })
   const connect = useCallback(() => {
     const socketInstance = io(url, {
       transports: ['websocket', 'polling'],
+      // Sent on every (re)connect so the server knows who we are before any event
+      auth: (cb) => {
+        let token: string | null = null;
+        try { token = localStorage.getItem('batak_auth_token'); } catch { /* storage unavailable */ }
+        cb({ token });
+      },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 10,

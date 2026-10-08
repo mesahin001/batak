@@ -244,6 +244,11 @@ export class SeekerWalletService {
       }
 
       const signatures = await transact(async (wallet: Web3MobileWallet) => {
+        // A fresh MWA session must be (re)authorized before it can sign
+        await wallet.reauthorize({
+          identity: APP_IDENTITY,
+          auth_token: authToken,
+        });
         const signedMessages = await wallet.signMessages({
           addresses: [await AsyncStorageService.getWalletPublicKey() || ''],
           payloads: [message],

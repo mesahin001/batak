@@ -32,6 +32,7 @@ export enum ClientEvent {
   AUTH_LOGIN = 'auth_login',
   AUTH_VALIDATE = 'auth_validate',
   AUTH_WALLET = 'auth_wallet',
+  AUTH_WALLET_CHALLENGE = 'auth_wallet_challenge',
   DISCONNECT = 'disconnect'
 }
 
