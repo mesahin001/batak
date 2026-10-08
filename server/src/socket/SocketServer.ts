@@ -4,6 +4,7 @@
  */
 
 import { RateLimiter } from './RateLimiter.js';
+import { schemas, validatePayload, Schema } from './validation.js';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Matchmaker } from '../matchmaker/Matchmaker.js';
@@ -25,7 +26,11 @@ export class SocketServer {
   constructor(httpServer: HTTPServer, db?: DatabaseManager | null, cnftMinter?: CNFTMinter | null, authService?: AuthService | null) {
     this.io = new SocketIOServer(httpServer, {
       cors: {
-        origin: '*',
+        // Browsers: only our own sites. Native apps send no Origin header and are not affected by CORS.
+        origin: (process.env.CORS_ORIGINS
+          ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+          : ['https://batakci.xyz', 'https://www.batakci.xyz', 'https://game.batakci.xyz',
+             ...(process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://localhost:3000'])]),
         methods: ['GET', 'POST']
       },
       transports: ['websocket', 'polling']
@@ -71,13 +76,20 @@ export class SocketServer {
       const clientIp = String(h['cf-connecting-ip'] || String(h['x-forwarded-for'] || '').split(',')[0].trim() || socket.handshake.address);
       // Login / register / wallet auth: per IP, so reconnecting does not reset the count
       const authAllowed = (callback: any): boolean => {
-        if (this.limiter.allow(`ip:${clientIp}:auth`, 20)) return true;
+        if (this.limiter.allow(`ip:${clientIp}:auth`, Number(process.env.AUTH_RATE_LIMIT_PER_MIN) || 20)) return true;
         if (typeof callback === 'function') callback({ success: false, error: 'rate_limited' });
         return false;
       };
 
+      const invalid = (callback: any): void => {
+        if (typeof callback === 'function') callback({ error: 'invalid_payload' });
+        else socket.emit(ServerEvent.ERROR, { message: 'invalid_payload' });
+      };
+
+      // Events that need a logged-in socket. The player id comes from the token, never from the payload.
       const onAuthed = <P extends { publicKey?: string }>(
         event: string,
+        schema: Schema,
         handler: (payload: P, callback: any) => void
       ) => {
         socket.on(event, (payload: P, callback?: (data: any) => void) => {
@@ -92,12 +104,37 @@ export class SocketServer {
             else socket.emit(ServerEvent.ERROR, { message: 'rate_limited' });
             return;
           }
+          // Validate what the client sent (a spoofed publicKey is still a valid field; it is overwritten below)
+          if (!validatePayload(payload, schema)) return invalid(callback);
           handler({ ...(payload || {}), publicKey: playerId } as P, callback as any);
         });
       };
 
+      // Events that only need a valid payload and a per-IP limit (in-game actions use the socket's room)
+      const onValidated = (event: string, schema: Schema, handler: (payload: any, callback: any) => void) => {
+        socket.on(event, (payload: any, callback?: (data: any) => void) => {
+          if (!this.limiter.allow(`ip:${clientIp}:${event}`, 120)) {
+            if (typeof callback === 'function') callback({ error: 'rate_limited' });
+            return;
+          }
+          if (!validatePayload(payload, schema)) return invalid(callback);
+          handler(payload || {}, callback);
+        });
+      };
+
+      // Reads of other players' data need a logged-in socket
+      const onAuthedRead = (event: string, schema: Schema, handler: (payload: any, callback: any) => void) => {
+        socket.on(event, (payload: any, callback?: (data: any) => void) => {
+          if (typeof callback !== 'function') return;
+          if (!socket.data.playerId) return callback({ error: 'not_authenticated' });
+          if (!this.limiter.allow(`ip:${clientIp}:${event}`, 60)) return callback({ error: 'rate_limited' });
+          if (!validatePayload(payload, schema)) return invalid(callback);
+          handler(payload || {}, callback);
+        });
+      };
+
       // Handle join queue
-      onAuthed(ClientEvent.JOIN_QUEUE, (payload: JoinQueuePayload) => {
+      onAuthed(ClientEvent.JOIN_QUEUE, schemas.join_queue, (payload: JoinQueuePayload) => {
         this.handleJoinQueue(socket, payload);
       });
 
@@ -107,12 +144,12 @@ export class SocketServer {
       });
 
       // Handle play card
-      socket.on(ClientEvent.PLAY_CARD, (payload: PlayCardPayload) => {
+      onValidated(ClientEvent.PLAY_CARD, schemas.play_card, (payload: PlayCardPayload) => {
         this.handlePlayCard(socket, payload);
       });
 
       // Handle bid trump
-      socket.on(ClientEvent.BID_TRUMP, (payload: BidTrumpPayload) => {
+      onValidated(ClientEvent.BID_TRUMP, schemas.bid_trump, (payload: BidTrumpPayload) => {
         this.handleBidTrump(socket, payload);
       });
 
@@ -127,7 +164,7 @@ export class SocketServer {
       });
 
       // Handle leave game (player wants to abandon current game)
-      onAuthed('leave_game', (payload: { publicKey: string }) => {
+      onAuthed('leave_game', schemas.player_only, (payload: { publicKey: string }) => {
         this.handleLeaveGame(socket, payload);
       });
 
@@ -137,12 +174,12 @@ export class SocketServer {
       });
 
       // Handle rejoin game (reconnect)
-      onAuthed(ClientEvent.REJOIN_GAME, (payload: { publicKey: string }) => {
+      onAuthed(ClientEvent.REJOIN_GAME, schemas.player_only, (payload: { publicKey: string }) => {
         this.handleRejoinGame(socket, payload);
       });
 
       // Handle create_private_room
-      onAuthed('create_private_room', (payload: { publicKey: string; username?: string; botDifficulty?: string; gameMode?: string }, callback: (data: any) => void) => {
+      onAuthed('create_private_room', schemas.create_private_room, (payload: { publicKey: string; username?: string; botDifficulty?: string; gameMode?: string }, callback: (data: any) => void) => {
         const code = this.matchmaker.createPrivateRoom({
           hostPk: payload.publicKey,
           hostSocket: socket,
@@ -158,7 +195,7 @@ export class SocketServer {
       });
 
       // Handle join_private_room
-      onAuthed('join_private_room', (payload: { code: string; publicKey: string; username?: string }, callback: (data: any) => void) => {
+      onAuthed('join_private_room', schemas.join_private_room, (payload: { code: string; publicKey: string; username?: string }, callback: (data: any) => void) => {
         const room = this.matchmaker.joinPrivateRoom(payload.code, {
           publicKey: payload.publicKey,
           socket,
@@ -183,7 +220,7 @@ export class SocketServer {
       });
 
       // Handle start_private_room
-      onAuthed('start_private_room', (payload: { code: string; publicKey: string }) => {
+      onAuthed('start_private_room', schemas.room_action, (payload: { code: string; publicKey: string }) => {
         const result = this.matchmaker.startPrivateRoom(payload.code, payload.publicKey);
         if (!result) {
           socket.emit(ServerEvent.ERROR, { message: 'Oda baslatilamadi' });
@@ -200,7 +237,7 @@ export class SocketServer {
       });
 
       // Handle leave_private_room
-      onAuthed('leave_private_room', (payload: { code: string; publicKey: string }) => {
+      onAuthed('leave_private_room', schemas.room_action, (payload: { code: string; publicKey: string }) => {
         const privateRoom = this.matchmaker.getPrivateRoom(payload.code);
         const { closed } = this.matchmaker.leavePrivateRoom(payload.code, payload.publicKey);
         if (closed && privateRoom) {
@@ -226,7 +263,7 @@ export class SocketServer {
       });
 
       // Handle set_username
-      onAuthed('set_username', (payload: { publicKey: string; username: string }, callback: (data: any) => void) => {
+      onAuthed('set_username', schemas.set_username, (payload: { publicKey: string; username: string }, callback: (data: any) => void) => {
         if (!this.db) return callback({ error: 'Database not available' });
         const { publicKey: pk, username } = payload;
         if (!pk || !username) return callback({ error: 'Missing fields' });
@@ -242,14 +279,14 @@ export class SocketServer {
       });
 
       // Handle get_username
-      socket.on('get_username', (payload: { publicKey: string }, callback: (data: any) => void) => {
+      onAuthedRead('get_username', schemas.get_player, (payload: { publicKey: string }, callback: (data: any) => void) => {
         if (!this.db) return callback({ username: null });
         const player = this.db.getPlayer(payload.publicKey);
         callback({ username: player?.username || null });
       });
 
       // API: Get leaderboard
-      socket.on('get_leaderboard', (options: { limit?: number }, callback: (data: any) => void) => {
+      onValidated('get_leaderboard', schemas.get_leaderboard, (options: { limit?: number }, callback: (data: any) => void) => {
         if (!this.db) return callback({ error: 'Database not available' });
         try {
           const leaderboard = this.db.getLeaderboard(options?.limit || 100);
@@ -260,7 +297,7 @@ export class SocketServer {
       });
 
       // API: Get player stats
-      socket.on('get_player_stats', (payload: { publicKey: string }, callback: (data: any) => void) => {
+      onAuthedRead('get_player_stats', schemas.get_player, (payload: { publicKey: string }, callback: (data: any) => void) => {
         if (!this.db) return callback({ error: 'Database not available' });
         try {
           const player = this.db.getPlayer(payload.publicKey);
@@ -272,7 +309,7 @@ export class SocketServer {
       });
 
       // API: Get player games
-      socket.on('get_player_games', (payload: { publicKey: string; limit?: number }, callback: (data: any) => void) => {
+      onAuthedRead('get_player_games', schemas.get_player_games, (payload: { publicKey: string; limit?: number }, callback: (data: any) => void) => {
         if (!this.db) return callback({ error: 'Database not available' });
         try {
           const games = this.db.getPlayerGames(payload.publicKey, payload.limit || 20);
@@ -283,7 +320,7 @@ export class SocketServer {
       });
 
       // API: Claim NFT reward — called after client signs the claim tx via MWA
-      onAuthed(ClientEvent.CLAIM_REWARD, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
+      onAuthed(ClientEvent.CLAIM_REWARD, schemas.claim_reward, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
         const { tournamentId, publicKey: pk, claimSignature } = payload;
         console.log(`[Tournament] Claim reward request from ${pk?.slice(0, 8)} for tournament ${tournamentId}`);
         const reply = (data: any) => { if (typeof callback === 'function') callback(data); };
@@ -358,7 +395,7 @@ export class SocketServer {
       });
 
       // SKR Tournament: create a room with SKR stake
-      onAuthed('create_skr_room', (payload: {
+      onAuthed('create_skr_room', schemas.create_skr_room, (payload: {
         publicKey: string;
         username?: string;
         botDifficulty?: string;

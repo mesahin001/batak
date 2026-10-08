@@ -44,31 +44,13 @@ async function main() {
   // Health check endpoint
   app.get('/health', async (_req, res) => {
     try {
-      const dbStats = db.getOverallStats();
       const redisConfig = getRedisConfig();
       const redisHealth = await checkRedisHealth(redisConfig);
 
+      // Public endpoint: status only. No counts, paths, network or latency.
       const healthData: any = {
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: config.nodeEnv,
-        solanaNetwork: config.solanaNetwork,
-        database: {
-          type: 'SQLite',
-          path: './data/batak.db',
-          totalPlayers: dbStats.totalPlayers,
-          totalGames: dbStats.totalGames,
-          totalNftsMinted: dbStats.totalNftsMinted
-        },
-        cnftMinting: cnftMinter ? 'enabled' : 'disabled',
-        redis: redisConfig.enabled ? {
-          enabled: true,
-          healthy: redisHealth.healthy,
-          latency: redisHealth.latency
-        } : {
-          enabled: false
-        }
       };
 
       if (!redisHealth.healthy && redisConfig.enabled) {
@@ -80,7 +62,6 @@ async function main() {
       res.status(500).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        error: (error as Error).message
       });
     }
   });
