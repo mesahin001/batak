@@ -14,8 +14,8 @@ app:
 
 release:
   catalog_name: "Batak Tournament"
-  version_code: 6
-  version_name: "1.0.5"
+  version_code: 7
+  version_name: "1.0.6"
   new_in_version: "Privacy and Terms pages updated. Bug fixes and UI improvements."
   testing_instructions: "Login with a Solana wallet (Phantom, Backpack, or any MWA-compatible wallet), join the queue to play a game of Koz Maça or İhaleli Batak against other players or bots."
   apk_paths:
