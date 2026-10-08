@@ -90,3 +90,8 @@ mobile/DAPP_STORE_SUBMISSION.md
 _bmad/
 _bmad-output/
 CLAUDE.md
+
+# Deploy keypairs and local databases must never be committed
+**/deploy-keypair.json
+*-keypair.json
+**/*.db

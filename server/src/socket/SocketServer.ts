@@ -3,6 +3,7 @@
  * Client-server arası tüm oyun iletişimini yönetir: kuyruk, ihale, kart oynama, tur geçişleri.
  */
 
+import { RateLimiter } from './RateLimiter';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Matchmaker } from '../matchmaker/Matchmaker.js';
@@ -17,6 +18,7 @@ export class SocketServer {
   private matchmaker: Matchmaker;
   private db: DatabaseManager | null;
   private cnftMinter: CNFTMinter | null;
+  private limiter = new RateLimiter(60_000);
   private mintingGames = new Set<string>(); // games with a mint in flight (claim vs. auto-mint)
   private authService: AuthService | null;
 
@@ -64,6 +66,16 @@ export class SocketServer {
 
       // Identity comes only from the authenticated socket (JWT or signed wallet
       // challenge), never from the payload. Any client-sent publicKey is overwritten.
+      // Cloudflare sets cf-connecting-ip; fall back to the proxy header, then the socket address
+      const h = socket.handshake.headers;
+      const clientIp = String(h['cf-connecting-ip'] || String(h['x-forwarded-for'] || '').split(',')[0].trim() || socket.handshake.address);
+      // Login / register / wallet auth: per IP, so reconnecting does not reset the count
+      const authAllowed = (callback: any): boolean => {
+        if (this.limiter.allow(`ip:${clientIp}:auth`, 20)) return true;
+        if (typeof callback === 'function') callback({ success: false, error: 'rate_limited' });
+        return false;
+      };
+
       const onAuthed = <P extends { publicKey?: string }>(
         event: string,
         handler: (payload: P, callback: any) => void
@@ -73,6 +85,11 @@ export class SocketServer {
           if (!playerId) {
             if (typeof callback === 'function') callback({ error: 'not_authenticated' });
             else socket.emit(ServerEvent.ERROR, { message: 'not_authenticated' });
+            return;
+          }
+          if (!this.limiter.allow(`player:${playerId}:${event}`, event === ClientEvent.CLAIM_REWARD ? 10 : 60)) {
+            if (typeof callback === 'function') callback({ error: 'rate_limited' });
+            else socket.emit(ServerEvent.ERROR, { message: 'rate_limited' });
             return;
           }
           handler({ ...(payload || {}), publicKey: playerId } as P, callback as any);
@@ -378,6 +395,7 @@ export class SocketServer {
 
       // Auth: Register with email
       socket.on(ClientEvent.AUTH_REGISTER, async (payload: { email: string; password: string }, callback: (data: any) => void) => {
+        if (!authAllowed(callback)) return;
         if (!this.authService) return callback({ error: 'Auth not available' });
         const result = await this.authService.register(payload.email, payload.password);
         if (result.success) {
@@ -389,6 +407,7 @@ export class SocketServer {
 
       // Auth: Login with email
       socket.on(ClientEvent.AUTH_LOGIN, async (payload: { email: string; password: string }, callback: (data: any) => void) => {
+        if (!authAllowed(callback)) return;
         if (!this.authService) return callback({ error: 'Auth not available' });
         const result = await this.authService.login(payload.email, payload.password);
         if (result.success) {
@@ -420,6 +439,7 @@ export class SocketServer {
       // Auth step 1 for wallets: ask for a one-time challenge to sign
       socket.on(ClientEvent.AUTH_WALLET_CHALLENGE, (payload: { publicKey: string }, callback: (data: any) => void) => {
         if (typeof callback !== 'function') return;
+        if (!authAllowed(callback)) return;
         if (!this.authService) return callback({ error: 'Auth not available' });
         const now = Date.now();
         const recent = ((socket.data.challengeTimes as number[]) || []).filter((t) => now - t < 60_000);
@@ -436,6 +456,7 @@ export class SocketServer {
       // Auth step 2 for wallets: verify the signature, then issue the token
       socket.on(ClientEvent.AUTH_WALLET, (payload: { publicKey: string; signature?: string }, callback: (data: any) => void) => {
         if (typeof callback !== 'function') return;
+        if (!authAllowed(callback)) return;
         if (!this.authService) return callback({ error: 'Auth not available' });
         const challenge = socket.data.walletChallenge;
         socket.data.walletChallenge = undefined; // single use

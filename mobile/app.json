@@ -34,7 +34,8 @@
         "barStyle": "light-content",
         "backgroundColor": "#0d2818",
         "hidden": true
-      }
+      },
+      "allowBackup": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
