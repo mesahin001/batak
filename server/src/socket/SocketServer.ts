@@ -3,7 +3,7 @@
  * Client-server arası tüm oyun iletişimini yönetir: kuyruk, ihale, kart oynama, tur geçişleri.
  */
 
-import { RateLimiter } from './RateLimiter';
+import { RateLimiter } from './RateLimiter.js';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Matchmaker } from '../matchmaker/Matchmaker.js';
