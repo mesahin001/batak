@@ -17,6 +17,7 @@ export class SocketServer {
   private matchmaker: Matchmaker;
   private db: DatabaseManager | null;
   private cnftMinter: CNFTMinter | null;
+  private mintingGames = new Set<string>(); // games with a mint in flight (claim vs. auto-mint)
   private authService: AuthService | null;
 
   constructor(httpServer: HTTPServer, db?: DatabaseManager | null, cnftMinter?: CNFTMinter | null, authService?: AuthService | null) {
@@ -268,6 +269,21 @@ export class SocketServer {
       onAuthed(ClientEvent.CLAIM_REWARD, async (payload: { tournamentId: string; publicKey: string; claimSignature?: string }, callback: (data: any) => void) => {
         const { tournamentId, publicKey: pk, claimSignature } = payload;
         console.log(`[Tournament] Claim reward request from ${pk?.slice(0, 8)} for tournament ${tournamentId}`);
+        const reply = (data: any) => { if (typeof callback === 'function') callback(data); };
+
+        // pk is the authenticated player (onAuthed). Only the recorded winner of a finished game may claim.
+        if (!this.db || typeof tournamentId !== 'string' || !tournamentId) return reply({ error: 'invalid_request' });
+        const game = this.db.getCompletedGameWinner(tournamentId);
+        if (!game || game.winnerPk !== pk) return reply({ error: 'not_eligible' });
+
+        // One reward per game: repeat claims return the existing result
+        const existing = this.db.getRewardForGame(tournamentId, pk);
+        if (existing && (existing.onChainMinted || !this.cnftMinter)) {
+          return reply({ success: true, alreadyClaimed: true, mintAddress: existing.mintAddress, signature: existing.signature });
+        }
+        if (this.mintingGames.has(tournamentId)) return reply({ error: 'claim_in_progress' });
+        this.mintingGames.add(tournamentId);
+        try {
 
         if (!this.cnftMinter) {
           // cNFT minting not configured — record pending reward and notify
@@ -318,6 +334,9 @@ export class SocketServer {
         } catch (error) {
           console.error('[Tournament] Mint failed:', error);
           if (callback) callback({ error: 'Minting failed: ' + (error as Error).message });
+        }
+        } finally {
+          this.mintingGames.delete(tournamentId);
         }
       });
 
@@ -938,7 +957,8 @@ export class SocketServer {
 
       // Mint cNFT for winner (if configured and winner is human)
       const winner = roomData.players.find((p: any) => p.id === winnerId);
-      if (this.cnftMinter && winner && winner.type === 'human') {
+      if (this.cnftMinter && winner && winner.type === 'human' && !this.mintingGames.has(roomId) && !this.db.getRewardForGame(roomId, winnerId)?.onChainMinted) {
+        this.mintingGames.add(roomId);
         try {
           const result = await this.cnftMinter.mintTournamentReward(roomId, winnerId, 'gold');
           console.log(`[cNFT] Minted reward for winner ${winnerId.slice(0, 8)}: ${result.signature}`);
@@ -967,6 +987,8 @@ export class SocketServer {
           }
         } catch (error) {
           console.error('[cNFT] Failed to mint reward, continuing without it:', error);
+        } finally {
+          this.mintingGames.delete(roomId);
         }
       }
     } catch (error) {

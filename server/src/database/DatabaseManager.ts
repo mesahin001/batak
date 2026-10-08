@@ -451,6 +451,33 @@ export class DatabaseManager {
   }
 
   /**
+   * Minimal result of a finished game, used to verify reward claims
+   */
+  getCompletedGameWinner(gameId: string): { winnerPk: string | null; humanPlayerPks: string[] } | null {
+    const row = this.db.prepare(
+      `SELECT * FROM games WHERE id = ? AND status = 'completed'`
+    ).get(gameId) as any;
+    if (!row) return null;
+    return {
+      winnerPk: row.winner_pk || null,
+      humanPlayerPks: [row.player_1_pk, row.player_2_pk, row.player_3_pk, row.player_4_pk].filter(Boolean),
+    };
+  }
+
+  /**
+   * Reward already recorded for this game and player (minted or pending)
+   */
+  getRewardForGame(gameId: string, playerPk: string): { onChainMinted: boolean; mintAddress: string | null; signature: string | null } | null {
+    const row = this.db.prepare(
+      `SELECT on_chain_minted, mint_tx_id, signature FROM nft_rewards
+       WHERE game_id = ? AND player_pk = ?
+       ORDER BY on_chain_minted DESC, id DESC LIMIT 1`
+    ).get(gameId, playerPk) as any;
+    if (!row) return null;
+    return { onChainMinted: row.on_chain_minted === 1, mintAddress: row.mint_tx_id || null, signature: row.signature || null };
+  }
+
+  /**
    * Get NFT rewards for player
    */
   getPlayerNfts(publicKey: string): NftReward[] {
