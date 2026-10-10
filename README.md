@@ -1,8 +1,8 @@
-# Batak Tournament — Solana Mobile Hackathon Submission
+# Batak Tournament — CLOCK IN Solana Mobile Hackathon Submission
 
 > **Turkish Trick-Taking Card Game · cNFT Trophies · SKR Staking · Seeker Wallet**
 
-[![Hackathon](https://img.shields.io/badge/Monolith%20Hackathon-Solana%20Mobile%20+%20Radiants-9945FF)](https://solanamobile.radiant.nexus/?panel=hackathon)
+[![Hackathon](https://img.shields.io/badge/CLOCK%20IN-Solana%20Mobile%20Hackathon-9945FF)](https://solanamobile.com/blog/clock-in-the-solana-mobile-hackathon)
 [![Platform](https://img.shields.io/badge/Platform-Android%20(Seeker)-green)](https://seeker.solana.com)
 [![Network](https://img.shields.io/badge/Network-Solana%20Devnet-14F195)](https://explorer.solana.com/?cluster=devnet)
 
@@ -15,7 +15,7 @@ Batak is the most popular card game in Turkey — a competitive trick-taking gam
 **Batak Tournament** brings it to Solana Mobile with:
 - 🃏 **Full multiplayer** (humans + smart bots)
 - 🏆 **cNFT trophies** minted to winners' wallets on Solana
-- ◎ **SKR staking** — stake SKR tokens, winner takes the pot
+- ◎ **SKR tournament rooms** — wallet-approved SKR stake per room (prototype; on-chain escrow is on the roadmap, see [Known limitations](#known-limitations))
 - 👛 **Seeker wallet** via Mobile Wallet Adapter (one-tap login + tx signing)
 
 ---
@@ -32,8 +32,8 @@ Traditional multiplayer games store achievements in their database. If the servi
 2. **Your trophies are real digital assets.**
    When you win a tournament, you receive a **compressed NFT (cNFT)** on Solana. It's cryptographically yours — verifiable by anyone, survives even if Batak shuts down.
 
-3. **Trustless tournament stakes with SKR.**
-   Using Solana Mobile's native SKR token, players stake before entering high-stakes rooms. The contract holds it — not us. Winners receive the pot automatically.
+3. **SKR-staked tournament rooms.**
+   Using Solana Mobile's native SKR token, a host can open a room with an SKR stake. The wallet approves the stake through Mobile Wallet Adapter. Trustless escrow and automatic payout of the pot are **not implemented yet** (roadmap).
 
 ---
 
@@ -51,18 +51,27 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 ---
 
+## Try it
+
+- **APK (signed release):** https://batakci.xyz/downloads/batak.apk
+- **Web version:** https://game.batakci.xyz
+- **Landing page:** https://batakci.xyz
+- **Demo video:** https://youtu.be/frwOmIqUAug
+
+---
+
 ## Solana Integration
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| MWA Login (Seeker) | ✅ Live | `SeekerWalletService.authorize()` |
-| JWT Auth via wallet | ✅ Live | `auth_wallet` socket event |
-| cNFT minting (game win) | ✅ Code ready | Requires `MERKLE_TREE` + funded wallet |
+| MWA Login (any MWA wallet, incl. Seeker) | ✅ Live | `SeekerWalletService.authorize()`; server verifies an Ed25519-signed challenge |
+| JWT Auth via wallet | ✅ Live | `auth_wallet` socket event; `publicKey` bound to the socket identity |
+| cNFT minting (game win) | ✅ Live | Mainnet Bubblegum tree; enabled when `MERKLE_TREE` is set |
 | Claim via MWA transaction | ✅ Live | Memo tx on devnet proves ownership |
 | NFT Gallery (Settings) | ✅ Live | Shows trophies with Solscan links |
 | SKR balance display | ✅ Live | Mainnet SPL token query |
-| SKR tournament staking | ✅ Live | MWA approval → room creation |
-| Solana Program (Anchor) | ✅ Deployed | `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h` |
+| SKR tournament rooms | ⚠️ Prototype | MWA-signed approval → room creation. Stake amount and transaction are **not verified on-chain by the server**; no escrow/payout yet |
+| Solana Program (Anchor) | ✅ Devnet | `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h` (not used for SKR escrow yet) |
 
 ---
 
@@ -70,10 +79,10 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 | Layer | Technology |
 |-------|-----------|
-| **Mobile** | React Native + Expo + Socket.IO Client |
+| **Mobile** | React Native 0.81 + Expo 54 + TypeScript + Socket.IO Client |
 | **Wallet** | `@solana-mobile/mobile-wallet-adapter-protocol-web3js` |
 | **Server** | Node.js + TypeScript + Express + Socket.IO |
-| **Blockchain** | Solana Devnet + Anchor + Metaplex Bubblegum (cNFTs) |
+| **Blockchain** | Solana (devnet for game/auth, mainnet for cNFTs and SKR balance) + Anchor + Metaplex Bubblegum |
 | **Token** | SKR — `SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3` (mainnet) |
 | **Database** | SQLite (game history, NFT rewards, auth) |
 
@@ -90,7 +99,7 @@ Traditional multiplayer games store achievements in their database. If the servi
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-org/batak
+git clone https://github.com/mesahin001/batak
 cd batak
 
 # Server
@@ -120,7 +129,7 @@ PROGRAM_ID=5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h
 
 ```bash
 # mobile/.env
-EXPO_PUBLIC_SERVER_URL=http://YOUR_LOCAL_IP:3001
+EXPO_PUBLIC_SOCKET_URL=http://YOUR_LOCAL_IP:3001
 ```
 
 ### 3. Run
@@ -192,8 +201,8 @@ Server (Node.js + TypeScript)
   ├── CNFTMinter        ← Bubblegum compressed NFT minting
   └── DatabaseManager   ← SQLite (stats, NFTs, auth)
   ↓ on game complete
-Solana Devnet
-  └── mintCompressedNft → winner's wallet
+Solana
+  └── mintCompressedNft (mainnet Bubblegum tree) → winner's wallet
 ```
 
 **Player identification:** Seeker wallet `publicKey`, not socket ID. Reconnects are seamless.
@@ -203,10 +212,14 @@ Solana Devnet
 ## APK Build
 
 ```bash
-cd mobile/android
-./gradlew assembleDebug
+# Embed the JS bundle, then build a signed release APK
+cd mobile && npx expo export:embed --platform android --entry-file index.ts \
+  --bundle-output android/app/src/main/assets/index.android.bundle \
+  --assets-dest android/app/src/main/res
+cd android && ./gradlew assembleRelease   # needs a keystore in gradle.properties
 
-# Install on device
+# Debug build / install on device
+./gradlew assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -256,7 +269,7 @@ batak/
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `EXPO_PUBLIC_SERVER_URL` | Yes | Server URL (e.g. `http://192.168.x.x:3001`) |
+| `EXPO_PUBLIC_SOCKET_URL` | Yes | Server URL (`https://batakci.xyz` for production, e.g. `http://192.168.x.x:3001` locally) |
 | `EXPO_PUBLIC_DEFAULT_BOT_COUNT` | No | Default bot count (0 = real players only) |
 
 ---
@@ -264,7 +277,7 @@ batak/
 ## Testing
 
 ```bash
-# Server (expects 86 pass / 8 fail — scoring edge case)
+# Server (136 tests, 9 files)
 cd server && npm test
 
 # Type check
@@ -274,6 +287,15 @@ cd mobile && npx tsc --noEmit
 
 ---
 
+## Known limitations
+
+Being upfront about the current state:
+
+- **SKR stakes are not trustless yet.** The wallet approves a stake via MWA, but the server does not verify the amount or the transaction on-chain, and there is no escrow or automatic payout of the pot. Do not attach real value to it until this is built.
+- **Mixed networks.** Game and auth run against devnet; cNFT minting and the SKR balance read use mainnet.
+
+---
+
 ## License
 
-MIT — built for the [Monolith Hackathon](https://solanamobile.radiant.nexus/?panel=hackathon) by Solana Mobile + Radiants.
+MIT — built for the [CLOCK IN Solana Mobile Hackathon](https://solanamobile.com/blog/clock-in-the-solana-mobile-hackathon).
