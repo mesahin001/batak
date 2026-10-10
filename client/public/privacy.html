@@ -94,7 +94,7 @@
 
   <main>
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: March 13, 2026</p>
+    <p class="updated">Last updated: October 10, 2026</p>
 
     <div class="highlight">
       <p>This Privacy Policy applies to the <strong>Batak Tournament mobile application</strong> available on the Solana dApp Store and at <a href="https://batakci.xyz">batakci.xyz</a>. Batak Tournament is committed to protecting your privacy. We collect only the minimum data needed to operate the game and never sell your personal information to third parties.</p>
@@ -105,7 +105,7 @@
     <ul>
       <li><strong>Wallet address</strong> — your Solana public key, used to identify your account and authenticate you in the game. This is a public blockchain address and does not expose your private key.</li>
       <li><strong>Username</strong> — a display name you choose, associated with your account.</li>
-      <li><strong>Email address and password</strong> — if you register with email/password, your email is stored and your password is stored as a secure one-way hash (bcrypt). We never store plain-text passwords.</li>
+      <li><strong>Email address and password (legacy accounts only)</strong> — sign-in is currently wallet-only and email registration is disabled. Accounts created earlier with email/password keep their email, and the password is stored only as a secure one-way hash (bcrypt). We never store plain-text passwords.</li>
       <li><strong>Game statistics</strong> — wins, losses, bids, tricks won, and other in-game performance data used for leaderboards and player profiles.</li>
       <li><strong>NFT reward records</strong> — mint addresses and metadata for cNFT trophies awarded upon tournament victories, stored to display your trophy collection.</li>
       <li><strong>Device connection data</strong> — timestamps and socket session identifiers used for real-time gameplay; not stored permanently after the session ends.</li>
@@ -116,7 +116,7 @@
       <li>To authenticate you and maintain your game session across devices.</li>
       <li>To calculate and display leaderboard rankings and player statistics.</li>
       <li>To mint cNFT tournament trophies to your Solana wallet upon winning a tournament.</li>
-      <li>To operate SKR token staking and prize distribution features.</li>
+      <li>To operate the experimental SKR tournament-room feature (a wallet-approved stake request; we do not take custody of your tokens).</li>
       <li>To improve game stability and fix technical issues.</li>
     </ul>
 
@@ -150,7 +150,7 @@
     <p>Game statistics and NFT records are retained for the lifetime of the service. You may request deletion of off-chain data (statistics, game history, account) by contacting us at the email below. On-chain blockchain data (NFT ownership, transaction history) cannot be deleted as it is permanently recorded on the public blockchain.</p>
 
     <h2>9. Security</h2>
-    <p>We never store your private key or seed phrase. Authentication is performed via your wallet's cryptographic signing (Mobile Wallet Adapter protocol). Server infrastructure is hosted on Hetzner Cloud with TLS encryption in transit via Cloudflare. Passwords (where used) are stored as bcrypt hashes.</p>
+    <p>We never store your private key or seed phrase. Authentication is performed via your wallet's cryptographic signing (Mobile Wallet Adapter protocol). Server infrastructure is hosted on Hetzner Cloud with TLS encryption in transit via Cloudflare. Passwords of legacy email accounts are stored as bcrypt hashes.</p>
 
     <h2>10. Children's Privacy</h2>
     <p>Batak Tournament is not directed at children under 13. We do not knowingly collect personal data from minors. If you believe a child under 13 has provided personal information, please contact us so we can delete it.</p>
@@ -163,12 +163,12 @@
 
     <h2>13. Contact</h2>
     <p>For privacy-related questions, data access, or deletion requests, contact us at:</p>
-    <p><strong>Email:</strong> <a href="mailto:info@batakci.xyz">info@batakci.xyz</a></p>
+    <p><strong>Email:</strong> info&#64;batakci.xyz</p>
     <p><strong>Website:</strong> <a href="https://batakci.xyz">https://batakci.xyz</a></p>
   </main>
 
   <footer>
-    <p>&copy; 2026 Batak Tournament. All Rights Reserved.</p>
+    <p>&copy; 2026 Batak Tournament. Source code under the MIT License.</p>
     <p><a href="/terms.html">Terms &amp; Conditions</a> &nbsp;&bull;&nbsp; <a href="/privacy.html">Privacy Policy</a></p>
   </footer>
 </body>

@@ -7,7 +7,7 @@ app:
   name: "Batak Tournament"
   android_package: "com.bataktournament.mobile"
   urls:
-    license_url: "https://batakci.xyz/legal/terms/"
+    license_url: "https://batakci.xyz/legal/license/"
     copyright_url: "https://batakci.xyz/legal/copyright/"
     privacy_policy_url: "https://batakci.xyz/privacy.html"
     website: "https://batakci.xyz"
