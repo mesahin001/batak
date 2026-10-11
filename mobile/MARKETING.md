@@ -58,6 +58,6 @@ card game, multiplayer, Turkish, Batak, Solana, NFT, cNFT, MWA, Seeker, tourname
 ---
 
 ## Contact / Links
-- Package: `com.bataktournament.mobile`
+- Package: `xyz.batakci.tournament`
 - Version: 1.0.0
 - Category: Games → Card Games

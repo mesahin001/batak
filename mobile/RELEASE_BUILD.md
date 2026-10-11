@@ -108,7 +108,7 @@ Required:
 - Feature banner: 1200×600 PNG
 - 2-3 screenshots
 - Description (see `mobile/MARKETING.md`)
-- Package name: `com.bataktournament.mobile`
+- Package name: `xyz.batakci.tournament`
 - Category: Games
 
 ---

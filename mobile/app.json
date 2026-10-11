@@ -2,7 +2,7 @@
   "expo": {
     "name": "Batak Tournament",
     "slug": "BatakMobile",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,8 +18,8 @@
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.bataktournament.mobile",
-      "versionCode": 9,
+      "package": "xyz.batakci.tournament",
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d2818"
