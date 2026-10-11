@@ -283,7 +283,7 @@ batak/
 ## Testing
 
 ```bash
-# Server (136 tests, 9 files)
+# Server (136+ tests; the DB-backed suites need better-sqlite3 built for your platform)
 cd server && npm test
 
 # Type check
@@ -299,6 +299,7 @@ Being upfront about the current state:
 
 - **SKR stakes are not trustless yet.** The wallet approves a stake via MWA, but the server does not verify the amount or the transaction on-chain, and there is no escrow or automatic payout of the pot. Do not attach real value to it until this is built.
 - **Mixed networks.** Game and auth run against devnet; cNFT minting and the SKR balance read use mainnet.
+- **Trophy mints are budgeted.** The server wallet pays every mint (about 0.000005 SOL) and the mainnet Merkle tree holds only 32 leaves, so mints are capped at 2 per wallet and 8 per day, and stop when 3 leaves or fewer remain (`MINT_MAX_PER_PLAYER_DAY`, `MINT_MAX_PER_DAY`, `MINT_MIN_TREE_LEAVES_LEFT`). A wider launch needs a larger tree.
 
 ---
 
