@@ -39,7 +39,7 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 ## Demo Video
 
-[![Batak Tournament Demo](https://img.youtube.com/vi/frwOmIqUAug/maxresdefault.jpg)](https://youtu.be/frwOmIqUAug)
+[![Batak Tournament Demo](https://img.youtube.com/vi/G3VXIUEaQgU/maxresdefault.jpg)](https://youtu.be/G3VXIUEaQgU)
 
 ---
 
@@ -56,7 +56,7 @@ Traditional multiplayer games store achievements in their database. If the servi
 - **APK (signed release):** https://batakci.xyz/downloads/batak.apk
 - **Web version:** https://game.batakci.xyz
 - **Landing page:** https://batakci.xyz
-- **Demo video:** https://youtu.be/frwOmIqUAug
+- **Demo video:** https://youtu.be/G3VXIUEaQgU
 
 ---
 
