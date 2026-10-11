@@ -7,15 +7,19 @@ com.bataktournament.mobile; same publisher profile, no new KYC). Prepared 2026-1
 | Field | Value |
 |---|---|
 | Package name | `xyz.batakci.tournament` (checked free in the portal) |
-| Version name / code | 1.0.9 / 10 |
-| APK to upload | `~/toolchain/work/dist/batak-1.0.9-dappstore.apk` (store update channel) |
-| SHA-256 | `93926f6236e9ea31eb8bd1288a3f90f58e2bd0ba33ccb78a3f25c1fa92fe5143` |
+| Version name / code | 1.0.10 / 11 |
+| APK to upload | `~/toolchain/work/dist/batak-1.0.10-dappstore.apk` (store update channel) |
+| SHA-256 | `e1c1e9da5ce20eb05636eed8331e1a8c8eb905d36611a63f30cf6144431e217a` |
 | Signing cert SHA-256 | `da218ee3ad4e6ff99171bf727c86f4b2fcdd06fd43454994f70f91334c3368da` |
 | Publisher wallet | `CxXwpFuPiMDnB3TrdCNVvRu5UZ9m94LokESeBTAf2HHs` |
 | Cost | about 0.2 SOL in the publisher wallet (fee + ArDrive upload) |
 
-Do not upload `batak-1.0.9-sideload.apk`; it offers its own APK as an update.
+Do not upload `batak-1.0.10-sideload.apk`; it offers its own APK as an update.
 Keep the same keystore for every later release of this package.
+
+Checked on the APK: launcher label "Batak Tournament", permissions INTERNET, VIBRATE and
+ACCESS_NETWORK_STATE only (storage permissions removed), arm64-v8a, minSdk 24, targetSdk 36,
+allowBackup off.
 
 ## App fields
 **App name:** Batak Tournament
@@ -67,12 +71,12 @@ Keep the same keystore for every later release of this package.
 | Featured graphic | `editors_choice_graphic.png` | 1200x1200 |
 | Screenshots | `lobby.png`, `nft.png`, `gameplay.png`, `skr.png` | portrait 1200x2670, `gameplay` landscape |
 
-These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.9
+These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.10
 (login, lobby, a hand in play, trophy) if the UI changed. `skr.png` shows the experimental SKR
 stake; drop it if it looks like a finished feature.
 
 ## Before pressing Submit
-- Install `batak-1.0.9-sideload.apk` on the phone first: wallet login, one bot game, a mint.
+- Install `batak-1.0.10-sideload.apk` on the phone first: wallet login, one bot game, a mint.
   The store APK differs only in the update channel.
 - Check the listing says "experimental" for SKR and does not claim escrow or payouts.
 - Review takes 3-5 business days; it will not finish before the hackathon deadline (13.10.2026 01:59).
