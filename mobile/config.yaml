@@ -14,9 +14,9 @@ app:
 
 release:
   catalog_name: "Batak Tournament"
-  version_code: 7
-  version_name: "1.0.6"
-  new_in_version: "Privacy and Terms pages updated. Bug fixes and UI improvements."
+  version_code: 8
+  version_name: "1.0.7"
+  new_in_version: "Wallet address and SKR balance now display correctly. Privacy and Terms pages updated."
   testing_instructions: "Login with a Solana wallet (Phantom, Backpack, or any MWA-compatible wallet), join the queue to play a game of Koz Maça or İhaleli Batak against other players or bots."
   apk_paths:
-    - "android/app/build/outputs/apk/release/app-release.apk"
+    - "android/app/build/outputs/apk/release/app-release.apk"  # build with EXPO_PUBLIC_UPDATE_CHANNEL=store
