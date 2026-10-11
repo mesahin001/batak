@@ -230,6 +230,27 @@ export class CNFTMinter {
     return this.mintRewardNFT(winnerAddress, metadata);
   }
 
+  private treeCache: { at: number; left: number } | null = null;
+
+  /**
+   * Unused leaves in the Merkle tree, read from the Bubblegum TreeConfig account
+   * (capacity at byte 72, minted at byte 80). Cached for a minute. Null if unreadable.
+   */
+  async getTreeLeavesLeft(): Promise<number | null> {
+    if (this.treeCache && Date.now() - this.treeCache.at < 60_000) return this.treeCache.left;
+    try {
+      const BUBBLEGUM = new PublicKey('BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY');
+      const [config] = PublicKey.findProgramAddressSync([this.merkleTree.toBuffer()], BUBBLEGUM);
+      const info = await this.client.getConnection().getAccountInfo(config);
+      if (!info || info.data.length < 88) return null;
+      const left = Number(info.data.readBigUInt64LE(72) - info.data.readBigUInt64LE(80));
+      this.treeCache = { at: Date.now(), left };
+      return left;
+    } catch {
+      return null;
+    }
+  }
+
   /** Server wallet balance in lamports, or null if the RPC call fails. */
   async getPayerLamports(): Promise<number | null> {
     try {

@@ -1,6 +1,6 @@
 import { evaluateMint, MintLimits } from '../MintPolicy';
 
-const limits: MintLimits = { maxPerPlayerPerDay: 3, maxPerDay: 10, minPayerLamports: 20_000_000 };
+const limits: MintLimits = { maxPerPlayerPerDay: 3, maxPerDay: 10, minPayerLamports: 20_000_000, minTreeLeavesLeft: 3 };
 
 const ledger = (total: number, perPlayer: number) => ({
   countMintsSince: (_h: number, pk?: string) => (pk ? perPlayer : total),
@@ -27,5 +27,11 @@ describe('mint budget', () => {
   it('does not block on an unreadable balance but still applies the DB limits', () => {
     expect(evaluateMint(ledger(0, 0), limits, 'pk', null)).toBeNull();
     expect(evaluateMint(ledger(10, 0), limits, 'pk', null)).toBe('daily_limit');
+  });
+
+  it('refuses when only the reserved Merkle tree leaves remain', () => {
+    expect(evaluateMint(ledger(0, 0), limits, 'pk', 60_000_000, 3)).toBe('tree_full');
+    expect(evaluateMint(ledger(0, 0), limits, 'pk', 60_000_000, 4)).toBeNull();
+    expect(evaluateMint(ledger(0, 0), limits, 'pk', 60_000_000, null)).toBeNull();
   });
 });

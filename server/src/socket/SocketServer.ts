@@ -29,15 +29,18 @@ export class SocketServer {
   private async mintDenial(playerPk: string): Promise<MintDenial | null> {
     if (!this.db || !this.cnftMinter) return null;
     const lamports = await this.cnftMinter.getPayerLamports();
+    const leavesLeft = await this.cnftMinter.getTreeLeavesLeft();
     const denial = evaluateMint(
       this.db,
       {
         maxPerPlayerPerDay: config.mintMaxPerPlayerPerDay,
         maxPerDay: config.mintMaxPerDay,
         minPayerLamports: config.mintMinPayerLamports,
+        minTreeLeavesLeft: config.mintMinTreeLeavesLeft,
       },
       playerPk,
-      lamports
+      lamports,
+      leavesLeft
     );
     if (denial) console.warn(`[cNFT] Mint refused for ${playerPk.slice(0, 8)}: ${denial}`);
     return denial;
