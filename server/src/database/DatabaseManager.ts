@@ -478,6 +478,18 @@ export class DatabaseManager {
   }
 
   /**
+   * Count on-chain mints in the last `hours` hours (all players, or one player).
+   * minted_at is CURRENT_TIMESTAMP (UTC), the same clock as datetime('now').
+   */
+  countMintsSince(hours: number, playerPk?: string): number {
+    const since = `datetime('now', '-${Math.floor(hours)} hours')`;
+    const row = playerPk
+      ? this.db.prepare(`SELECT COUNT(*) AS n FROM nft_rewards WHERE on_chain_minted = 1 AND minted_at >= ${since} AND player_pk = ?`).get(playerPk)
+      : this.db.prepare(`SELECT COUNT(*) AS n FROM nft_rewards WHERE on_chain_minted = 1 AND minted_at >= ${since}`).get();
+    return (row as any).n as number;
+  }
+
+  /**
    * Get NFT rewards for player
    */
   getPlayerNfts(publicKey: string): NftReward[] {

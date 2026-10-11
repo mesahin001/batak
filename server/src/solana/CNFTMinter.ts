@@ -230,6 +230,15 @@ export class CNFTMinter {
     return this.mintRewardNFT(winnerAddress, metadata);
   }
 
+  /** Server wallet balance in lamports, or null if the RPC call fails. */
+  async getPayerLamports(): Promise<number | null> {
+    try {
+      return await this.client.getConnection().getBalance(this.client.getPayer().publicKey);
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Get asset by ID
    */

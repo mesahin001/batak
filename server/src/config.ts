@@ -17,6 +17,12 @@ export const config = {
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY || '',
   solanaNetwork: process.env.SOLANA_NETWORK || 'devnet',
 
+  // cNFT mint budget: the server wallet pays every mint, so cap what a day can cost.
+  mintMaxPerPlayerPerDay: parseInt(process.env.MINT_MAX_PER_PLAYER_DAY || '3', 10),
+  mintMaxPerDay: parseInt(process.env.MINT_MAX_PER_DAY || '100', 10),
+  // Stop minting when the server wallet falls below this (lamports, default 0.02 SOL).
+  mintMinPayerLamports: parseInt(process.env.MINT_MIN_PAYER_LAMPORTS || '20000000', 10),
+
   // Program
   programId: process.env.PROGRAM_ID || '',
   merkleTree: process.env.MERKLE_TREE || '',

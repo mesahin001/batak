@@ -11,6 +11,8 @@ import { Matchmaker } from '../matchmaker/Matchmaker.js';
 import { ClientEvent, ServerEvent, JoinQueuePayload, PlayCardPayload, BidTrumpPayload } from '../types/socket.js';
 import { DatabaseManager } from '../database/DatabaseManager.js';
 import { CNFTMinter } from '../solana/CNFTMinter.js';
+import { evaluateMint, MintDenial } from '../solana/MintPolicy.js';
+import { config } from '../config.js';
 import { AuthService } from '../auth/AuthService.js';
 import { setupRedisAdapter, getRedisConfig } from './RedisAdapter.js';
 
@@ -22,6 +24,24 @@ export class SocketServer {
   private limiter = new RateLimiter(60_000);
   private mintingGames = new Set<string>(); // games with a mint in flight (claim vs. auto-mint)
   private authService: AuthService | null;
+
+  /** Why a mint must be refused right now (budget / wallet reserve), or null to proceed. */
+  private async mintDenial(playerPk: string): Promise<MintDenial | null> {
+    if (!this.db || !this.cnftMinter) return null;
+    const lamports = await this.cnftMinter.getPayerLamports();
+    const denial = evaluateMint(
+      this.db,
+      {
+        maxPerPlayerPerDay: config.mintMaxPerPlayerPerDay,
+        maxPerDay: config.mintMaxPerDay,
+        minPayerLamports: config.mintMinPayerLamports,
+      },
+      playerPk,
+      lamports
+    );
+    if (denial) console.warn(`[cNFT] Mint refused for ${playerPk.slice(0, 8)}: ${denial}`);
+    return denial;
+  }
 
   constructor(httpServer: HTTPServer, db?: DatabaseManager | null, cnftMinter?: CNFTMinter | null, authService?: AuthService | null) {
     this.io = new SocketIOServer(httpServer, {
@@ -361,6 +381,8 @@ export class SocketServer {
         }
 
         try {
+          const denial = await this.mintDenial(pk);
+          if (denial) return reply({ error: denial });
           const result = await this.cnftMinter.mintTournamentReward(tournamentId, pk, 'gold');
 
           if (this.db) {
@@ -1018,6 +1040,7 @@ export class SocketServer {
       if (this.cnftMinter && winner && winner.type === 'human' && !this.mintingGames.has(roomId) && !this.db.getRewardForGame(roomId, winnerId)?.onChainMinted) {
         this.mintingGames.add(roomId);
         try {
+          if (await this.mintDenial(winnerId)) return;
           const result = await this.cnftMinter.mintTournamentReward(roomId, winnerId, 'gold');
           console.log(`[cNFT] Minted reward for winner ${winnerId.slice(0, 8)}: ${result.signature}`);
 
