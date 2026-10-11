@@ -225,6 +225,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
+### Releasing an update
+
+`scripts/release-apk.sh <apk> <versionName> <versionCode> [minVersionCode] [notes_en] [notes_tr]` uploads the APK, checks the served hash and writes `data/app-version.json` in `batak-server`. The app asks `GET /api/app-version` on start and offers the update (once a day, or every start if the install is below `minVersionCode`). dApp Store builds set `EXPO_PUBLIC_UPDATE_CHANNEL=store` and open `storeUrl` (pass `STORE_URL=...` to the script) instead of the APK link.
+
 ## Project Structure
 
 ```

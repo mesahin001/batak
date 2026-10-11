@@ -9,6 +9,7 @@ import {
   SeekerWalletService,
   WalletAuthResult,
   APP_IDENTITY,
+  toBase58Address,
 } from '../services/wallet/SeekerWalletService';
 import { AsyncStorageService } from '../services/storage/AsyncStorageService';
 
@@ -47,7 +48,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, onWall
       const storedToken = await AsyncStorageService.getWalletToken();
 
       if (storedPublicKey && storedToken) {
-        setPublicKey(storedPublicKey);
+        setPublicKey(toBase58Address(storedPublicKey));
         setAuthToken(storedToken);
         setIsConnected(true);
       }

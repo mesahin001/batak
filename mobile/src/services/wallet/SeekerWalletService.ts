@@ -16,6 +16,23 @@ const DEVNET_CONNECTION = new Connection('https://api.devnet.solana.com', 'confi
 const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 /**
+ * MWA returns account addresses base64-encoded; the app, server and RPC use base58.
+ * The stored key is base58; signMessages wants base64 again.
+ */
+function base64ToBase58(address: string): string {
+  return new PublicKey(Buffer.from(address, 'base64')).toBase58();
+}
+
+/** Accepts either form (older installs stored the base64 one) and returns base58. */
+export function toBase58Address(address: string): string {
+  return /[+/=]/.test(address) ? base64ToBase58(address) : address;
+}
+
+function base58ToBase64(address: string): string {
+  return Buffer.from(new PublicKey(address).toBytes()).toString('base64');
+}
+
+/**
  * App identity for Solana Mobile Wallet Adapter
  */
 export const APP_IDENTITY = {
@@ -50,7 +67,7 @@ export class SeekerWalletService {
         });
 
         return {
-          publicKey: authResult.accounts[0].address.toString(),
+          publicKey: base64ToBase58(authResult.accounts[0].address),
           authToken: authResult.auth_token,
           walletUriBase: authResult.wallet_uri_base,
         };
@@ -86,7 +103,7 @@ export class SeekerWalletService {
         });
 
         return {
-          publicKey: authResult.accounts[0].address.toString(),
+          publicKey: base64ToBase58(authResult.accounts[0].address),
           authToken: authResult.auth_token,
           walletUriBase: authResult.wallet_uri_base,
         };
@@ -180,7 +197,8 @@ export class SeekerWalletService {
    */
   static async claimNftReward(tournamentId: string): Promise<string> {
     const authToken = await AsyncStorageService.getWalletToken();
-    const publicKeyStr = await AsyncStorageService.getWalletPublicKey();
+    const storedKey = await AsyncStorageService.getWalletPublicKey();
+    const publicKeyStr = storedKey ? toBase58Address(storedKey) : storedKey;
 
     if (!authToken || !publicKeyStr) {
       throw new Error('Wallet not authorized');
@@ -250,7 +268,7 @@ export class SeekerWalletService {
           auth_token: authToken,
         });
         const signedMessages = await wallet.signMessages({
-          addresses: [await AsyncStorageService.getWalletPublicKey() || ''],
+          addresses: [base58ToBase64(toBase58Address((await AsyncStorageService.getWalletPublicKey()) || ''))],
           payloads: [message],
         });
         return signedMessages;

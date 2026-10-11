@@ -7,6 +7,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { initI18n } from './src/services/i18n/I18nService';
 import { soundManager } from './src/utils/SoundManager';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { checkForUpdate } from './src/services/UpdateService';
 import { SplashScreen } from './src/screens/SplashScreen';
 
 // Socket server URL - configure based on environment
@@ -23,6 +24,7 @@ export default function App() {
       await initI18n();
       await soundManager.init();
       setIsI18nReady(true);
+      checkForUpdate(SOCKET_URL);
     };
     initServices();
   }, []);

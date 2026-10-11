@@ -11,6 +11,7 @@ import { config } from './config.js';
 import { SocketServer } from './socket/SocketServer.js';
 import { DatabaseManager } from './database/DatabaseManager.js';
 import { AuthService } from './auth/AuthService.js';
+import { loadAppVersion } from './app/AppVersion.js';
 import { checkRedisHealth, getRedisConfig } from './socket/RedisAdapter.js';
 async function main() {
   // Validate configuration
@@ -64,6 +65,12 @@ async function main() {
         timestamp: new Date().toISOString(),
       });
     }
+  });
+
+  // Mobile update manifest (data/app-version.json, written by scripts/release-apk.sh)
+  app.get('/api/app-version', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(loadAppVersion(path.join(process.cwd(), 'data', 'app-version.json')));
   });
 
   // Basic info endpoint
