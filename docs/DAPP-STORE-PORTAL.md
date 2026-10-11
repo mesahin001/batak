@@ -24,8 +24,9 @@ allowBackup off.
 ## App fields
 **App name:** Batak Tournament
 
-**Short description (80 chars max):**
-> Turkey's favorite card game with wallet login and cNFT trophies.
+**Short description (portal limit: 30 characters):**
+> Turkey's card game on Solana
+(28 characters; the longer line used earlier was over the limit)
 
 **Long description:**
 > Batak Tournament brings Turkey's most popular trick-taking card game to Solana Mobile. Play 4-player Batak against real players or smart bots in two classic modes: Koz Maça and İhaleli Batak.
@@ -62,6 +63,18 @@ allowBackup off.
 | License | https://batakci.xyz/legal/license/ |
 | Copyright | https://batakci.xyz/legal/copyright/ |
 | Contact | info@batakci.xyz |
+
+## Required portal fields (checked against the listing guidelines)
+| Field | Value |
+|---|---|
+| dApp Icon | `demo/icon_512.png` (512x512) |
+| Banner | `demo/dapp_store_banner.png` (1200x600; no size rule is published) |
+| dApp Preview | screenshots at least 1080 px on both sides, ALL in the same orientation and aspect ratio, or an .mp4 of at least 720 px |
+| Language | English (add Turkish if the field allows several) |
+| App Website | https://batakci.xyz |
+| Support Email | info@batakci.xyz (must be read; reviewers and users write here) |
+| Terms of Use | https://batakci.xyz/terms.html |
+| Privacy Policy | https://batakci.xyz/privacy.html |
 
 ## Images (in `demo/`)
 | Slot | File | Size |
