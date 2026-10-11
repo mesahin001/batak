@@ -7,6 +7,7 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
+import { Buffer } from 'buffer';
 import { AsyncStorageService } from '../storage/AsyncStorageService';
 
 // Solana devnet connection for transaction submission
@@ -20,7 +21,11 @@ const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfc
  * The stored key is base58; signMessages wants base64 again.
  */
 function base64ToBase58(address: string): string {
-  return new PublicKey(Buffer.from(address, 'base64')).toBase58();
+  // atob/btoa instead of Buffer: Hermes has no global Buffer in this app
+  const binary = atob(address);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new PublicKey(bytes).toBase58();
 }
 
 /** Accepts either form (older installs stored the base64 one) and returns base58. */
@@ -29,7 +34,10 @@ export function toBase58Address(address: string): string {
 }
 
 function base58ToBase64(address: string): string {
-  return Buffer.from(new PublicKey(address).toBytes()).toString('base64');
+  const bytes = new PublicKey(address).toBytes();
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
 /**
@@ -67,7 +75,7 @@ export class SeekerWalletService {
         });
 
         return {
-          publicKey: base64ToBase58(authResult.accounts[0].address),
+          publicKey: toBase58Address(authResult.accounts[0].address),
           authToken: authResult.auth_token,
           walletUriBase: authResult.wallet_uri_base,
         };
@@ -103,7 +111,7 @@ export class SeekerWalletService {
         });
 
         return {
-          publicKey: base64ToBase58(authResult.accounts[0].address),
+          publicKey: toBase58Address(authResult.accounts[0].address),
           authToken: authResult.auth_token,
           walletUriBase: authResult.wallet_uri_base,
         };
