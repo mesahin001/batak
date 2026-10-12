@@ -7,14 +7,14 @@ com.bataktournament.mobile; same publisher profile, no new KYC). Prepared 2026-1
 | Field | Value |
 |---|---|
 | Package name | `xyz.batakci.tournament` (checked free in the portal) |
-| Version name / code | 1.0.11 / 12 |
-| APK to upload | `~/toolchain/work/dist/batak-1.0.11-dappstore.apk` (store update channel) |
+| Version name / code | 1.0.12 / 13 |
+| APK to upload | `~/toolchain/work/dist/batak-1.0.12-dappstore.apk` (store update channel) |
 | SHA-256 | `e89f9b663c67cff9bb7236d2a215e0eb24ee114c1b6a1d2819f6baf2365608b6` |
 | Signing cert SHA-256 | `da218ee3ad4e6ff99171bf727c86f4b2fcdd06fd43454994f70f91334c3368da` |
 | Publisher wallet | `CxXwpFuPiMDnB3TrdCNVvRu5UZ9m94LokESeBTAf2HHs` |
 | Cost | about 0.2 SOL in the publisher wallet (fee + ArDrive upload) |
 
-Do not upload `batak-1.0.11-sideload.apk`; it offers its own APK as an update.
+Do not upload `batak-1.0.12-sideload.apk`; it offers its own APK as an update.
 Keep the same keystore for every later release of this package.
 
 Checked on the APK: launcher label "Batak Tournament", permissions INTERNET, VIBRATE and
@@ -29,17 +29,17 @@ allowBackup off.
 (28 characters; the longer line used earlier was over the limit)
 
 **Long description:**
-> Batak Tournament brings Turkey's most popular trick-taking card game to Solana Mobile. Play 4-player Batak against real players or smart bots in two classic modes: Koz Maça and İhaleli Batak.
+> Batak Tournament brings Turkey's most popular trick-taking card game to Solana Mobile. Play 4-player Batak against real players or smart bots in two classic modes: Koz Maça and İhaleli Batak. Each game is one 4-player match; there are no entry fees or prize pools.
 >
 > • Wallet login: sign in with a Mobile Wallet Adapter wallet such as Seeker. Your wallet is your player identity, with no password to remember. Email sign-up is also available.
 > • cNFT trophies: win a full game and a compressed NFT trophy is minted to your wallet on Solana mainnet. Trophy mints are limited per wallet and per day.
 > • Bots on three difficulty levels, so a table is never empty.
 > • Private rooms: invite friends with a room code.
 > • Leaderboards and player profiles.
-> • SKR tournament rooms (experimental): read your SKR balance and approve a stake in your wallet. On-chain escrow and automatic payout are not built yet.
+> • SKR balance: your Solana Mobile SKR balance is shown in the lobby. SKR tournament rooms are coming soon and are not available in this release; no tokens are staked or paid out.
 > • 11 languages, including Turkish and English.
 >
-> Gameplay is server-authoritative: hands stay hidden and every move is validated on the server. Game and sign-in run on Solana devnet; trophies and the SKR balance use mainnet.
+> Gameplay is server-authoritative: hands stay hidden and every move is validated on the server. Sign-in is an off-chain wallet signature; trophies and the SKR balance use Solana mainnet. Trophy NFTs are commemorative; there is no prize money.
 
 **What's new (release notes):**
 > First release. Wallet login with Mobile Wallet Adapter, 4-player Batak against bots or players, and compressed-NFT trophies.
@@ -50,7 +50,7 @@ allowBackup off.
 > 2. From the lobby tap "Play" to join the queue. A match against bots starts after the matchmaking wait.
 > 3. Play a full game (Koz Maça or İhaleli Batak). Rules are in the in-app help.
 > 4. Winning a complete game mints a compressed NFT trophy to the connected wallet (Solana mainnet). To protect the server wallet, trophies are capped at 2 per wallet per day and 8 per day overall; if the cap is hit, the game still completes normally.
-> 5. The SKR tournament button opens a stake dialog. It is optional, needs SKR in the wallet, and is a prototype (no escrow).
+> 5. The lobby shows your SKR balance when the wallet holds SKR. The "SKR Tournament" tile is disabled and marked coming soon in this release.
 > The server is https://batakci.xyz (health: /health). No test account is needed.
 
 **Category / tags:** Games (card). Tags: card game, multiplayer, turkish, nft, solana.
@@ -84,13 +84,12 @@ allowBackup off.
 | Featured graphic | `editors_choice_graphic.png` | 1200x1200 |
 | Screenshots | `lobby.png`, `nft.png`, `gameplay.png`, `skr.png` | portrait 1200x2670, `gameplay` landscape |
 
-These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.11
-(login, lobby, a hand in play, trophy) if the UI changed. `skr.png` shows the experimental SKR
-stake; drop it if it looks like a finished feature.
+These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.12
+(login, lobby, a hand in play, trophy) if the UI changed. Do NOT upload `skr.png`: it shows the stake dialog, which is no longer in the app.
 
 ## Before pressing Submit
-- Install `batak-1.0.11-sideload.apk` on the phone first: wallet login, one bot game, a mint.
+- Install `batak-1.0.12-sideload.apk` on the phone first: wallet login, one bot game, a mint.
   The store APK differs only in the update channel.
-- Check the listing says "experimental" for SKR and does not claim escrow or payouts.
+- Check the listing says SKR tournaments are "coming soon" and does not claim stakes, escrow, payouts or prizes.
 - Review takes 3-5 business days; it will not finish before the hackathon deadline (13.10.2026 01:59).
   Say "dApp Store submission in progress" in the hackathon form only after submitting.

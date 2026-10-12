@@ -62,9 +62,9 @@
     "featureFast": "Rápido",
     "featureFastDesc": "Sem senha para lembrar",
     "featureRewards": "Recompensas",
-    "featureRewardsDesc": "Ganhe NFTs por vitórias em torneios",
-    "featurePlay": "Jogar e Ganhar",
-    "featurePlayDesc": "Compita em torneios classificatórios",
+    "featureRewardsDesc": "Vença partidas e ganhe um NFT troféu",
+    "featurePlay": "Jogar online",
+    "featurePlayDesc": "Suba no ranking",
     "checkSeeker": "Um app de carteira Solana está instalado (Seeker, Phantom, Backpack)",
     "checkWallet": "Você tem uma conta na carteira",
     "checkInternet": "Conexão com internet está estável",
@@ -89,7 +89,7 @@
     "customGame": "Partida personalizada",
     "pvp": "JcJ",
     "skrTournament": "Torneio SKR",
-    "skrTournamentSub": "Aposte SKR · Vencedor leva tudo",
+    "skrTournamentSub": "Em breve",
     "unknownMode": "Desconhecido"
   },
   "game": {
@@ -210,7 +210,7 @@
     "walletAddress": "Carteira",
     "emailAddress": "Email",
     "myTrophies": "Meus Troféus",
-    "noTrophiesMsg": "Vença um torneio para ganhar seu primeiro NFT troféu",
+    "noTrophiesMsg": "Vença uma partida para ganhar seu primeiro NFT troféu",
     "mintingPending": "Cunhando na rede...",
     "appDescription": "Jogue o jogo de cartas turco na Solana",
     "champion": "Campeão"

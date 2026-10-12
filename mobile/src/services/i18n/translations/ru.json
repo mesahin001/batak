@@ -62,9 +62,9 @@
     "featureFast": "Быстро",
     "featureFastDesc": "Не нужно запоминать пароль",
     "featureRewards": "Награды",
-    "featureRewardsDesc": "Получайте NFT за победы в турнирах",
-    "featurePlay": "Играй и Зарабатывай",
-    "featurePlayDesc": "Участвуйте в рейтинговых турнирах",
+    "featureRewardsDesc": "Побеждайте в играх и получайте NFT-трофей",
+    "featurePlay": "Играйте онлайн",
+    "featurePlayDesc": "Поднимайтесь в рейтинге",
     "checkSeeker": "Приложение кошелька Solana установлено (Seeker, Phantom, Backpack)",
     "checkWallet": "Аккаунт в кошельке настроен",
     "checkInternet": "Интернет-соединение стабильно",
@@ -89,7 +89,7 @@
     "customGame": "Пользовательская игра",
     "pvp": "PvP",
     "skrTournament": "Турнир SKR",
-    "skrTournamentSub": "Ставьте SKR · Победитель берёт всё",
+    "skrTournamentSub": "Скоро",
     "unknownMode": "Неизвестно"
   },
   "game": {
@@ -210,7 +210,7 @@
     "walletAddress": "Кошелёк",
     "emailAddress": "Email",
     "myTrophies": "Мои трофеи",
-    "noTrophiesMsg": "Выиграйте турнир, чтобы получить первый NFT-трофей",
+    "noTrophiesMsg": "Выиграйте игру, чтобы получить первый NFT-трофей",
     "mintingPending": "Чеканка в блокчейне...",
     "appDescription": "Играйте в турецкие карты на Solana",
     "champion": "Чемпион"

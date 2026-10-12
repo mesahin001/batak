@@ -20,15 +20,14 @@ Portal deadline: 13.10.2026 01:59. Facts below were checked on 2026-10-11.
 "If no..." field: **See previous answer (ported app).**
 
 ## SKR integration
-> Yes. Players can create SKR-staked private tournament rooms. The app reads the player's SKR balance on mainnet, lets them pick a stake, and has the wallet approve it through Mobile Wallet Adapter. The winner receives a compressed-NFT trophy minted to their wallet via Metaplex Bubblegum on mainnet. The SKR stake flow is at prototype stage: the stake approval is signed in the wallet, while on-chain escrow and automatic payout of the pot are on our roadmap.
-
-Only keep "reads the player's SKR balance" if the balance shows correctly on the phone (fixed in 1.0.8, not yet confirmed by the developer).
+> Partially. The lobby reads the connected wallet's SKR balance on Solana mainnet and shows it (verified on a Seeker with 1.0.11). SKR-staked tournament rooms with escrow and payout are not built yet: the lobby shows them as "coming soon" and nothing is staked or paid. Winners receive a commemorative compressed-NFT trophy minted to their wallet via Metaplex Bubblegum on mainnet; there is no prize money.
 
 ## Pitch (if the form asks)
 > Batak is Turkey's most beloved trick-taking card game, played by tens of millions. Batak Tournament brings it to Solana Mobile: real-time 4-player matches (humans plus smart bots so a table is never empty), a wallet-as-identity login with no account creation, and compressed-NFT trophies minted to winners. Your wallet is your profile, your history and your trophy case.
 
 ## Be careful
 - Do not write "live in the dApp Store". The listing is archived and waiting on Solana Mobile support. Say "submission to the dApp Store in progress" only if a request is actually pending.
-- Networks: game and auth run on devnet, cNFT minting and the SKR balance on mainnet. Say so if asked.
+- Networks: the game server is off-chain and wallet login is an off-chain Ed25519 signature; cNFT minting and the SKR balance use mainnet. Do not say "devnet" for login.
+- Do not call it a tournament with prizes: one game is one 4-player match. There are no brackets, entry fees or prize pools. The only reward is the trophy NFT.
 - Trophy mints are capped (2 per wallet, 8 per day) because the Merkle tree has 32 leaves. Judges can still mint one.
 - The demo video was recorded on a Seeker with v1.0.7/1.0.8. Mention the version only if the form asks.

@@ -15,7 +15,7 @@ Batak is the most popular card game in Turkey — a competitive trick-taking gam
 **Batak Tournament** brings it to Solana Mobile with:
 - 🃏 **Full multiplayer** (humans + smart bots)
 - 🏆 **cNFT trophies** minted to winners' wallets on Solana
-- ◎ **SKR tournament rooms** — wallet-approved SKR stake per room (prototype; on-chain escrow is on the roadmap, see [Known limitations](#known-limitations))
+- ◎ **SKR balance** shown in the lobby (read from mainnet). SKR tournament rooms are **not available yet** (roadmap, see [Known limitations](#known-limitations))
 - 👛 **Seeker wallet** via Mobile Wallet Adapter (one-tap login + tx signing)
 
 ---
@@ -32,8 +32,8 @@ Traditional multiplayer games store achievements in their database. If the servi
 2. **Your trophies are real digital assets.**
    When you win a tournament, you receive a **compressed NFT (cNFT)** on Solana. It's cryptographically yours — verifiable by anyone, survives even if Batak shuts down.
 
-3. **SKR-staked tournament rooms.**
-   Using Solana Mobile's native SKR token, a host can open a room with an SKR stake. The wallet approves the stake through Mobile Wallet Adapter. Trustless escrow and automatic payout of the pot are **not implemented yet** (roadmap).
+3. **SKR token support (partial).**
+   The lobby reads the player's Solana Mobile SKR balance on mainnet. SKR-staked rooms with escrow and payout are **not built yet**; the lobby shows them as "coming soon" (roadmap).
 
 ---
 
@@ -45,9 +45,9 @@ Traditional multiplayer games store achievements in their database. If the servi
 
 ## Screenshots
 
-| Lobby | Gameplay | NFT Trophy | SKR Stake |
-|-------|----------|------------|-----------|
-| ![Lobby](demo/lobby.png) | ![Gameplay](demo/gameplay.png) | ![NFT Trophy](demo/nft.png) | ![SKR Stake](demo/skr.png) |
+| Lobby | Gameplay | NFT Trophy |
+|-------|----------|------------|
+| ![Lobby](demo/lobby.png) | ![Gameplay](demo/gameplay.png) | ![NFT Trophy](demo/nft.png) |
 
 ---
 
@@ -70,7 +70,7 @@ Traditional multiplayer games store achievements in their database. If the servi
 | Claim via MWA transaction | ✅ Live | Memo tx on devnet proves ownership |
 | NFT Gallery (Settings) | ✅ Live | Shows trophies with Solscan links |
 | SKR balance display | ✅ Live | Mainnet SPL token query |
-| SKR tournament rooms | ⚠️ Prototype | MWA-signed approval → room creation. Stake amount and transaction are **not verified on-chain by the server**; no escrow/payout yet |
+| SKR tournament rooms | ⏳ Not available | Disabled in the app ("coming soon"). No stake, escrow or payout; the code path exists on the server but is unreachable from the UI. SKR balance display works |
 | Solana Program (Anchor) | ✅ Devnet | `5ZdgoyBDknoZ8tDYMDXf8zCUQ7FxuaDbK4QffAgSfA9h` (not used for SKR escrow yet) |
 
 ---
@@ -297,7 +297,7 @@ cd mobile && npx tsc --noEmit
 
 Being upfront about the current state:
 
-- **SKR stakes are not trustless yet.** The wallet approves a stake via MWA, but the server does not verify the amount or the transaction on-chain, and there is no escrow or automatic payout of the pot. Do not attach real value to it until this is built.
+- **SKR tournaments are not available.** Only the SKR balance display works. There is no stake, escrow, entry fee or payout; the lobby button is disabled ("coming soon"). A game called a "tournament" in the code is a single 4-player match; the only reward is a commemorative trophy cNFT (no prize money).
 - **Mixed networks.** Game and auth run against devnet; cNFT minting and the SKR balance read use mainnet.
 - **Trophy mints are budgeted.** The server wallet pays every mint (about 0.000005 SOL) and the mainnet Merkle tree holds only 32 leaves, so mints are capped at 2 per wallet and 8 per day, and stop when 3 leaves or fewer remain (`MINT_MAX_PER_PLAYER_DAY`, `MINT_MAX_PER_DAY`, `MINT_MIN_TREE_LEAVES_LEFT`). A wider launch needs a larger tree.
 

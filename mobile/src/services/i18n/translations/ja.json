@@ -62,9 +62,9 @@
     "featureFast": "高速",
     "featureFastDesc": "パスワード不要",
     "featureRewards": "報酬",
-    "featureRewardsDesc": "トーナメント優勝でNFT獲得",
-    "featurePlay": "プレイ＆稼ぐ",
-    "featurePlayDesc": "ランクトーナメントで競争",
+    "featureRewardsDesc": "ゲームに勝ってトロフィーNFTを獲得",
+    "featurePlay": "オンラインで遊ぶ",
+    "featurePlayDesc": "ランキングを駆け上がろう",
     "checkSeeker": "Solanaウォレットアプリがインストール済み (Seeker, Phantom, Backpack)",
     "checkWallet": "ウォレットにアカウントがある",
     "checkInternet": "インターネット接続が安定",
@@ -89,7 +89,7 @@
     "customGame": "カスタムゲーム",
     "pvp": "PvP",
     "skrTournament": "SKRトーナメント",
-    "skrTournamentSub": "SKRをステーク · 勝者がポットを総取り",
+    "skrTournamentSub": "近日公開",
     "unknownMode": "不明"
   },
   "game": {
@@ -210,7 +210,7 @@
     "walletAddress": "ウォレット",
     "emailAddress": "メール",
     "myTrophies": "マイトロフィー",
-    "noTrophiesMsg": "トーナメントで優勝して最初のNFTトロフィーを獲得しよう",
+    "noTrophiesMsg": "ゲームに勝って最初のNFTトロフィーを獲得しよう",
     "mintingPending": "チェーンで発行中...",
     "appDescription": "SolanaでトルコのカードゲームをプレイCheck",
     "champion": "チャンピオン"

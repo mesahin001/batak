@@ -689,20 +689,15 @@ export const LobbyScreen = () => {
           </View>
         )}
 
-        {/* SKR Tournament — only for wallet users */}
+        {/* SKR Tournament — not available yet (stake escrow and payout are not built); shown as coming soon */}
         {!inQueue && publicKey && (
-          <TouchableOpacity
-            style={[styles.skrTournamentButton, !isConnected && styles.buttonDisabled]}
-            onPress={() => setShowSkrModal(true)}
-            disabled={!isConnected}
-            activeOpacity={0.7}
-          >
+          <View style={[styles.skrTournamentButton, styles.buttonDisabled]}>
             <Text style={styles.skrTournamentIcon}>◎</Text>
             <View>
               <Text style={styles.skrTournamentTitle}>{t('lobby.skrTournament')}</Text>
               <Text style={styles.skrTournamentSub}>{t('lobby.skrTournamentSub')}</Text>
             </View>
-          </TouchableOpacity>
+          </View>
         )}
 
         {/* Quick Info */}

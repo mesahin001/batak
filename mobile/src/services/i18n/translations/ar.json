@@ -62,9 +62,9 @@
     "featureFast": "سريع",
     "featureFastDesc": "لا حاجة لتذكر كلمة مرور",
     "featureRewards": "مكافآت",
-    "featureRewardsDesc": "اكسب NFTs عند الفوز في البطولات",
-    "featurePlay": "العب واكسب",
-    "featurePlayDesc": "تنافس في البطولات المصنفة",
+    "featureRewardsDesc": "افز بالألعاب لتحصل على NFT كأس",
+    "featurePlay": "العب أونلاين",
+    "featurePlayDesc": "تقدّم في لوحة المتصدرين",
     "checkSeeker": "تطبيق محفظة Solana مثبت (Seeker, Phantom, Backpack)",
     "checkWallet": "حساب في المحفظة مُعدّ",
     "checkInternet": "اتصال الإنترنت مستقر",
@@ -89,7 +89,7 @@
     "customGame": "لعب مخصص",
     "pvp": "لاعب ضد لاعب",
     "skrTournament": "بطولة SKR",
-    "skrTournamentSub": "راهن بـ SKR · الفائز يأخذ الجميع",
+    "skrTournamentSub": "قريبًا",
     "unknownMode": "غير معروف"
   },
   "game": {
@@ -210,7 +210,7 @@
     "walletAddress": "المحفظة",
     "emailAddress": "البريد الإلكتروني",
     "myTrophies": "كؤوسي",
-    "noTrophiesMsg": "فز ببطولة لتحصل على أول NFT كأس",
+    "noTrophiesMsg": "افز بلعبة لتحصل على أول NFT كأس",
     "mintingPending": "جاري السك على السلسلة...",
     "appDescription": "العب لعبة الورق التركية على Solana",
     "champion": "بطل"

@@ -266,7 +266,7 @@ export const SettingsScreen = () => {
                 const tier = TIER_LABELS[nft.tier] || TIER_LABELS[1];
                 const date = new Date(nft.mintedAt).toLocaleDateString();
                 const solscanUrl = nft.mintAddress
-                  ? `https://solscan.io/token/${nft.mintAddress}?cluster=devnet`
+                  ? `https://solscan.io/token/${nft.mintAddress}`
                   : null;
                 return (
                   <TouchableOpacity
