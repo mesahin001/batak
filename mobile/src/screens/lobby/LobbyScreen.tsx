@@ -74,7 +74,7 @@ export const LobbyScreen = () => {
    */
   useEffect(() => {
     if (!publicKey) return;
-    getSkrBalance(publicKey).then(setSkrBalance).catch(() => setSkrBalance(0));
+    getSkrBalance(publicKey).then(setSkrBalance).catch(() => setSkrBalance(null));
   }, [publicKey]);
 
   /**

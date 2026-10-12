@@ -46,7 +46,7 @@ export const SkrStakeModal: React.FC<SkrStakeModalProps> = ({
     setLoadingBalance(true);
     getSkrBalance(publicKey)
       .then(setBalance)
-      .catch(() => setBalance(0))
+      .catch(() => setBalance(null))
       .finally(() => setLoadingBalance(false));
   }, [visible, publicKey]);
 

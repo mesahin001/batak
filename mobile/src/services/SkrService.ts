@@ -1,61 +1,75 @@
 /**
  * SKR Token Service
- * Queries SKR SPL token balance on Solana mainnet.
+ * Queries SKR SPL token balance on Solana mainnet (plain JSON-RPC, no Buffer needed).
  * SKR is the native token of Solana Mobile (Seeker ecosystem).
  */
 
-import { Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 
-// SKR token mint address on mainnet
-const SKR_MINT = new PublicKey('SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3');
+// SKR token mint address on mainnet (6 decimals)
+const SKR_MINT = 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3';
+const SKR_DECIMALS = 6;
 
-// Use mainnet RPC for SKR (it's a mainnet token)
-const MAINNET_RPC = 'https://api.mainnet-beta.solana.com';
+const TOKEN_PROGRAM = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ATA_PROGRAM = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 
-// Token program ID
-const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+// The default Solana RPC rejects or rate-limits many mobile clients; a failure
+// there must not look like "0 SKR". The fallback RPC only serves non-indexed
+// token calls, so it reads the wallet's associated token account directly.
+const PRIMARY_RPC = 'https://api.mainnet-beta.solana.com';
+const FALLBACK_RPC = 'https://solana-rpc.publicnode.com';
 
-let connection: Connection | null = null;
+async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  if (!res.ok) throw new Error(`RPC ${url} HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.error) throw new Error(`RPC ${url}: ${json.error.message}`);
+  return json.result;
+}
 
-function getConnection(): Connection {
-  if (!connection) {
-    connection = new Connection(MAINNET_RPC, 'confirmed');
-  }
-  return connection;
+async function balanceByOwner(owner: string): Promise<number> {
+  const result = await rpc(PRIMARY_RPC, 'getTokenAccountsByOwner', [
+    owner,
+    { mint: SKR_MINT },
+    { encoding: 'jsonParsed', commitment: 'confirmed' },
+  ]);
+  // A wallet can hold several token accounts for the same mint: add them all up.
+  return (result?.value ?? []).reduce(
+    (sum: number, a: any) => sum + Number(a.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0),
+    0
+  );
+}
+
+async function balanceByAta(owner: string): Promise<number> {
+  const [ata] = PublicKey.findProgramAddressSync(
+    [new PublicKey(owner).toBuffer(), TOKEN_PROGRAM.toBuffer(), new PublicKey(SKR_MINT).toBuffer()],
+    ATA_PROGRAM
+  );
+  const result = await rpc(FALLBACK_RPC, 'getAccountInfo', [ata.toBase58(), { encoding: 'base64', commitment: 'confirmed' }]);
+  // No account = the wallet never held SKR, which is a real 0.
+  if (!result?.value) return 0;
+  // SPL token account layout: u64 little-endian amount at offset 64.
+  const raw = atob(result.value.data[0]);
+  let amount = 0;
+  for (let i = 7; i >= 0; i--) amount = amount * 256 + raw.charCodeAt(64 + i);
+  return amount / 10 ** SKR_DECIMALS;
 }
 
 /**
- * Get SKR token balance for a wallet address.
- * Returns balance in SKR (human-readable, divided by decimals).
- * Returns 0 if no account found or any error occurs.
+ * Get SKR token balance (human-readable) for a base58 wallet address.
+ * Returns 0 only when the chain says the wallet holds none; throws if no RPC
+ * could be reached, so callers can show "unavailable" instead of a wrong 0.
  */
 export async function getSkrBalance(walletAddress: string): Promise<number> {
   try {
-    const conn = getConnection();
-    const owner = new PublicKey(walletAddress);
-
-    const tokenAccounts = await conn.getTokenAccountsByOwner(owner, {
-      mint: SKR_MINT,
-      programId: TOKEN_PROGRAM_ID,
-    });
-
-    if (tokenAccounts.value.length === 0) {
-      return 0;
-    }
-
-    // Parse the first token account balance
-    const accountInfo = tokenAccounts.value[0].account;
-    const data = accountInfo.data;
-
-    // SPL token account layout: amount is at offset 64 (8 bytes, little-endian u64)
-    const amount = data.readBigUInt64LE(64);
-    // SKR has 9 decimals
-    const balance = Number(amount) / 1e9;
-
-    return balance;
+    return await balanceByOwner(walletAddress);
   } catch (error) {
-    console.warn('[SkrService] Failed to fetch SKR balance:', error);
-    return 0;
+    console.warn('[SkrService] primary RPC failed, trying fallback:', error);
+    return balanceByAta(walletAddress);
   }
 }
 
@@ -73,4 +87,4 @@ export function formatSkrBalance(balance: number): string {
   return balance.toFixed(4);
 }
 
-export const SKR_MINT_ADDRESS = SKR_MINT.toBase58();
+export const SKR_MINT_ADDRESS = SKR_MINT;
