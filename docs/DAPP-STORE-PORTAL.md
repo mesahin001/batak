@@ -7,14 +7,14 @@ com.bataktournament.mobile; same publisher profile, no new KYC). Prepared 2026-1
 | Field | Value |
 |---|---|
 | Package name | `xyz.batakci.tournament` (checked free in the portal) |
-| Version name / code | 1.0.10 / 11 |
-| APK to upload | `~/toolchain/work/dist/batak-1.0.10-dappstore.apk` (store update channel) |
-| SHA-256 | `e1c1e9da5ce20eb05636eed8331e1a8c8eb905d36611a63f30cf6144431e217a` |
+| Version name / code | 1.0.11 / 12 |
+| APK to upload | `~/toolchain/work/dist/batak-1.0.11-dappstore.apk` (store update channel) |
+| SHA-256 | `e89f9b663c67cff9bb7236d2a215e0eb24ee114c1b6a1d2819f6baf2365608b6` |
 | Signing cert SHA-256 | `da218ee3ad4e6ff99171bf727c86f4b2fcdd06fd43454994f70f91334c3368da` |
 | Publisher wallet | `CxXwpFuPiMDnB3TrdCNVvRu5UZ9m94LokESeBTAf2HHs` |
 | Cost | about 0.2 SOL in the publisher wallet (fee + ArDrive upload) |
 
-Do not upload `batak-1.0.10-sideload.apk`; it offers its own APK as an update.
+Do not upload `batak-1.0.11-sideload.apk`; it offers its own APK as an update.
 Keep the same keystore for every later release of this package.
 
 Checked on the APK: launcher label "Batak Tournament", permissions INTERNET, VIBRATE and
@@ -84,12 +84,12 @@ allowBackup off.
 | Featured graphic | `editors_choice_graphic.png` | 1200x1200 |
 | Screenshots | `lobby.png`, `nft.png`, `gameplay.png`, `skr.png` | portrait 1200x2670, `gameplay` landscape |
 
-These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.10
+These screenshots date from March 2026. Replace them with fresh phone screenshots of v1.0.11
 (login, lobby, a hand in play, trophy) if the UI changed. `skr.png` shows the experimental SKR
 stake; drop it if it looks like a finished feature.
 
 ## Before pressing Submit
-- Install `batak-1.0.10-sideload.apk` on the phone first: wallet login, one bot game, a mint.
+- Install `batak-1.0.11-sideload.apk` on the phone first: wallet login, one bot game, a mint.
   The store APK differs only in the update channel.
 - Check the listing says "experimental" for SKR and does not claim escrow or payouts.
 - Review takes 3-5 business days; it will not finish before the hackathon deadline (13.10.2026 01:59).
